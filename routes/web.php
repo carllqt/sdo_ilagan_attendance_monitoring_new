@@ -45,15 +45,6 @@ Route::get('/', function () {
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
 Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
-Route::get('/fingerprint/register', [FingerprintController::class, 'register'])
-    ->name('fingerprint.register');
-
-Route::get('/fingerprint/test', function () {
-    return Inertia::render('FingerprintTest');
-})->name('fingerprint.test.page');
-Route::post('/fingerprint/test-three', [FingerprintController::class, 'testThree'])
-    ->name('fingerprint.testThree');
-
 /*
 |--------------------------------------------------------------------------
 | Authenticated & Verified Routes
