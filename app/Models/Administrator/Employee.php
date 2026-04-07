@@ -2,7 +2,7 @@
 
 namespace App\Models\Administrator;
 
-use App\Models\DepartmentHead;
+use App\Models\DepartmentHeadAndSchoolAdmin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\HumanResource\TardyConvertion;
@@ -35,7 +35,11 @@ class Employee extends Model
         'national_reference_card_no',
     ];
 
-    protected $appends = ['full_name', 'is_department_head'];
+    protected $appends = [
+        'full_name',
+        'is_department_head',
+        'is_school_admin'
+    ];
 
     protected static function newFactory()
     {
@@ -61,6 +65,7 @@ class Employee extends Model
     {
         return $this->hasOne(Biometric::class, 'employee_id');
     }
+
     public function sickLeaves()
     {
         return $this->hasMany(SickLeave::class);
@@ -70,20 +75,47 @@ class Employee extends Model
     {
         return $this->hasMany(VacationLeave::class);
     }
+
     public function station()
     {
         return $this->belongsTo(Station::class);
     }
+
     public function user()
     {
         return $this->hasOne(User::class);
     }
-    public function departmentHead()
+
+    // ============================
+    // 🔥 FIXED ROLE SYSTEM
+    // ============================
+
+    public function roles()
     {
-        return $this->hasOne(DepartmentHead::class, 'employee_id');
+        return $this->hasMany(DepartmentHeadAndSchoolAdmin::class, 'employee_id');
     }
+
+    public function isDepartmentHead()
+    {
+        return $this->roles()
+            ->where('type', 'department_head')
+            ->exists();
+    }
+
+    public function isSchoolAdmin()
+    {
+        return $this->roles()
+            ->where('type', 'school_admin')
+            ->exists();
+    }
+
     public function getIsDepartmentHeadAttribute()
     {
-        return $this->departmentHead()->exists();
+        return $this->isDepartmentHead();
+    }
+
+    public function getIsSchoolAdminAttribute()
+    {
+        return $this->isSchoolAdmin();
     }
 }

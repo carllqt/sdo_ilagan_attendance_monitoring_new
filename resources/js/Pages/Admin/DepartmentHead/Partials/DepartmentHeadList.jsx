@@ -34,12 +34,6 @@ const DepartmentHeadList = ({ dept_heads, queryParams: rawParams, employees,  as
     );
     const [heads, setHeads] = useState(dept_heads);
 
-    const handleStatusUpdated = (id, status) => {
-        setHeads((prev) =>
-            prev.map((item) => (item.id === id ? { ...item, status } : item)),
-        );
-    };
-
     const handlePageChange = (page) => {
         if (page < 1 || page > totalPages) return;
         setCurrentPage(page);
@@ -88,14 +82,16 @@ const DepartmentHeadList = ({ dept_heads, queryParams: rawParams, employees,  as
                         <TableRow key={emp.id} className="hover:bg-gray-100">
                             <TableCell className="text-center">
                                 <div className="flex justify-center items-center gap-2">
-                                    {emp.head.full_name}
+                                    {emp.employee?.full_name}
                                 </div>
                             </TableCell>
+
                             <TableCell className="text-center">
-                                {emp.head.position}
+                                {emp.employee?.position}
                             </TableCell>
+
                             <TableCell className="text-center">
-                                {emp.head?.department}
+                                {emp.employee?.department}
                             </TableCell>
                             <TableCell className="flex justify-center gap-2">
                                 <ConfirmPasswordDialog

@@ -25,8 +25,8 @@ const AddDepartmentHeadForm = ({
         e.preventDefault();
 
         router.post(route("departmenthead.store"), {
-            department: selectedDept,
             employee_id: selectedEmployee,
+            type: "department_head",
         }, {
             onSuccess: () => {
                 setOpen(false);

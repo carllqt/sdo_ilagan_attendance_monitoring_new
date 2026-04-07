@@ -13,24 +13,34 @@ use Illuminate\Validation\ValidationException;
 
 class EmployeeManagementController extends Controller
 {
-
     public function index()
     {
         $user = auth()->user();
         $stationId = $user->employee->station_id;
-        $employees = Employee::with('departmentHead')
+
+        $employees = Employee::with('roles')
             ->get()
             ->map(function ($emp) {
-                $emp->is_department_head = $emp->departmentHead()->exists();
+                $emp->is_department_head = $emp->roles
+                    ->where('type', 'department_head')
+                    ->isNotEmpty();
+
                 return $emp;
             });
 
-        $employeesWithFingers = Employee::withCount(['biometric', 'departmentHead'])
+        // 🔥 station filtered + counts
+        $employeesWithFingers = Employee::with(['biometric', 'roles'])
+            ->withCount(['biometric'])
             ->where('station_id', $stationId)
             ->get()
             ->transform(function ($emp) {
+
                 $emp->available_fingers = 3 - $emp->biometric_count;
-                $emp->is_department_head = $emp->department_head_count > 0;
+
+                $emp->is_department_head = $emp->roles
+                    ->where('type', 'department_head')
+                    ->isNotEmpty();
+
                 return $emp;
             });
 
