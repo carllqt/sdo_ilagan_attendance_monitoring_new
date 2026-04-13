@@ -18,7 +18,7 @@ import {
 import { Trash2, Building2, CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
-import AddDepartmentHead from "./AddDepartmentHeadForm";
+import AddDepartmentHeadForm from "./AddDepartmentHeadForm";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -86,14 +86,10 @@ const DepartmentHeadList = ({
                         Manage department head assignments
                     </p>
                 </div>
-
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                    + Add Department
-                </Button>
             </div>
 
             {/* ADD FORM */}
-            <AddDepartmentHead
+            <AddDepartmentHeadForm
                 open={openAdd}
                 setOpen={setOpenAdd}
                 employees={employees}

@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { router } from "@inertiajs/react";
-import { Search } from "lucide-react";
+import { router, usePage } from "@inertiajs/react";
+import { Search, Check } from "lucide-react";
 import FloatingInput from "@/components/floating-input";
+import { toast } from "sonner";
 
 const AddDepartmentHeadForm = ({
     open,
@@ -44,11 +46,23 @@ const AddDepartmentHeadForm = ({
             );
     }, [employees, selectedDept, search]);
 
+    const flash = usePage().props.flash;
+
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash?.success, flash?.error]);
+
     const handleSubmit = () => {
         if (!selectedEmployee) return;
 
         router.post(
-            route("departmenthead.store"),
+            route("departmenthead.storeHead"),
             {
                 employee_id: selectedEmployee.id,
             },
@@ -63,6 +77,9 @@ const AddDepartmentHeadForm = ({
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>Assign Department Head</DialogTitle>
+                    <DialogDescription>
+                        Select an employee to assign as department head.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
@@ -85,38 +102,77 @@ const AddDepartmentHeadForm = ({
                     />
 
                     {/* EMPLOYEE LIST */}
-                    <div className="border rounded-md h-[180px] overflow-y-auto divide-y divide-gray-100">
+                    <div className="border rounded-md h-[180px] overflow-y-auto divide-y divide-gray-100 bg-blue-50 border border-blue-500">
                         {filteredEmployees.length > 0 ? (
                             filteredEmployees.map((emp) => (
                                 <div
                                     key={emp.id}
                                     onClick={() => setSelectedEmployee(emp)}
-                                    className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-100 transition ${
-                                        selectedEmployee?.id === emp.id
-                                            ? "bg-blue-50 border-l-4 border-blue-500"
-                                            : ""
-                                    }`}
+                                    className="flex items-center justify-between gap-3 p-3 cursor-pointer hover:bg-gray-100 transition"
                                 >
-                                    {/* Avatar */}
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                                        {emp.first_name[0]}
-                                        {emp.last_name[0]}
+                                    {/* LEFT SIDE */}
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-xs font-bold">
+                                            {emp.first_name[0]}
+                                            {emp.last_name[0]}
+                                        </div>
+
+                                        <div>
+                                            <div className="text-sm font-medium">
+                                                {emp.first_name} {emp.last_name}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {emp.position}
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Info */}
-                                    <div>
-                                        <div className="text-sm font-medium">
-                                            {emp.first_name} {emp.last_name}
+                                    {String(selectedEmployee?.id) ===
+                                        String(emp.id) && (
+                                        <div className="ml-auto flex items-center">
+                                            <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                                                <Check className="w-3 h-3 text-white" />
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-gray-500">
-                                            {emp.position}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             ))
                         ) : (
                             <div className="p-3 text-sm text-gray-500 text-center">
                                 No employees found
+                            </div>
+                        )}
+                    </div>
+
+                    {/* SELECTED EMPLOYEE INFO */}
+                    <div className="border rounded-md p-3 bg-blue-50 border border-blue-500">
+                        {selectedEmployee ? (
+                            <div className="flex items-center gap-3">
+                                {/* Avatar */}
+                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">
+                                    {selectedEmployee.first_name[0]}
+                                    {selectedEmployee.last_name[0]}
+                                </div>
+
+                                {/* Info */}
+                                <div className="flex-1">
+                                    <div className="text-sm font-semibold text-gray-800">
+                                        {selectedEmployee.first_name}{" "}
+                                        {selectedEmployee.last_name}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                        {selectedEmployee.position}
+                                    </div>
+                                </div>
+
+                                {/* Status */}
+                                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                                    Selected
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="text-sm text-gray-400 text-center">
+                                No employee selected
                             </div>
                         )}
                     </div>

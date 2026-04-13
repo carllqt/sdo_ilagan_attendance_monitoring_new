@@ -50,7 +50,7 @@ class DepartmentHeadController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function storeHead(Request $request)
     {
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
@@ -112,5 +112,18 @@ class DepartmentHeadController extends Controller
         } catch (Throwable $e) {
             return back()->with('error', 'Failed to delete.');
         }
+    }
+
+    public function storeDepartment(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:departments,name',
+        ]);
+
+        Department::create([
+            'name' => $validated['name'],
+        ]);
+
+        return back()->with('success', 'Department created successfully!');
     }
 }
