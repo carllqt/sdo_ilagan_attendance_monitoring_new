@@ -27,7 +27,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-const EmployeeLeaveTable = ({ employees, selectedDate }) => {
+const EmployeeLeaveTable = ({ employees, selectedDate, syncLeave }) => {
     const [leaveTypes, setLeaveTypes] = useState({});
     const [loading, setLoading] = useState({});
     const [selectedEmp, setSelectedEmp] = useState(null);
@@ -41,7 +41,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
 
     const handleLeaveChange = (empId, selectedLabel) => {
         const selected = leaveOptions.find(
-            (opt) => opt.label === selectedLabel
+            (opt) => opt.label === selectedLabel,
         );
         setLeaveTypes((prev) => ({
             ...prev,
@@ -64,6 +64,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
                 onSuccess: () => {
                     toast.success("Leave removed successfully!");
                     setLeaveTypes((prev) => ({ ...prev, [empId]: null }));
+                    syncLeave(empId, null);
                 },
                 onError: () => {
                     toast.error("Failed to remove leave.");
@@ -89,13 +90,14 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
                         ...prev,
                         [empId]: selectedLeaveCode,
                     }));
+                    syncLeave(empId, selectedLeaveCode);
                 },
                 onError: () => {
                     toast.error("Failed to assign leave.");
                 },
                 onFinish: () =>
                     setLoading((prev) => ({ ...prev, [empId]: false })),
-            }
+            },
         );
     };
 
@@ -122,7 +124,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
                                     opt.value ===
                                     (leaveTypes.hasOwnProperty(emp.id)
                                         ? leaveTypes[emp.id]
-                                        : emp.leave_type)
+                                        : emp.leave_type),
                             )?.label || "";
 
                         return (
@@ -138,7 +140,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
                                     <CustomDropdownCheckbox
                                         label="Select Leave"
                                         items={leaveOptions.map(
-                                            (opt) => opt.label
+                                            (opt) => opt.label,
                                         )}
                                         selected={currentValue}
                                         onChange={(value) =>
@@ -176,7 +178,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
                                                     to {emp.first_name}{" "}
                                                     {emp.last_name} on{" "}
                                                     {dayjs(selectedDate).format(
-                                                        "DD MMMM YYYY"
+                                                        "DD MMMM YYYY",
                                                     )}
                                                     ?
                                                 </AlertDialogDescription>

@@ -10,6 +10,8 @@ class EmployeeLeave extends Model
 {
     use HasFactory;
 
+    protected $table = 'employee_leaves';
+
     protected $fillable = [
         'employee_id',
         'date',

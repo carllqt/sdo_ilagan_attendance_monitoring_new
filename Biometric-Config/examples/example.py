@@ -45,7 +45,7 @@ class FingerprintService:
             host="localhost",
             user="root",
             password="",
-            database="capstone_project"
+            database="sdo_ilagan_attendance_new"
         )
         self.cursor = self.conn.cursor()
 

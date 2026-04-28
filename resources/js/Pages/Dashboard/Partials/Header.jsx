@@ -9,8 +9,9 @@ function Clock() {
     }, []);
 
     return (
-        <span className="text-lg font-medium whitespace-nowrap">
-            {time.toLocaleTimeString()}
+        <span className="text-lg font-medium whitespace-nowrap text-right">
+            <div>{time.toLocaleDateString()}</div>
+            <div>{time.toLocaleTimeString()}</div>
         </span>
     );
 }
