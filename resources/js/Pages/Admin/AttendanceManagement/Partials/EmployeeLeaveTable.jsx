@@ -109,7 +109,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate, syncLeave }) => {
             <TableHeader>
                 <TableRow className="bg-yellow-900 hover:bg-yellow-800">
                     <TableHead>Employee</TableHead>
-                    <TableHead>Department</TableHead>
+                                <TableHead>Office</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Leave Type</TableHead>
                     <TableHead></TableHead>
@@ -133,7 +133,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate, syncLeave }) => {
                                     {emp.first_name} {emp.last_name}
                                 </TableCell>
                                 <TableCell>
-                                    {emp.department?.name || "-"}
+                                                {emp.office?.name || "-"}
                                 </TableCell>
                                 <TableCell>
                                     {dayjs(selectedDate).format("DD MMMM")}
