@@ -129,11 +129,6 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->call([
-            MonthlySeeder::class,
-            LeaveCardSeeder::class,
-        ]);
-
         Position::factory()->count(20)->create();
     }
 }
