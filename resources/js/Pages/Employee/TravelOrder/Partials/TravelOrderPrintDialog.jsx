@@ -56,18 +56,29 @@ const TravelOrderPrintDialog = ({ open, onClose, order }) => {
 
     if (!open || !order) return null;
 
+    const toCaps = (value) => String(value || "").toUpperCase();
+
     const reportProps = {
-        name: order.employee?.full_name || order.employee?.name || "",
-        position: order.employee?.position || "",
-        station:
-            order.employee?.station || order.employee?.permanent_station || "",
-        shuttle: order.purpose_of_travel || "", // adjust if you add a field
-        host: order.host_of_activity || "",
-        dates: order.inclusive_dates
-            ? dayjs(order.inclusive_dates).format("MMMM D, YYYY")
-            : "",
-        destination: order.destination || "",
-        fund: order.fund_source || "",
+        name: toCaps(
+            order.employee_name ||
+                order.employee?.full_name ||
+                order.employee?.name,
+        ),
+        position: toCaps(order.position || order.employee?.position),
+        station: toCaps(
+            order.permanent_station ||
+                order.employee?.station?.name ||
+                order.employee?.permanent_station,
+        ),
+        shuttle: toCaps(order.purpose_of_travel), // adjust if you add a field
+        host: toCaps(order.host_of_activity),
+        dates: toCaps(
+            order.inclusive_dates
+                ? dayjs(order.inclusive_dates).format("MMMM D, YYYY")
+                : "",
+        ),
+        destination: toCaps(order.destination),
+        fund: toCaps(order.fund_source),
     };
 
     return (

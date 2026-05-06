@@ -120,7 +120,7 @@ const TravelOrderReport = React.forwardRef(
                     >
                         <tbody>
                             {[
-                                ["NAME", name.toUpperCase()],
+                                ["NAME", name],
                                 ["Position/Designation", position],
                                 ["Permanent Station", station],
                                 ["TO SHUTTLE SDS", shuttle],
@@ -167,7 +167,7 @@ const TravelOrderReport = React.forwardRef(
                         <tbody>
                             <tr>
                                 <td>
-                                    <b>{name.toUpperCase()}</b>
+                                    <b>{name}</b>
                                     <br />
                                     Name and Signature of Requesting Employee
                                 </td>
@@ -242,11 +242,7 @@ const TravelOrderReport = React.forwardRef(
                                         }}
                                     >
                                         <img
-                                            src="/img/deped_matatag.jpg"
-                                            style={{ height: "46px" }}
-                                        />
-                                        <img
-                                            src="/sdo-pic.jpg"
+                                            src="/img/footer_logos.png"
                                             style={{ height: "46px" }}
                                         />
                                     </div>

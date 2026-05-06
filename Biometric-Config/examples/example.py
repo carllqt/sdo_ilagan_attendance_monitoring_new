@@ -45,8 +45,9 @@ class FingerprintService:
             host="localhost",
             user="root",
             password="",
-            database="sdo_ilagan_attendance_monitoring"
+            database="sdo_ilagan_attendance_new"
         )
+            
         self.cursor = self.conn.cursor()
 
     def get_next_finger_id(self):

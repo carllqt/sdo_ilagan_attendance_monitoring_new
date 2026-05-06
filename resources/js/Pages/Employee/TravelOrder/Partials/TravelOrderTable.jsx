@@ -46,7 +46,8 @@ const TravelOrderTable = ({ travelOrders = [] }) => {
                                 className="transition hover:bg-gray-50"
                             >
                                 <td className="px-6 py-3">
-                                    {order.employee?.full_name ||
+                                    {order.employee_name ||
+                                        order.employee?.full_name ||
                                         order.employee?.name ||
                                         "—"}
                                 </td>

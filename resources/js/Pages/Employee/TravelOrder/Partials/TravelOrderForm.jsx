@@ -4,7 +4,15 @@ import React from "react";
 import { useForm } from "@inertiajs/react";
 
 export default function TravelAuthorityForm({ onClose, employee }) {
+    const employeeName = employee?.full_name || employee?.name || "";
+    const employeePosition = employee?.position || "";
+    const employeeStation =
+        employee?.station?.name || employee?.permanent_station || "";
+
     const { data, setData, post, processing, reset, errors } = useForm({
+        employee_name: employeeName,
+        position: employeePosition,
+        permanent_station: employeeStation,
         purpose_of_travel: "",
         host_of_activity: "",
         inclusive_dates: "",
@@ -44,12 +52,17 @@ export default function TravelAuthorityForm({ onClose, employee }) {
                                 Name
                             </label>
                             <input
-                                className="mt-1 w-full rounded-lg border bg-gray-100 p-2"
-                                value={
-                                    employee?.full_name || employee?.name || ""
+                                className="mt-1 w-full rounded-lg border p-2"
+                                value={data.employee_name}
+                                onChange={(e) =>
+                                    setData("employee_name", e.target.value)
                                 }
-                                readOnly
                             />
+                            {errors.employee_name && (
+                                <p className="text-sm text-red-500">
+                                    {errors.employee_name}
+                                </p>
+                            )}
                         </div>
 
                         <div>
@@ -57,10 +70,17 @@ export default function TravelAuthorityForm({ onClose, employee }) {
                                 Position / Designation
                             </label>
                             <input
-                                className="mt-1 w-full rounded-lg border bg-gray-100 p-2"
-                                value={employee?.position || ""}
-                                readOnly
+                                className="mt-1 w-full rounded-lg border p-2"
+                                value={data.position}
+                                onChange={(e) =>
+                                    setData("position", e.target.value)
+                                }
                             />
+                            {errors.position && (
+                                <p className="text-sm text-red-500">
+                                    {errors.position}
+                                </p>
+                            )}
                         </div>
 
                         <div className="col-span-2">
@@ -68,14 +88,17 @@ export default function TravelAuthorityForm({ onClose, employee }) {
                                 Permanent Station
                             </label>
                             <input
-                                className="mt-1 w-full rounded-lg border bg-gray-100 p-2"
-                                value={
-                                    employee?.station ||
-                                    employee?.permanent_station ||
-                                    ""
+                                className="mt-1 w-full rounded-lg border p-2"
+                                value={data.permanent_station}
+                                onChange={(e) =>
+                                    setData("permanent_station", e.target.value)
                                 }
-                                readOnly
                             />
+                            {errors.permanent_station && (
+                                <p className="text-sm text-red-500">
+                                    {errors.permanent_station}
+                                </p>
+                            )}
                         </div>
                     </div>
 

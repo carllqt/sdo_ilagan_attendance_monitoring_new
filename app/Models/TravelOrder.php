@@ -12,6 +12,9 @@ class TravelOrder extends Model
     use HasFactory;
     protected $fillable = [
         'employee_id',
+        'employee_name',
+        'position',
+        'permanent_station',
         'purpose_of_travel',
         'host_of_activity',
         'inclusive_dates',

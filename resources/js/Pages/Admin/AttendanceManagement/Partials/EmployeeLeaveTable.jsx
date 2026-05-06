@@ -27,7 +27,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-const EmployeeLeaveTable = ({ employees, selectedDate }) => {
+const EmployeeLeaveTable = ({ employees, selectedDate, syncLeave }) => {
     const [leaveTypes, setLeaveTypes] = useState({});
     const [loading, setLoading] = useState({});
     const [selectedEmp, setSelectedEmp] = useState(null);
@@ -64,6 +64,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
                 onSuccess: () => {
                     toast.success("Leave removed successfully!");
                     setLeaveTypes((prev) => ({ ...prev, [empId]: null }));
+                    syncLeave(empId, null);
                 },
                 onError: () => {
                     toast.error("Failed to remove leave.");
@@ -89,6 +90,7 @@ const EmployeeLeaveTable = ({ employees, selectedDate }) => {
                         ...prev,
                         [empId]: selectedLeaveCode,
                     }));
+                    syncLeave(empId, selectedLeaveCode);
                 },
                 onError: () => {
                     toast.error("Failed to assign leave.");

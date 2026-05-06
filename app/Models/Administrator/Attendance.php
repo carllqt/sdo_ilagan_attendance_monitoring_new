@@ -2,6 +2,9 @@
 
 namespace App\Models\Administrator;
 
+use App\Models\Administrator\AttendanceAm;
+use App\Models\Administrator\AttendancePm;
+use App\Models\Administrator\Employee;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,15 +19,24 @@ class Attendance extends Model
         'employee_id',
         'date',
     ];
+    //old
+    // public function am()
+    // {
+    //     return $this->hasOne(AttendanceAm::class);
+    // }
 
+    // public function pm()
+    // {
+    //     return $this->hasOne(AttendancePm::class);
+    // }
     public function am()
     {
-        return $this->hasOne(AttendanceAm::class);
+        return $this->hasOne(AttendanceAm::class, 'attendance_id');
     }
 
     public function pm()
     {
-        return $this->hasOne(AttendancePm::class);
+        return $this->hasOne(AttendancePm::class, 'attendance_id');
     }
 
     public function employee()

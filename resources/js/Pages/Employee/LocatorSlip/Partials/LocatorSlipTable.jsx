@@ -43,7 +43,9 @@ const LocatorSlipTable = ({ slips = [] }) => {
                                 className="transition hover:bg-gray-50"
                             >
                                 <td className="px-6 py-3">
-                                    {slip.employee
+                                    {slip.employee_name
+                                        ? slip.employee_name
+                                        : slip.employee
                                         ? `${slip.employee.first_name ?? ""} ${slip.employee.middle_name ?? ""} ${slip.employee.last_name ?? ""}`
                                               .replace(/\s+/g, " ")
                                               .trim()
