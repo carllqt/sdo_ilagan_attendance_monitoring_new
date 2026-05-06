@@ -18,6 +18,9 @@ const EmployeeManagement = ({
     userStation,
     userStationId,
     search = "",
+    status = "Active",
+    officeName = "all",
+    limit = 10,
     ...props
 }) => {
     const formatSearchDisplay = (value) =>
@@ -26,19 +29,15 @@ const EmployeeManagement = ({
             .trim();
 
     const [searchInput, setSearchInput] = useState(formatSearchDisplay(search));
-
     const [employees, setEmployees] = useState(employeesList || []);
     const [registered, setRegistered] = useState(registeredList || []);
     const [unregistered, setUnregistered] = useState(unregisteredList || []);
-
     const [selectedEmployee, setSelectedEmployee] = useState("");
     const [scanStatus, setScanStatus] = useState("idle");
     const [scanMessage, setScanMessage] = useState("");
     const [scanning, setScanning] = useState(false);
     const [eventSource, setEventSource] = useState(null);
-
     const [open, setOpen] = useState(false);
-
     const [testEmployee, setTestEmployee] = useState(null);
     const [testCountdown, setTestCountdown] = useState(null);
     const [testOpen, setTestOpen] = useState(false);
@@ -46,22 +45,24 @@ const EmployeeManagement = ({
     const [testStatus, setTestStatus] = useState("idle");
     const [testSource, setTestSource] = useState(null);
 
-    const [selectedOffice, setSelectedOffice] = useState("all");
-    const [statusFilter, setStatusFilter] = useState("Active");
+    const findOfficeByName = (value) =>
+        offices.find((office) => office.name === value);
+
+    const [selectedOffice, setSelectedOffice] = useState(
+        findOfficeByName(officeName)?.id || "all",
+    );
+    const [statusFilter, setStatusFilter] = useState(status || "Active");
     const statusOptions = ["Active", "Inactive"];
 
-    // Initialize employees from props
     useEffect(() => {
         setEmployees(Array.isArray(employeesList) ? employeesList : []);
     }, [employeesList]);
 
     useEffect(() => {
         setSearchInput(formatSearchDisplay(search));
-
-        if (search) {
-            setSelectedOffice("all");
-        }
-    }, [search]);
+        setSelectedOffice(findOfficeByName(officeName)?.id || "all");
+        setStatusFilter(status || "Active");
+    }, [search, officeName, status, offices]);
 
     // Keep registered / unregistered reactive
     useEffect(() => {
@@ -288,27 +289,48 @@ const EmployeeManagement = ({
         setEditOpen(true);
     };
 
-    const visibleEmployees = Array.isArray(filteredEmployeesList)
-        ? filteredEmployeesList
-        : employees;
+    const filteredEmployees = Array.isArray(filteredEmployeesList?.data)
+        ? filteredEmployeesList.data
+        : Array.isArray(filteredEmployeesList)
+          ? filteredEmployeesList
+          : employees;
 
-    const filteredEmployees = visibleEmployees.filter((emp) => {
-        // Office filter
-        const matchesOffice =
-            selectedOffice === "all"
-                ? true
-                : emp.office_id === Number(selectedOffice);
+    const applyEmployeeFilters = ({
+        searchValue = searchInput,
+        statusValue = statusFilter,
+        officeValue = selectedOffice,
+        pageValue,
+        limitValue = limit,
+    } = {}) => {
+        const query = {
+            status: statusValue,
+            limit: limitValue,
+        };
 
-        // Status filter
-        const matchesStatus =
-            statusFilter === "All Status"
-                ? true
-                : statusFilter === "Active"
-                  ? emp.active_status === "Active" || emp.active_status === 1
-                  : emp.active_status === "Inactive" || emp.active_status === 0;
+        if (searchValue && searchValue.trim()) {
+            query.search = searchValue.trim();
+        }
 
-        return matchesOffice && matchesStatus;
-    });
+        if (officeValue !== "all") {
+            const office = offices.find(
+                (item) => Number(item.id) === Number(officeValue),
+            );
+
+            if (office) {
+                query.office = office.name;
+            }
+        }
+
+        if (pageValue && pageValue > 1) {
+            query.page = pageValue;
+        }
+
+        router.get(route("employeemanagement"), query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
 
     return (
         <AuthenticatedLayout
@@ -353,23 +375,13 @@ const EmployeeManagement = ({
                 <EmployeeList
                     employees={employees}
                     filteredEmployees={filteredEmployees}
+                    pagination={filteredEmployeesList}
                     isRegistered={isRegistered}
                     handleEdit={handleEdit}
                     searchInput={searchInput}
                     setSearchInput={setSearchInput}
                     applySearch={(value) => {
-                        setSelectedOffice("all");
-                        router.get(
-                            route("employeemanagement"),
-                            value && value.trim()
-                                ? { search: value.trim() }
-                                : {},
-                            {
-                                preserveState: true,
-                                preserveScroll: true,
-                                replace: true,
-                            },
-                        );
+                        applyEmployeeFilters({ searchValue: value });
                     }}
                     offices={offices}
                     selectedOffice={selectedOffice}
@@ -377,6 +389,7 @@ const EmployeeManagement = ({
                     statusOptions={statusOptions}
                     statusFilter={statusFilter}
                     setStatusFilter={setStatusFilter}
+                    applyFilters={applyEmployeeFilters}
                 />
 
                 <EmployeeEditDialog

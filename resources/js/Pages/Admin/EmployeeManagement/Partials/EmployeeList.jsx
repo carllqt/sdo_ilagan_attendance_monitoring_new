@@ -33,8 +33,6 @@ import {
 } from "@/components/ui/pagination";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 
-const ITEMS_PER_PAGE = 10;
-
 const formatEmployeeSearchName = (emp) =>
     [emp.first_name, emp.middle_name, emp.last_name]
         .filter(Boolean)
@@ -44,7 +42,8 @@ const formatEmployeeSearchName = (emp) =>
 
 const EmployeeList = ({
     employees = [],
-    filteredEmployees,
+    filteredEmployees = [],
+    pagination,
     isRegistered,
     handleEdit,
     searchInput,
@@ -56,20 +55,28 @@ const EmployeeList = ({
     statusOptions,
     statusFilter,
     setStatusFilter,
+    applyFilters,
 }) => {
-    const [currentPage, setCurrentPage] = useState(1);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchBoxRef = useRef(null);
-
-    const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
-    const paginatedEmployees = filteredEmployees.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE,
+    const officeItems = useMemo(
+        () => [{ id: "all", name: "All Offices" }, ...offices],
+        [offices],
     );
+
+    const currentPage = pagination?.current_page || 1;
+    const totalPages = pagination?.last_page || 1;
+    const paginatedEmployees = filteredEmployees;
+    const pageNumbers = useMemo(() => {
+        const start = Math.max(1, currentPage - 2);
+        const end = Math.min(totalPages, currentPage + 2);
+
+        return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    }, [currentPage, totalPages]);
 
     const handlePageChange = (page) => {
         if (page < 1 || page > totalPages) return;
-        setCurrentPage(page);
+        applyFilters({ pageValue: page });
     };
 
     const suggestionMatches = useMemo(() => {
@@ -136,7 +143,6 @@ const EmployeeList = ({
                                 value={searchInput}
                                 onChange={(e) => {
                                     setSearchInput(e.target.value);
-                                    setCurrentPage(1);
                                     setShowSuggestions(true);
                                 }}
                                 onFocus={() => setShowSuggestions(true)}
@@ -144,7 +150,6 @@ const EmployeeList = ({
                                     if (e.key === "Enter") {
                                         e.preventDefault();
                                         applySearch(searchInput);
-                                        setCurrentPage(1);
                                         setShowSuggestions(false);
                                     }
                                 }}
@@ -169,7 +174,6 @@ const EmployeeList = ({
                                                         applySearch(
                                                             `${emp.id} ${emp.label}`,
                                                         );
-                                                        setCurrentPage(1);
                                                         setShowSuggestions(
                                                             false,
                                                         );
@@ -206,7 +210,7 @@ const EmployeeList = ({
                             selected={statusFilter}
                             onChange={(val) => {
                                 setStatusFilter(val);
-                                setCurrentPage(1);
+                                applyFilters({ statusValue: val });
                             }}
                             buttonVariant="blue"
                             className="w-32"
@@ -214,16 +218,21 @@ const EmployeeList = ({
 
                         <CustomDropdownCheckboxObject
                             label="Select Office"
-                            items={offices}
+                            items={officeItems}
                             selected={selectedOffice}
                             buttonLabel={
                                 offices.find(
-                                    (office) => office.id === selectedOffice,
+                                    (office) =>
+                                        Number(office.id) ===
+                                        Number(selectedOffice),
                                 )?.name || "All Offices"
                             }
                             onChange={(val) => {
-                                setSelectedOffice(val);
-                                setCurrentPage(1);
+                                const nextOffice =
+                                    val === "all" ? "all" : Number(val);
+
+                                setSelectedOffice(nextOffice);
+                                applyFilters({ officeValue: nextOffice });
                             }}
                             buttonVariant="green"
                             className="w-[360px]"
@@ -376,13 +385,13 @@ const EmployeeList = ({
                         onClick={() => handlePageChange(currentPage - 1)}
                     />
                     <PaginationContent>
-                        {Array.from({ length: totalPages }, (_, i) => (
-                            <PaginationItem key={i}>
+                        {pageNumbers.map((page) => (
+                            <PaginationItem key={page}>
                                 <PaginationLink
-                                    isActive={currentPage === i + 1}
-                                    onClick={() => handlePageChange(i + 1)}
+                                    isActive={currentPage === page}
+                                    onClick={() => handlePageChange(page)}
                                 >
-                                    {i + 1}
+                                    {page}
                                 </PaginationLink>
                             </PaginationItem>
                         ))}

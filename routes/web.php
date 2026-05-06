@@ -57,13 +57,9 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
     //Attendance Management
     Route::get('/attendancemanagement', [AttendanceManagementController::class, 'index'])->name('attendancemanagement');
-
-    Route::post('/attendancemanagement/{id}/update', [AttendanceManagementController::class, 'update'])
-        ->name('attendancemanagement.update');
+    Route::post('/attendancemanagement/{id}/update', [AttendanceManagementController::class, 'update'])->name('attendancemanagement.update');
     Route::post('attendancemanagement/create', [AttendanceManagementController::class, 'store'])->name('attendancemanagement.create');
-
-    Route::post('/attendance/leave', [EmployeeLeaveController::class, 'store'])
-        ->name('attendance.leave.store');
+    Route::post('/attendance/leave', [EmployeeLeaveController::class, 'store'])->name('attendance.leave.store');
     Route::delete('/attendance/leave', [EmployeeLeaveController::class, 'destroy']);
 
 
@@ -103,8 +99,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::put('/departmentmanagement/updateDepartment/{id}', [DepartmentManagementController::class, 'updateDepartment'])->name('department.updateDepartment');
     Route::delete('/departmentmanagement/delete/{id}', [DepartmentManagementController::class, 'destroy'])->name('departmenthead.destroy');
     Route::delete('/departmentmanagement/division/delete/{id}', [DepartmentManagementController::class, 'destroyDivisionHead'])->name('divisionhead.destroy');
-    Route::delete('/departmentmanagement/department/delete/{id}', [DepartmentManagementController::class, 'destroyDepartment'])
-        ->name('department.destroy');
+    Route::delete('/departmentmanagement/department/delete/{id}', [DepartmentManagementController::class, 'destroyDepartment'])->name('department.destroy');
     Route::post('/departmentmanagement/addOffice', [DepartmentManagementController::class, 'storeOffice'])->name('office.storeOffice');
     Route::put('/departmentmanagement/updateOffice/{id}', [DepartmentManagementController::class, 'updateOffice'])->name('office.updateOffice');
     Route::delete('/departmentmanagement/office/delete/{id}', [DepartmentManagementController::class, 'destroyOffice'])->name('office.destroy');
@@ -123,11 +118,8 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
 
     Route::middleware(['auth'])->group(function () {
-        Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])
-            ->name('locator-slips');
-
-        Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])
-            ->name('locator-slips.store');
+        Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])->name('locator-slips');
+        Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])->name('locator-slips.store');
     });
 
 

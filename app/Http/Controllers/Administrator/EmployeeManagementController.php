@@ -20,20 +20,29 @@ class EmployeeManagementController extends Controller
         $user = auth()->user();
         $stationId = $user->employee->station_id;
         $search = trim((string) request('search', ''));
+        $status = request('status', 'Active');
+        $officeName = trim((string) request('office', 'all'));
+        $officeId = 'all';
+        $limit = (int) request('limit', 10);
+
+        if (! in_array($status, ['Active', 'Inactive'], true)) {
+            $status = 'Active';
+        }
+
+        if (! in_array($limit, [10, 25, 50, 100], true)) {
+            $limit = 10;
+        }
+
         $offices = Office::with('division:id,code,name')
             ->select('id', 'division_id', 'name')
             ->orderBy('name')
             ->get();
 
-        $employees = Employee::with('roles')
-            ->get()
-            ->map(function ($emp) {
-                $emp->is_department_head = $emp->roles
-                    ->where('type', 'department_head')
-                    ->isNotEmpty();
-
-                return $emp;
-            });
+        if ($officeName !== '' && $officeName !== 'all') {
+            $officeId = $offices
+                ->firstWhere('name', $officeName)
+                ?->id ?? 'all';
+        }
 
         $employeesQuery = Employee::with(['biometric', 'roles', 'office.division'])
             ->withCount(['biometric'])
@@ -71,9 +80,19 @@ class EmployeeManagementController extends Controller
             });
         }
 
+        if ($officeId !== 'all') {
+            $filteredEmployeesList->where('office_id', (int) $officeId);
+        }
+
+        $filteredEmployeesList->where(
+            'active_status',
+            $status === 'Active' ? 1 : 0,
+        );
+
         $filteredEmployeesList = $filteredEmployeesList
-            ->get()
-            ->transform(function ($emp) {
+            ->paginate($limit)
+            ->withQueryString()
+            ->through(function ($emp) {
                 $emp->available_fingers = 3 - $emp->biometric_count;
 
                 $emp->is_department_head = $emp->roles
@@ -94,7 +113,6 @@ class EmployeeManagementController extends Controller
         $stations = Station::select('id', 'name')->get();
 
         return Inertia::render('Admin/EmployeeManagement/EmployeeManagement', [
-            'allEmployees' => $employees,
             'offices' => $offices,
             'employeesList' => $employeesWithFingers,
             'filteredEmployeesList' => $filteredEmployeesList,
@@ -104,6 +122,9 @@ class EmployeeManagementController extends Controller
             'userStation' => $user->employee->station->name ?? null,
             'userStationId' => $stationId,
             'search' => $search,
+            'status' => $status,
+            'officeName' => $officeId === 'all' ? 'all' : $officeName,
+            'limit' => $limit,
         ]);
     }
 
