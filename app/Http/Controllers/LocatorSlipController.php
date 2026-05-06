@@ -55,6 +55,9 @@ class LocatorSlipController extends Controller
         }
 
         $validated = $request->validate([
+            'employee_name' => 'required|string|max:255',
+            'position' => 'required|string|max:255',
+            'permanent_station' => 'required|string|max:255',
             'purpose_of_travel' => 'required|string|max:255',
             'destination' => 'required|string|max:255',
             'travel_type' => 'required|in:official_business,official_time',
@@ -63,6 +66,9 @@ class LocatorSlipController extends Controller
 
         LocatorSlip::create([
             'employee_id' => $employee->id,
+            'employee_name' => $validated['employee_name'],
+            'position' => $validated['position'],
+            'permanent_station' => $validated['permanent_station'],
             'purpose_of_travel' => $validated['purpose_of_travel'],
             'destination' => $validated['destination'],
             'travel_type' => $validated['travel_type'],
@@ -70,8 +76,7 @@ class LocatorSlipController extends Controller
         ]);
 
         return redirect()
-            ->route('locator-slips
-            ')
+            ->route('locator-slips')
             ->with('success_message', 'Locator Slip created successfully.');
     }
 }

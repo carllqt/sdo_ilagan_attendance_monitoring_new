@@ -137,9 +137,11 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 
-    Route::get('/travel-order', function () {
-        return Inertia::render('Employee/TravelOrder/TravelOrderPage');
-    })->name('travelorder');
+    Route::get('/travel-order', [TravelOrderController::class, 'index'])
+        ->name('travelorder');
+
+    Route::post('/employee/travel-order', [TravelOrderController::class, 'store'])
+        ->name('travelorder.store');
 
     Route::resource('position', PositionController::class);
 });

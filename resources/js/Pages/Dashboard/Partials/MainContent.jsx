@@ -7,6 +7,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination";
+import EmployeeAvatar from "@/Components/EmployeeAvatar";
 
 import { MapPin, LogIn, LogOut, Clock, X } from "lucide-react";
 
@@ -124,6 +125,7 @@ export default function MainContent({
                 employee_id: emp.id,
                 name: fullName,
                 station: emp.station?.name || "No Station",
+                profile_img: emp.profile_img || attendance?.profile_img || null,
 
                 am_in: attendance?.am_in || "",
                 am_out: attendance?.am_out || "",
@@ -252,9 +254,11 @@ export default function MainContent({
                             `}
                         >
                             {/* AVATAR */}
-                            <div className="w-11 h-11 mx-auto mb-3 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium">
-                                {name.charAt(0) || "?"}
-                            </div>
+                            <EmployeeAvatar
+                                employee={user}
+                                name={name}
+                                className="h-11 w-11 mx-auto mb-3"
+                            />
 
                             {/* NAME */}
                             <p className="text-xs font-semibold text-center truncate">
@@ -349,9 +353,11 @@ export default function MainContent({
 
                         {/* HEADER */}
                         <div className="text-center mb-4">
-                            <div className="w-14 h-14 mx-auto rounded-full bg-gray-200 flex items-center justify-center text-lg font-semibold">
-                                {safeString(selectedUser.name).charAt(0)}
-                            </div>
+                            <EmployeeAvatar
+                                employee={selectedUser}
+                                name={safeString(selectedUser.name)}
+                                className="h-14 w-14 mx-auto"
+                            />
 
                             <h2 className="mt-2 text-sm font-semibold">
                                 {safeString(selectedUser.name)}

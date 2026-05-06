@@ -4,8 +4,16 @@ import React, { useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 
 export default function LocatorSlipForm({ onClose, employee }) {
+    const employeeName = employee?.full_name || employee?.name || "";
+    const employeePosition = employee?.position || "";
+    const employeeStation =
+        employee?.station?.name || employee?.permanent_station || "";
+
     const { data, setData, post, processing, reset, errors } = useForm({
         employee_id: "",
+        employee_name: employeeName,
+        position: employeePosition,
+        permanent_station: employeeStation,
         purpose_of_travel: "",
         destination: "",
         travel_datetime: "",
@@ -14,7 +22,13 @@ export default function LocatorSlipForm({ onClose, employee }) {
 
     useEffect(() => {
         if (employee?.id) {
-            setData("employee_id", employee.id);
+            setData({
+                ...data,
+                employee_id: employee.id,
+                employee_name: employeeName,
+                position: employeePosition,
+                permanent_station: employeeStation,
+            });
         }
     }, [employee]);
 
@@ -49,12 +63,17 @@ export default function LocatorSlipForm({ onClose, employee }) {
                                 Name
                             </label>
                             <input
-                                className="mt-1 w-full rounded-lg border bg-gray-100 p-2"
-                                value={
-                                    employee?.full_name || employee?.name || ""
+                                className="mt-1 w-full rounded-lg border p-2"
+                                value={data.employee_name}
+                                onChange={(e) =>
+                                    setData("employee_name", e.target.value)
                                 }
-                                readOnly
                             />
+                            {errors.employee_name && (
+                                <p className="mt-1 text-sm text-red-500">
+                                    {errors.employee_name}
+                                </p>
+                            )}
                         </div>
 
                         <div>
@@ -62,10 +81,17 @@ export default function LocatorSlipForm({ onClose, employee }) {
                                 Position / Designation
                             </label>
                             <input
-                                className="mt-1 w-full rounded-lg border bg-gray-100 p-2"
-                                value={employee?.position || ""}
-                                readOnly
+                                className="mt-1 w-full rounded-lg border p-2"
+                                value={data.position}
+                                onChange={(e) =>
+                                    setData("position", e.target.value)
+                                }
                             />
+                            {errors.position && (
+                                <p className="mt-1 text-sm text-red-500">
+                                    {errors.position}
+                                </p>
+                            )}
                         </div>
 
                         <div className="col-span-2">
@@ -73,10 +99,17 @@ export default function LocatorSlipForm({ onClose, employee }) {
                                 Permanent Station
                             </label>
                             <input
-                                className="mt-1 w-full rounded-lg border bg-gray-100 p-2"
-                                value={employee?.station?.name || ""}
-                                readOnly
+                                className="mt-1 w-full rounded-lg border p-2"
+                                value={data.permanent_station}
+                                onChange={(e) =>
+                                    setData("permanent_station", e.target.value)
+                                }
                             />
+                            {errors.permanent_station && (
+                                <p className="mt-1 text-sm text-red-500">
+                                    {errors.permanent_station}
+                                </p>
+                            )}
                         </div>
                     </div>
 

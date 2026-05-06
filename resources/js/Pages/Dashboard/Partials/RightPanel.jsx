@@ -1,4 +1,5 @@
 import React from "react";
+import EmployeeAvatar from "@/Components/EmployeeAvatar";
 
 export default function RightPanels({
     users,
@@ -10,14 +11,11 @@ export default function RightPanels({
     setTravelPage,
     sidePerPage = 5, // ✅ default fix
 }) {
-
     // =========================
     // MERGE EMPLOYEES + ATTENDANCE
     // =========================
     const normalizedUsers = employees.map((emp) => {
-        const attendance = users.find(
-            (u) => u.employee_id === emp.id
-        );
+        const attendance = users.find((u) => u.employee_id === emp.id);
 
         const fullName =
             emp.full_name ||
@@ -30,6 +28,7 @@ export default function RightPanels({
             employee_id: emp.id,
             name: fullName || `Employee #${emp.id}`,
             station: emp.station?.name || "No Station",
+            profile_img: emp.profile_img || attendance?.profile_img || null,
 
             leave_type: attendance?.leave_type || null,
 
@@ -44,9 +43,7 @@ export default function RightPanels({
     const filteredUsers =
         selectedStation === "All Stations"
             ? normalizedUsers
-            : normalizedUsers.filter(
-                  (u) => u.station === selectedStation
-              );
+            : normalizedUsers.filter((u) => u.station === selectedStation);
 
     const withSlipUsers = filteredUsers.filter((u) => u.withSlip);
     const onTravelUsers = filteredUsers.filter((u) => u.onTravel);
@@ -59,17 +56,16 @@ export default function RightPanels({
 
     const paginatedSlipUsers = withSlipUsers.slice(
         (safeSlipPage - 1) * sidePerPage,
-        safeSlipPage * sidePerPage
+        safeSlipPage * sidePerPage,
     );
 
     const paginatedTravelUsers = onTravelUsers.slice(
         (safeTravelPage - 1) * sidePerPage,
-        safeTravelPage * sidePerPage
+        safeTravelPage * sidePerPage,
     );
 
     return (
         <div className="flex flex-col gap-4">
-
             {/* ========================= */}
             {/* WITH SLIP */}
             {/* ========================= */}
@@ -92,10 +88,12 @@ export default function RightPanels({
                                 key={user.employee_id}
                                 className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg text-xs border-l-4 border-yellow-400"
                             >
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-[10px]">
-                                        {(user.name || "?").charAt(0)}
-                                    </div>
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <EmployeeAvatar
+                                        employee={user}
+                                        name={user.name}
+                                        className="h-6 w-6"
+                                    />
                                     <span className="truncate">
                                         {user.name}
                                     </span>
@@ -131,9 +129,9 @@ export default function RightPanels({
                                     Math.min(
                                         (p || 1) + 1,
                                         Math.ceil(
-                                            withSlipUsers.length / sidePerPage
-                                        )
-                                    )
+                                            withSlipUsers.length / sidePerPage,
+                                        ),
+                                    ),
                                 )
                             }
                             className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
@@ -166,10 +164,12 @@ export default function RightPanels({
                                 key={user.employee_id}
                                 className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg text-xs border-l-4 border-purple-500"
                             >
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-[10px]">
-                                        {(user.name || "?").charAt(0)}
-                                    </div>
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <EmployeeAvatar
+                                        employee={user}
+                                        name={user.name}
+                                        className="h-6 w-6"
+                                    />
                                     <span className="truncate">
                                         {user.name}
                                     </span>
@@ -205,9 +205,9 @@ export default function RightPanels({
                                     Math.min(
                                         (p || 1) + 1,
                                         Math.ceil(
-                                            onTravelUsers.length / sidePerPage
-                                        )
-                                    )
+                                            onTravelUsers.length / sidePerPage,
+                                        ),
+                                    ),
                                 )
                             }
                             className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"

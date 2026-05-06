@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Administrator\Employee;
 use App\Models\Administrator\Attendance;
+use App\Models\Administrator\Station;
 use App\Models\EmployeeLeave;
-use App\Models\Station;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -32,17 +32,16 @@ class DashboardController extends Controller
         // =========================
         $leaves = EmployeeLeave::whereDate('date', $today)
         ->get();
+        $leavesByEmployee = $leaves->keyBy('employee_id');
 
         // =========================
         // EMPLOYEES + LEAVE MERGE
         // =========================
         $employees = Employee::with('station')
             ->get()
-            ->map(function ($emp) use ($leaves) {
+            ->map(function ($emp) use ($leavesByEmployee) {
 
-                $leaveType = optional($leaves[$emp->id] ?? collect())
-                    ->first()
-                    ?->leave_type;
+                $leaveType = $leavesByEmployee->get($emp->id)?->leave_type;
 
                 return [
                     'id' => $emp->id,
@@ -50,6 +49,7 @@ class DashboardController extends Controller
                     'first_name' => $emp->first_name,
                     'middle_name' => $emp->middle_name,
                     'last_name' => $emp->last_name,
+                    'profile_img' => $emp->profile_img,
                     'station' => $emp->station,
                     'leave_type' => $leaveType,
                 ];

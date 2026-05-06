@@ -56,25 +56,34 @@ const LocatorSlipPrintDialog = ({ open, onClose, slip }) => {
 
     if (!open || !slip) return null;
 
+    const fullName = slip.employee
+        ? `${slip.employee.first_name ?? ""} ${slip.employee.middle_name ?? ""} ${slip.employee.last_name ?? ""}`
+              .replace(/\s+/g, " ")
+              .trim()
+        : "";
+    const toCaps = (value) => String(value || "").toUpperCase();
+
     const reportProps = {
-        name: slip.employee
-            ? `${slip.employee.first_name ?? ""} ${slip.employee.middle_name ?? ""} ${slip.employee.last_name ?? ""}`
-                  .replace(/\s+/g, " ")
-                  .trim()
-            : "",
-        position: slip.employee?.position || "",
-        station: slip.employee?.station?.name || "",
-        purpose: slip.purpose_of_travel || "",
+        name: toCaps(slip.employee_name || fullName),
+        position: toCaps(slip.position || slip.employee?.position),
+        station: toCaps(
+            slip.permanent_station ||
+                slip.employee?.station?.name ||
+                slip.employee?.permanent_station,
+        ),
+        purpose: toCaps(slip.purpose_of_travel),
         check_type:
             slip.travel_type === "official_business"
                 ? "Official Business"
                 : slip.travel_type === "official_time"
                   ? "Official Time"
                   : "",
-        date_time: slip.travel_datetime
-            ? dayjs(slip.travel_datetime).format("MMMM D, YYYY hh:mm A")
-            : "",
-        destination: slip.destination || "",
+        date_time: toCaps(
+            slip.travel_datetime
+                ? dayjs(slip.travel_datetime).format("MMMM D, YYYY hh:mm A")
+                : "",
+        ),
+        destination: toCaps(slip.destination),
     };
 
     return (

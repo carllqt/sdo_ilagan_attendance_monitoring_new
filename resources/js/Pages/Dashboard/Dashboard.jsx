@@ -26,11 +26,17 @@ const normalizeEmployee = (emp) => {
         employee_id: emp.id ?? emp.employee_id,
         name: fullName || `Employee #${emp.id || "Unknown"}`,
         station: emp.station?.name || "No Station",
+        profile_img: emp.profile_img || null,
     };
 };
 
 export default function Dashboard() {
-    const { stations = [], attendances = [], employees = [], leaves = [] } = usePage().props;
+    const {
+        stations = [],
+        attendances = [],
+        employees = [],
+        leaves = [],
+    } = usePage().props;
     const stationList = ["All Stations", ...stations.map((s) => s.name)];
     console.log("EMPLOYEES FROM BACKEND:", employees);
     const [selectedStation, setSelectedStation] = useState("All Stations");
@@ -73,36 +79,33 @@ export default function Dashboard() {
 
         // STEP 1: create ALL employees FIRST (important for absents)
         employees.forEach((emp) => {
-        const id = emp.id;
+            const id = emp.id;
 
-        const fullName = [
-            emp.first_name,
-            emp.middle_name,
-            emp.last_name,
-        ]
-            .filter(Boolean)
-            .join(" ")
-            .replace(/\s+/g, " ")
-            .trim();
+            const fullName = [emp.first_name, emp.middle_name, emp.last_name]
+                .filter(Boolean)
+                .join(" ")
+                .replace(/\s+/g, " ")
+                .trim();
 
-        // 🔥 FIND LEAVE FOR THIS EMPLOYEE
-        const leave = leaves?.find((l) => l.employee_id === id);
+            // 🔥 FIND LEAVE FOR THIS EMPLOYEE
+            const leave = leaves?.find((l) => l.employee_id === id);
 
-        grouped.set(id, {
-            id,
-            employee_id: id,
-            name: fullName || "Unknown",
-            station: emp.station?.name || "No Station",
+            grouped.set(id, {
+                id,
+                employee_id: id,
+                name: fullName || "Unknown",
+                station: emp.station?.name || "No Station",
+                profile_img: emp.profile_img || null,
 
-            am_in: "",
-            am_out: "",
-            pm_in: "",
-            pm_out: "",
+                am_in: "",
+                am_out: "",
+                pm_in: "",
+                pm_out: "",
 
-            // 🔥 THIS IS THE MISSING PIECE
-            leave_type: leave?.leave_type || null,
+                // 🔥 THIS IS THE MISSING PIECE
+                leave_type: leave?.leave_type || null,
+            });
         });
-    });
 
         // STEP 2: merge attendance on top
         attendances.forEach((item) => {
@@ -186,6 +189,7 @@ export default function Dashboard() {
                             employee_id: id,
                             name: fullName,
                             station: emp.station?.name || "No Station",
+                            profile_img: emp.profile_img || null,
                             am_in:
                                 data.session === "AM" &&
                                 data.action === "time-in"
@@ -228,14 +232,14 @@ export default function Dashboard() {
             eventSource.close();
         };
     }, []);
-    
+
     const syncLeave = (employeeId, leaveType) => {
         setUsers((prev) =>
             prev.map((u) =>
                 u.employee_id === employeeId
                     ? { ...u, leave_type: leaveType }
-                    : u
-            )
+                    : u,
+            ),
         );
     };
 

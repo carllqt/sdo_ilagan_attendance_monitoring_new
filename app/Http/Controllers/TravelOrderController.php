@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\TravelOrder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use App\Models\Administrator\Employee;
+
 class TravelOrderController extends Controller
 {
     /**
@@ -14,9 +15,20 @@ class TravelOrderController extends Controller
    
     public function index()
     {
-        $employee = Employee::first(); // same as LocatorSlip
+        $user = Auth::user();
 
-        $travel_orders = TravelOrder::with('employee')
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $employee = $user->employee()->with('station')->first();
+
+        if (!$employee) {
+            abort(404, 'Employee record not found for this user.');
+        }
+
+        $travel_orders = TravelOrder::with('employee.station')
+            ->where('employee_id', $employee->id)
             ->latest()
             ->get();
 
@@ -41,7 +53,16 @@ class TravelOrderController extends Controller
      */
     public function store(Request $request)
     {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
         $validated = $request->validate([
+            'employee_name' => 'required|string|max:255',
+            'position' => 'required|string|max:255',
+            'permanent_station' => 'required|string|max:255',
             'purpose_of_travel' => 'required|string|max:255',
             'host_of_activity' => 'nullable|string|max:255',
             'inclusive_dates' => 'required|date',
@@ -49,12 +70,10 @@ class TravelOrderController extends Controller
             'fund_source' => 'nullable|string|max:255',
         ]);
 
-        $employee = Employee::first(); // same logic
+        $employee = $user->employee;
 
         if (!$employee) {
-            return redirect()
-                ->route('travelorder')
-                ->with('error_message', 'No employee found in the system.');
+            abort(404, 'Employee record not found for this user.');
         }
 
         TravelOrder::create([

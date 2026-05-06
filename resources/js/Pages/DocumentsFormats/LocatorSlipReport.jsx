@@ -124,7 +124,7 @@ const LocatorSlipReport = React.forwardRef(
                                         verticalAlign: "top",
                                     }}
                                 >
-                                    {name.toUpperCase()}
+                                    {name}
                                 </td>
                             </tr>
 
