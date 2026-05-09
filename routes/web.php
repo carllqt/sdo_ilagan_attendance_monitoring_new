@@ -21,8 +21,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeLeaveController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\LocatorSlipController;
@@ -34,19 +32,15 @@ use App\Http\Controllers\TravelOrderController;
 */
 
 Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect()->route('employeemanagement');
-    }
-    return Inertia::render('Auth/Login', [
-        'canRegister'      => Route::has('register'),
-        'canResetPassword' => Route::has('password.request'),
-        'laravelVersion'   => Application::VERSION,
-        'phpVersion'       => PHP_VERSION,
-    ]);
-});
+    return Inertia::render('LandingPage');
+})->name('landing');
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
 Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+
+Route::get('/LandingPage', function () {
+    return redirect()->route('landing');
+});
 /*
 |--------------------------------------------------------------------------
 | Authenticated & Verified Routes
