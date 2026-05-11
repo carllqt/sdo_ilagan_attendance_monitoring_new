@@ -72,10 +72,29 @@ const EmployeeList = ({
     const totalPages = pagination?.last_page || 1;
     const paginatedEmployees = filteredEmployees;
     const pageNumbers = useMemo(() => {
-        const start = Math.max(1, currentPage - 2);
-        const end = Math.min(totalPages, currentPage + 2);
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
 
-        return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+        const pages = [1];
+        const start = Math.max(2, currentPage - 1);
+        const end = Math.min(totalPages - 1, currentPage + 1);
+
+        if (start > 2) {
+            pages.push("start-ellipsis");
+        }
+
+        for (let page = start; page <= end; page += 1) {
+            pages.push(page);
+        }
+
+        if (end < totalPages - 1) {
+            pages.push("end-ellipsis");
+        }
+
+        pages.push(totalPages);
+
+        return pages;
     }, [currentPage, totalPages]);
 
     const handlePageChange = (page) => {
@@ -420,12 +439,18 @@ const EmployeeList = ({
                     <PaginationContent>
                         {pageNumbers.map((page) => (
                             <PaginationItem key={page}>
-                                <PaginationLink
-                                    isActive={currentPage === page}
-                                    onClick={() => handlePageChange(page)}
-                                >
-                                    {page}
-                                </PaginationLink>
+                                {typeof page === "number" ? (
+                                    <PaginationLink
+                                        isActive={currentPage === page}
+                                        onClick={() => handlePageChange(page)}
+                                    >
+                                        {page}
+                                    </PaginationLink>
+                                ) : (
+                                    <span className="flex h-9 min-w-9 items-center justify-center px-2 text-sm font-medium text-slate-400">
+                                        ...
+                                    </span>
+                                )}
                             </PaginationItem>
                         ))}
                     </PaginationContent>

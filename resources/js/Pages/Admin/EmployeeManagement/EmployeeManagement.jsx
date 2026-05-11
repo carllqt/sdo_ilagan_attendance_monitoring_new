@@ -8,6 +8,8 @@ import EmployeeList from "./Partials/EmployeeList";
 import EmployeeEditDialog from "./Partials/EmployeeEditDialog";
 import FingerprintRegistrationPanel from "./Partials/EmployeeFingerprintPanel";
 
+const fingerprintServiceUrl = `http://${window.location.hostname}:5000`;
+
 const EmployeeManagement = ({
     filteredEmployeesList,
     offices = [],
@@ -128,7 +130,7 @@ const EmployeeManagement = ({
         setScanMessage("🔄 Starting fingerprint registration...");
 
         const source = new EventSource(
-            `http://127.0.0.1:5000/bioRegisterSSE/${selectedEmployee}`,
+            `${fingerprintServiceUrl}/bioRegisterSSE/${selectedEmployee}`,
         );
         setEventSource(source);
 
@@ -197,7 +199,7 @@ const EmployeeManagement = ({
         setTestMessage("Place your finger on the scanner...");
         setTestStatus("scanning"); // optional state to show animation/status
 
-        const source = new EventSource(`http://127.0.0.1:5000/bioTestSSE`);
+        const source = new EventSource(`${fingerprintServiceUrl}/bioTestSSE`);
         setTestSource(source);
 
         source.onmessage = (event) => {

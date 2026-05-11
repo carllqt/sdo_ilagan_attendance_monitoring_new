@@ -95,8 +95,9 @@ class EmployeeManagementController extends Controller
         );
 
         $filteredEmployeesList
-            ->orderBy('last_name')
             ->orderBy('first_name')
+            ->orderBy('middle_name')
+            ->orderBy('last_name')
             ->orderBy('id');
 
         $filteredEmployeesList = $filteredEmployeesList

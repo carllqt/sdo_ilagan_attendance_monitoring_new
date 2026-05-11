@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { usePage } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 
 import Header from "./Partials/Header";
 import EmployeeList from "./Partials/EmployeeList";
@@ -20,118 +20,128 @@ const toArray = (value) => {
     return [];
 };
 
-const createRows = (employees, attendances, leaves) => {
-    const employeeList = toArray(employees);
-    const attendanceList = toArray(attendances);
-    const leaveList = toArray(leaves);
-    const leaveMap = new Map(
-        leaveList.map((leave) => [leave.employee_id, leave]),
-    );
-    const rows = new Map();
-
-    employeeList.forEach((employee) => {
-        const leave = leaveMap.get(employee.id);
-
-        rows.set(employee.id, {
-            id: employee.id,
-            employee_id: employee.id,
-            name: getName(employee),
-            station: employee.station?.name || "Division Office",
-            station_id: employee.station?.id || null,
-            position: employee.position || "Employee",
-            profile_img: employee.profile_img || null,
-            leave_type: employee.leave_type || leave?.leave_type || null,
-            am_in: "",
-            am_out: "",
-            pm_in: "",
-            pm_out: "",
-        });
-    });
-
-    attendanceList.forEach((attendance) => {
-        const id = attendance.employee?.id || attendance.employee_id;
-        const row = rows.get(id);
-
-        if (!row) return;
-
-        rows.set(id, {
-            ...row,
-            am_in: attendance.am?.am_time_in || row.am_in,
-            am_out: attendance.am?.am_time_out || row.am_out,
-            pm_in: attendance.pm?.pm_time_in || row.pm_in,
-            pm_out: attendance.pm?.pm_time_out || row.pm_out,
-        });
-    });
-
-    return [...rows.values()].sort((a, b) => a.name.localeCompare(b.name));
+const createRows = (employees) => {
+    return toArray(employees?.data || employees).map((employee) => ({
+        id: employee.id,
+        employee_id: employee.employee_id || employee.id,
+        name: getName(employee),
+        station: employee.station?.name || "Division Office",
+        station_id: employee.station?.id || null,
+        position: employee.position || "Employee",
+        profile_img: employee.profile_img || null,
+        am_in: employee.am_in || "",
+        am_out: employee.am_out || "",
+        pm_in: employee.pm_in || "",
+        pm_out: employee.pm_out || "",
+        status: employee.status || "Absent",
+    }));
 };
 
 const AttendanceMonitoring = ({
-    attendances = [],
-    employees = [],
-    leaves = [],
+    employees = {},
+    filters = {},
     stations = [],
 }) => {
-    console.log({ stations });
     const stationList = useMemo(() => toArray(stations), [stations]);
-    const rows = useMemo(
-        () => createRows(employees, attendances, leaves),
-        [employees, attendances, leaves],
-    );
-    const [search, setSearch] = useState("");
-    const [selectedStation, setSelectedStation] = useState("all");
-    const [page, setPage] = useState(1);
+    const rows = useMemo(() => createRows(employees), [employees]);
+    const [search, setSearch] = useState(filters.search || "");
+    const [stationSearch, setStationSearch] = useState("");
     const [time, setTime] = useState(new Date());
+    const selectedStation = filters.station_id || 1;
+    const selectedStationCode = filters.station_code || "SDO";
+    const selectedStationName =
+        filters.station_name || "School Division Office";
+
+    const visit = (overrides = {}) => {
+        const params = new URLSearchParams(window.location.search);
+
+        params.set("station_code", selectedStationCode);
+        params.set("station_name", selectedStationName);
+        params.delete("limit");
+
+        Object.entries(overrides).forEach(([key, value]) => {
+            if (value === null || value === undefined || value === "") {
+                params.delete(key);
+                return;
+            }
+
+            params.set(key, value);
+        });
+
+        if (!params.get("search")) params.delete("search");
+        params.delete("station_search");
+
+        router.get(route("attendance-monitoring"), Object.fromEntries(params), {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    useEffect(() => {
+        setSearch(filters.search || "");
+    }, [filters.search]);
+
+    useEffect(() => {
+        console.log("Attendance employees reloaded:", employees);
+    }, [employees]);
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const filteredRows = useMemo(() => {
-        const keyword = search.toLowerCase().trim();
-
-        return rows.filter((row) => {
-            const matchesStation =
-                selectedStation === "all" ||
-                String(row.station_id) === String(selectedStation);
-
-            return (
-                matchesStation &&
-                (!keyword ||
-                    row.name.toLowerCase().includes(keyword) ||
-                    row.station.toLowerCase().includes(keyword))
-            );
-        });
-    }, [rows, search, selectedStation]);
-
-    const perPage = 12;
-    const pageCount = Math.max(1, Math.ceil(filteredRows.length / perPage));
-
     useEffect(() => {
-        setPage((value) => Math.min(value, pageCount));
-    }, [pageCount]);
+        const timer = setInterval(() => {
+            router.reload({
+                only: ["employees"],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 3000);
 
-    const visibleRows = filteredRows.slice(
-        (page - 1) * perPage,
-        page * perPage,
-    );
+        return () => clearInterval(timer);
+    }, []);
+
+    const selectStation = (station) => {
+        const stationCode = String(station?.code || "SDO").trim();
+        const stationName = String(
+            station?.name || "School Division Office",
+        ).trim();
+
+        visit({
+            station_code: stationCode,
+            station_name: stationName,
+            page: 1,
+        });
+    };
+
+    const goToPage = (page) => {
+        visit({ page });
+    };
+
+    const submitSearch = (value) => {
+        visit({ search: value?.trim() || "", page: 1 });
+    };
 
     return (
         <div className="min-h-screen text-[#070d3f]">
+            <Head title="Time Vault - AMS" />
             <Header time={time} />
             <EmployeeList
-                filteredRows={filteredRows}
-                page={page}
-                pageCount={pageCount}
-                perPage={perPage}
+                employees={employees}
+                goToPage={goToPage}
+                rows={rows}
                 search={search}
                 selectedStation={selectedStation}
-                setPage={setPage}
+                selectedStationCode={selectedStationCode}
+                selectedStationName={selectedStationName}
+                selectStation={selectStation}
                 setSearch={setSearch}
-                setSelectedStation={setSelectedStation}
+                setStationSearch={setStationSearch}
+                submitSearch={submitSearch}
+                stationSearch={stationSearch}
                 stations={stationList}
-                visibleRows={visibleRows}
             />
         </div>
     );
