@@ -15,19 +15,10 @@ class LocatorSlipController extends Controller
     {
         /** @var User|null $user */
         $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        $employee = $user->employee()->with('station')->first();
-
-        if (!$employee) {
-            abort(404, 'Employee record not found for this user.');
-        }
-
+        $employee = $user?->employee()->with('station')->first();
         $locator_slips = LocatorSlip::with('employee.station')
-            ->where('employee_id', $employee->id)
+            ->when($employee, fn ($query) => $query->where('employee_id', $employee->id))
+            ->when(!$employee, fn ($query) => $query->whereNull('employee_id'))
             ->latest()
             ->get();
 
@@ -43,16 +34,7 @@ class LocatorSlipController extends Controller
     {
         /** @var User|null $user */
         $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        $employee = $user->employee;
-
-        if (!$employee) {
-            abort(404, 'Employee record not found for this user.');
-        }
+        $employee = $user?->employee;
 
         $validated = $request->validate([
             'employee_name' => 'required|string|max:255',
@@ -65,7 +47,7 @@ class LocatorSlipController extends Controller
         ]);
 
         LocatorSlip::create([
-            'employee_id' => $employee->id,
+            'employee_id' => $employee?->id,
             'employee_name' => $validated['employee_name'],
             'position' => $validated['position'],
             'permanent_station' => $validated['permanent_station'],

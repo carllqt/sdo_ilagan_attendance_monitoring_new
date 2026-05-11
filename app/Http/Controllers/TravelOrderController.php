@@ -16,19 +16,10 @@ class TravelOrderController extends Controller
     public function index()
     {
         $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        $employee = $user->employee()->with('station')->first();
-
-        if (!$employee) {
-            abort(404, 'Employee record not found for this user.');
-        }
-
+        $employee = $user?->employee()->with('station')->first();
         $travel_orders = TravelOrder::with('employee.station')
-            ->where('employee_id', $employee->id)
+            ->when($employee, fn ($query) => $query->where('employee_id', $employee->id))
+            ->when(!$employee, fn ($query) => $query->whereNull('employee_id'))
             ->latest()
             ->get();
 
@@ -54,10 +45,7 @@ class TravelOrderController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
+        $employee = $user?->employee;
 
         $validated = $request->validate([
             'employee_name' => 'required|string|max:255',
@@ -70,14 +58,8 @@ class TravelOrderController extends Controller
             'fund_source' => 'nullable|string|max:255',
         ]);
 
-        $employee = $user->employee;
-
-        if (!$employee) {
-            abort(404, 'Employee record not found for this user.');
-        }
-
         TravelOrder::create([
-            'employee_id' => $employee->id,
+            'employee_id' => $employee?->id,
             ...$validated
         ]);
 

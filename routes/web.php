@@ -37,6 +37,14 @@ Route::get('/', function () {
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
 Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])
+    ->name('locator-slips');
+Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])
+    ->name('locator-slips.store');
+Route::get('/travel-order', [TravelOrderController::class, 'index'])
+    ->name('travelorder');
+Route::post('/employee/travel-order', [TravelOrderController::class, 'store'])
+    ->name('travelorder.store');
 
 Route::get('/LandingPage', function () {
     return redirect()->route('landing');
@@ -116,26 +124,10 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::delete('/stations/{station}', [StationManagementController::class, 'destroyStation'])->name('stations.destroy');
 
 
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])
-            ->name('locator-slips');
-
-        Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])
-            ->name('locator-slips.store');
-    });
-
-
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-
-    Route::get('/travel-order', [TravelOrderController::class, 'index'])
-        ->name('travelorder');
-
-    Route::post('/employee/travel-order', [TravelOrderController::class, 'store'])
-        ->name('travelorder.store');
 
     Route::resource('position', PositionController::class);
 });
