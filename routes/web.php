@@ -35,11 +35,11 @@ Route::get('/', function () {
 })->name('landing');
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
-<<<<<<<<< Temporary merge branch 1
+
 Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'index'])->name('attendance-monitoring');
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
-=========
+
 Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
 Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])
     ->name('locator-slips');
