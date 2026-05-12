@@ -19,7 +19,7 @@ class OfficeSeeder extends Seeder
                 'CID',
             ],
 
-            'SDS' => [
+            'OSDS' => [
                 'Accounting Unit',
                 'Budget Unit',
                 'Administrative Unit',
