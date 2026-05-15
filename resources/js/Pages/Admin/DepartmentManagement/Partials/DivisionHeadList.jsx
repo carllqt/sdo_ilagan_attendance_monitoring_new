@@ -26,17 +26,14 @@ const ITEMS_PER_PAGE = 10;
 
 const DivisionHeadList = ({
     division_heads = [],
-    employees = [],
     divisions = [],
+    assignDivisionHeadModal = null,
     deleteDivisionHeadModal = null,
     onAssignNow,
     highlightedDivisionId = null,
     highlightRequestKey = 0,
 }) => {
-    const [openAdd, setOpenAdd] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedDivisionForAssign, setSelectedDivisionForAssign] =
-        useState(null);
     const [animatedDivisionId, setAnimatedDivisionId] = useState(null);
     const animationTimeoutRef = useRef(null);
 
@@ -118,6 +115,7 @@ const DivisionHeadList = ({
 
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
         query.set("modal", modal);
 
@@ -140,6 +138,7 @@ const DivisionHeadList = ({
         query.delete("modal");
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
 
         router.get(route("departmentmanagement"), Object.fromEntries(query), {
@@ -161,11 +160,14 @@ const DivisionHeadList = ({
             </div>
 
             <AddDivisionHeadForm
-                open={openAdd}
-                setOpen={setOpenAdd}
-                employees={employees}
+                open={!!assignDivisionHeadModal}
+                setOpen={(nextOpen) => {
+                    if (!nextOpen) closeDepartmentModal();
+                }}
                 divisions={divisions}
-                preselectedDivision={selectedDivisionForAssign}
+                preselectedDivision={
+                    assignDivisionHeadModal?.division_id || null
+                }
             />
 
             <div className="overflow-x-auto rounded-lg border">
@@ -306,10 +308,15 @@ const DivisionHeadList = ({
                                                             : ""
                                                     }`}
                                                     onClick={() => {
-                                                        setSelectedDivisionForAssign(
-                                                            row.division.id,
+                                                        openDepartmentModal(
+                                                            "assign-division-head",
+                                                            {
+                                                                division_name:
+                                                                    row
+                                                                        .division
+                                                                        .name,
+                                                            },
                                                         );
-                                                        setOpenAdd(true);
                                                         onAssignNow?.(
                                                             row.division.id,
                                                         );

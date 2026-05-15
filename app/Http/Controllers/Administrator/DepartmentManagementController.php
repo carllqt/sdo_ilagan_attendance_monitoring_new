@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Administrator;
 
-use App\Http\Controllers\Concerns\HandleModalConcerns\DeparmentModals;
+use App\Http\Controllers\Concerns\HandleModalConcerns\DepartmentModals;
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
 use App\Models\Administrator\Employee;
@@ -11,14 +11,12 @@ use App\Models\Administrator\Office;
 use App\Models\Division;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use Throwable;
 
 class DepartmentManagementController extends Controller
 {
-    use DeparmentModals;
+    use DepartmentModals;
     use ValidatesPassword;
 
     public function index()
@@ -103,7 +101,37 @@ class DepartmentManagementController extends Controller
             ->orderBy('name')
             ->get();
 
-        $employees = Employee::with('office:id,name,division_id')
+        return Inertia::render('Admin/DepartmentManagement/DepartmentManagement', [
+            'office_heads' => $officeHeads,
+            'filtered_office_heads' => $filteredOfficeHeads,
+            'division_heads' => $divisionHeads,
+            'filtered_division_heads' => $filteredDivisionHeads,
+            'divisions' => $divisions,
+            'offices' => $offices,
+            'office_search' => $officeSearch,
+            'division_search' => $divisionSearch,
+            'addDivisionModal' => $this->isDepartmentModal('add-division'),
+            'addOfficeModal' => $this->isDepartmentModal('add-office'),
+            'editOfficeModal' => $this->resolveOfficeModal('edit-office'),
+            'deleteOfficeModal' => $this->resolveOfficeModal('delete-office'),
+            'assignOfficeHeadModal' => $this->resolveAssignOfficeHeadModal(),
+            'assignDivisionHeadModal' => $this->resolveAssignDivisionHeadModal(),
+            'deleteOfficeHeadModal' => $this->resolveOfficeHeadModal('delete-office-head'),
+            'deleteDivisionHeadModal' => $this->resolveDivisionHeadModal('delete-division-head'),
+        ]);
+    }
+
+    public function employeeCandidates(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'office_id' => ['nullable', 'integer', 'exists:offices,id'],
+            'division_id' => ['nullable', 'integer', 'exists:divisions,id'],
+        ]);
+
+        $search = trim((string) ($validated['search'] ?? ''));
+
+        $employeesQuery = Employee::with('office:id,name,division_id')
             ->select(
                 'id',
                 'first_name',
@@ -113,27 +141,38 @@ class DepartmentManagementController extends Controller
                 'work_type',
                 'position',
                 'office_id',
-                'station_id'
+                'station_id',
             )
-            ->get();
+            ->when(isset($validated['office_id']), function ($query) use ($validated) {
+                $query->where('office_id', $validated['office_id']);
+            })
+            ->when(isset($validated['division_id']), function ($query) use ($validated) {
+                $query->whereHas('office', function ($query) use ($validated) {
+                    $query->where('division_id', $validated['division_id']);
+                });
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('id', $search)
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('position', 'like', "%{$search}%")
+                        ->orWhereRaw(
+                            "CONCAT_WS(' ', first_name, middle_name, last_name) LIKE ?",
+                            ["%{$search}%"],
+                        );
+                });
+            })
+            ->orderBy('last_name')
+            ->orderBy('first_name');
 
-        return Inertia::render('Admin/DepartmentManagement/DepartmentManagement', [
-            'office_heads' => $officeHeads,
-            'filtered_office_heads' => $filteredOfficeHeads,
-            'division_heads' => $divisionHeads,
-            'filtered_division_heads' => $filteredDivisionHeads,
-            'divisions' => $divisions,
-            'offices' => $offices,
-            'employees' => $employees,
-            'office_search' => $officeSearch,
-            'division_search' => $divisionSearch,
-            'addDivisionModal' => $this->isDepartmentModal('add-division'),
-            'addOfficeModal' => $this->isDepartmentModal('add-office'),
-            'editOfficeModal' => $this->resolveOfficeModal('edit-office'),
-            'deleteOfficeModal' => $this->resolveOfficeModal('delete-office'),
-            'assignOfficeHeadModal' => $this->resolveAssignOfficeHeadModal(),
-            'deleteOfficeHeadModal' => $this->resolveOfficeHeadModal('delete-office-head'),
-            'deleteDivisionHeadModal' => $this->resolveDivisionHeadModal('delete-division-head'),
+        $total = (clone $employeesQuery)->count();
+        $employees = $employeesQuery->limit(10)->get();
+
+        return response()->json([
+            'data' => $employees,
+            'total' => $total,
         ]);
     }
 

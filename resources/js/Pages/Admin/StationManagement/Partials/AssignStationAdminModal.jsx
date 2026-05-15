@@ -38,6 +38,7 @@ const AssignStationAdminModal = ({
 
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [employees, setEmployees] = useState([]);
+    const [employeeTotal, setEmployeeTotal] = useState(0);
     const [employeesLoading, setEmployeesLoading] = useState(false);
     const [search, setSearch] = useState("");
 
@@ -68,6 +69,7 @@ const AssignStationAdminModal = ({
         if (open) {
             setSelectedEmployee(null);
             setEmployees([]);
+            setEmployeeTotal(0);
             setSearch("");
             setEmail("");
             setPassword("");
@@ -102,6 +104,7 @@ const AssignStationAdminModal = ({
     useEffect(() => {
         if (!open || !selectedStationId) {
             setEmployees([]);
+            setEmployeeTotal(0);
             setEmployeesLoading(false);
             return;
         }
@@ -121,19 +124,14 @@ const AssignStationAdminModal = ({
                 .then((response) => {
                     if (!isCurrentRequest) return;
 
-                    console.log("Station admin employee candidates", {
-                        stationId: selectedStationId,
-                        search,
-                        count: response.data?.length || 0,
-                        employees: response.data || [],
-                    });
-
-                    setEmployees(response.data || []);
+                    setEmployees(response.data?.data || []);
+                    setEmployeeTotal(response.data?.total || 0);
                 })
                 .catch(() => {
                     if (!isCurrentRequest) return;
 
                     setEmployees([]);
+                    setEmployeeTotal(0);
                 })
                 .finally(() => {
                     if (!isCurrentRequest) return;
@@ -233,7 +231,7 @@ const AssignStationAdminModal = ({
                                 <div className="text-xs text-slate-400">
                                     {employeesLoading
                                         ? "Searching..."
-                                        : `${employees.length} found`}
+                                        : `Showing ${employees.length ? 1 : 0} to ${employees.length} of ${employeeTotal}`}
                                 </div>
                             </div>
 

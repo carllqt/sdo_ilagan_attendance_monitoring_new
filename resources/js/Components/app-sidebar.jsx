@@ -410,7 +410,6 @@ export function AppSidebar({ active, user, ...props }) {
                                 </SidebarMenuSub>
                             )}
                         </SidebarMenuItem>
-
                     </SidebarMenu>
                 </SidebarGroup>
 

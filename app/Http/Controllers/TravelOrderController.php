@@ -17,9 +17,12 @@ class TravelOrderController extends Controller
     {
         $user = Auth::user();
         $employee = $user?->employee()->with('station')->first();
+
+
         $travel_orders = TravelOrder::with('employee.station')
-            ->when($employee, fn ($query) => $query->where('employee_id', $employee->id))
-            ->when(!$employee, fn ($query) => $query->whereNull('employee_id'))
+            ->when($employee, function ($query) use ($employee) {
+                $query->where('employee_id', $employee->id);
+            })
             ->latest()
             ->get();
 

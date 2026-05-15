@@ -43,6 +43,7 @@ const StationAdminList = ({
     highlightRequestKey = 0,
 }) => {
     const [animatedStationId, setAnimatedStationId] = useState(null);
+    const [stationRowsData, setStationRowsData] = useState(stationRows);
     const [searchTerm, setSearchTerm] = useState(search || "");
     const [suggestionMatches, setSuggestionMatches] = useState([]);
     const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -55,12 +56,43 @@ const StationAdminList = ({
         setSearchTerm(search || "");
     }, [search]);
 
-    const visibleStationRows = stationRows?.data || [];
-    const activePage = stationRows?.current_page || 1;
-    const totalPages = stationRows?.last_page || 1;
-    const totalEntries = stationRows?.total || 0;
-    const startIndex = stationRows?.from || 0;
-    const endIndex = stationRows?.to || 0;
+    useEffect(() => {
+        setStationRowsData(stationRows);
+    }, [stationRows]);
+
+    const visibleStationRows = stationRowsData?.data || [];
+    const activePage = stationRowsData?.current_page || 1;
+    const totalPages = stationRowsData?.last_page || 1;
+    const totalEntries = stationRowsData?.total || 0;
+    const startIndex = stationRowsData?.from || 0;
+    const endIndex = stationRowsData?.to || 0;
+    const pageNumbers = useMemo(() => {
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, index) => index + 1);
+        }
+
+        const pages = [1];
+        const start = Math.max(2, activePage - 1);
+        const end = Math.min(totalPages - 1, activePage + 2);
+
+        if (start > 2) {
+            pages.push("start-ellipsis");
+        }
+
+        for (let page = start; page <= end; page += 1) {
+            pages.push(page);
+        }
+
+        if (end < totalPages - 1) {
+            pages.push("end-ellipsis");
+        }
+
+        if (!pages.includes(totalPages)) {
+            pages.push(totalPages);
+        }
+
+        return pages;
+    }, [activePage, totalPages]);
 
     useEffect(() => {
         const query = searchTerm.trim();
@@ -217,18 +249,58 @@ const StationAdminList = ({
         });
     };
 
+    const loadAdminRows = (overrides = {}) => {
+        const params = new URLSearchParams(window.location.search);
+
+        params.set("admin_page", overrides.admin_page || activePage);
+        params.set("admin_limit", overrides.admin_limit || adminLimit);
+
+        if (Object.prototype.hasOwnProperty.call(overrides, "search")) {
+            if (overrides.search && overrides.search.trim()) {
+                params.set("search", overrides.search.trim());
+            } else {
+                params.delete("search");
+            }
+        } else if (searchTerm.trim()) {
+            params.set("search", searchTerm.trim());
+        }
+
+        axios
+            .get(route("stationadmin.list"), {
+                params: Object.fromEntries(params),
+            })
+            .then((response) => {
+                setStationRowsData(response.data.stationAdminRows);
+                setSearchTerm(response.data.search || "");
+
+                const nextParams = new URLSearchParams(window.location.search);
+                nextParams.set("admin_page", response.data.adminPage || 1);
+                nextParams.set(
+                    "admin_limit",
+                    response.data.adminLimit || adminLimit,
+                );
+
+                if (response.data.search) {
+                    nextParams.set("search", response.data.search);
+                } else {
+                    nextParams.delete("search");
+                }
+
+                window.history.replaceState(
+                    {},
+                    "",
+                    `${route("stationmanagement")}?${nextParams.toString()}`,
+                );
+            })
+            .catch((error) => {
+                console.error("Failed to load station admin rows:", error);
+            });
+    };
+
     const handlePageChange = (page) => {
         if (page < 1 || page > totalPages) return;
 
-        const params = new URLSearchParams(window.location.search);
-        params.set("admin_page", page);
-        params.set("admin_limit", adminLimit);
-
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
+        loadAdminRows({ admin_page: page });
     };
 
     const getFullName = (emp) => {
@@ -239,20 +311,9 @@ const StationAdminList = ({
     };
 
     const submitSearch = (value) => {
-        const params = new URLSearchParams(window.location.search);
-        params.set("admin_page", 1);
-        params.set("admin_limit", adminLimit);
-
-        if (value && value.trim()) {
-            params.set("search", value.trim());
-        } else {
-            params.delete("search");
-        }
-
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
+        loadAdminRows({
+            admin_page: 1,
+            search: value?.trim() || "",
         });
     };
 
@@ -553,16 +614,22 @@ const StationAdminList = ({
                                 onClick={() => handlePageChange(activePage - 1)}
                             />
                             <PaginationContent>
-                                {Array.from({ length: totalPages }, (_, i) => (
-                                    <PaginationItem key={i}>
-                                        <PaginationLink
-                                            isActive={activePage === i + 1}
-                                            onClick={() =>
-                                                handlePageChange(i + 1)
-                                            }
-                                        >
-                                            {i + 1}
-                                        </PaginationLink>
+                                {pageNumbers.map((page) => (
+                                    <PaginationItem key={page}>
+                                        {typeof page === "number" ? (
+                                            <PaginationLink
+                                                isActive={activePage === page}
+                                                onClick={() =>
+                                                    handlePageChange(page)
+                                                }
+                                            >
+                                                {page}
+                                            </PaginationLink>
+                                        ) : (
+                                            <span className="flex h-9 min-w-9 items-center justify-center px-2 text-sm font-medium text-slate-400">
+                                                ...
+                                            </span>
+                                        )}
                                     </PaginationItem>
                                 ))}
                             </PaginationContent>

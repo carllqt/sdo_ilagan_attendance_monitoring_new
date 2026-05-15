@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import { Head, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { UserCog } from "lucide-react";
@@ -8,7 +9,7 @@ import EmployeeList from "./Partials/EmployeeList";
 import EmployeeEditDialog from "./Partials/EmployeeEditDialog";
 import FingerprintRegistrationPanel from "./Partials/EmployeeFingerprintPanel";
 
-const fingerprintServiceUrl = `http://${window.location.hostname}:5000`;
+const defaultFingerprintServiceUrl = `http://${window.location.hostname}:5000`;
 
 const EmployeeManagement = ({
     filteredEmployeesList,
@@ -23,11 +24,17 @@ const EmployeeManagement = ({
     editEmployeeModal = null,
     selectedFingerprintEmployee: selectedFingerprintEmployeeProp = null,
     testFingerprintModal = false,
+    fingerprintServiceUrl = defaultFingerprintServiceUrl,
     ...props
 }) => {
     const formatSearchDisplay = (value) =>
         String(value || "")
             .replace(/^\d+\s+/, "")
+            .trim();
+    const formatFingerprintRegistrationParam = (employee) =>
+        [employee?.id, employee?.full_name || employee?.label]
+            .filter(Boolean)
+            .join(" ")
             .trim();
 
     const [searchInput, setSearchInput] = useState(formatSearchDisplay(search));
@@ -38,15 +45,16 @@ const EmployeeManagement = ({
         useState(selectedFingerprintEmployeeProp);
     const [scanStatus, setScanStatus] = useState("idle");
     const [scanMessage, setScanMessage] = useState("");
+    const [scanFeedbackKey, setScanFeedbackKey] = useState(0);
     const [scanning, setScanning] = useState(false);
-    const [eventSource, setEventSource] = useState(null);
-    const [open, setOpen] = useState(false);
-    const [testEmployee, setTestEmployee] = useState(null);
-    const [testCountdown, setTestCountdown] = useState(null);
+    const registerSourceRef = useRef(null);
     const [testOpen, setTestOpen] = useState(Boolean(testFingerprintModal));
     const [testMessage, setTestMessage] = useState("Waiting for scan...");
     const [testStatus, setTestStatus] = useState("idle");
     const [testSource, setTestSource] = useState(null);
+    const [employeeListData, setEmployeeListData] = useState(
+        filteredEmployeesList,
+    );
 
     const findOfficeByName = (value) =>
         offices.find((office) => office.name === value);
@@ -57,11 +65,15 @@ const EmployeeManagement = ({
     const [statusFilter, setStatusFilter] = useState(status || "Active");
     const statusOptions = ["Active", "Inactive"];
 
-    const filteredEmployees = Array.isArray(filteredEmployeesList?.data)
-        ? filteredEmployeesList.data
-        : Array.isArray(filteredEmployeesList)
-          ? filteredEmployeesList
+    const filteredEmployees = Array.isArray(employeeListData?.data)
+        ? employeeListData.data
+        : Array.isArray(employeeListData)
+          ? employeeListData
           : [];
+
+    useEffect(() => {
+        setEmployeeListData(filteredEmployeesList);
+    }, [filteredEmployeesList]);
 
     useEffect(() => {
         setSearchInput(formatSearchDisplay(search));
@@ -86,12 +98,14 @@ const EmployeeManagement = ({
     const isRegistered = (id) => {
         const emp = findCurrentEmployee(id);
 
-        return emp ? emp.available_fingers < 3 : false;
+        return emp ? Number(emp.available_fingers ?? 3) < 3 : false;
     };
 
     const availableFingers = (empId) => {
         const emp = findCurrentEmployee(empId);
-        return emp ? emp.available_fingers : 3;
+        const available = Number(emp?.available_fingers ?? 3);
+
+        return Math.min(Math.max(available, 0), 3);
     };
 
     // Reset UI after success
@@ -108,15 +122,25 @@ const EmployeeManagement = ({
         return () => clearTimeout(timer);
     }, [scanStatus]);
 
+    const stopRegisterSource = (source = registerSourceRef.current) => {
+        if (source) {
+            source.close();
+        }
+
+        if (!source || registerSourceRef.current === source) {
+            registerSourceRef.current = null;
+        }
+    };
+
     // Cleanup SSE on unmount
     useEffect(() => {
         return () => {
-            if (eventSource) eventSource.close();
+            stopRegisterSource();
         };
-    }, [eventSource]);
+    }, []);
 
     const cancelScan = () => {
-        if (eventSource) eventSource.close();
+        stopRegisterSource();
         setScanning(false);
         setScanStatus("idle");
         setScanMessage("Scan cancelled");
@@ -125,6 +149,7 @@ const EmployeeManagement = ({
     const registerFingerprint = () => {
         if (!selectedEmployee) return;
 
+        stopRegisterSource();
         setScanning(true);
         setScanStatus("scanning");
         setScanMessage("🔄 Starting fingerprint registration...");
@@ -132,23 +157,27 @@ const EmployeeManagement = ({
         const source = new EventSource(
             `${fingerprintServiceUrl}/bioRegisterSSE/${selectedEmployee}`,
         );
-        setEventSource(source);
+        registerSourceRef.current = source;
 
         source.onmessage = (event) => {
+            if (registerSourceRef.current !== source) return;
+
             try {
                 const data = JSON.parse(event.data);
                 if (!data || Object.keys(data).length === 0) return;
 
                 if (data.success === null) {
                     // Still scanning
+                    setScanFeedbackKey((value) => value + 1);
                     setScanStatus("scanning");
                     setScanMessage(data.message);
                 } else if (data.success === true) {
                     // Scan success
+                    setScanFeedbackKey((value) => value + 1);
                     setScanStatus("success");
                     setScanMessage(data.message);
                     setScanning(false);
-                    source.close();
+                    stopRegisterSource(source);
 
                     const emp = findCurrentEmployee(selectedEmployee);
 
@@ -157,37 +186,43 @@ const EmployeeManagement = ({
                             ? {
                                   ...current,
                                   available_fingers: Math.max(
-                                      current.available_fingers - 1,
+                                      Number(current.available_fingers ?? 3) -
+                                          1,
                                       0,
                                   ),
                               }
                             : current,
                     );
 
-                    if (emp && emp.available_fingers - 1 <= 0) {
+                    if (emp && Number(emp.available_fingers ?? 3) - 1 <= 0) {
                         clearFingerprintEmployee();
                     }
                 } else if (data.success === false) {
+                    setScanFeedbackKey((value) => value + 1);
                     setScanStatus("error");
                     setScanMessage(data.message);
                     setScanning(false);
-                    source.close();
+                    stopRegisterSource(source);
                 }
             } catch (err) {
                 console.error("Failed to parse SSE data:", err);
+                setScanFeedbackKey((value) => value + 1);
                 setScanStatus("error");
-                setScanMessage("❌ Unexpected error occurred.");
+                setScanMessage("Unexpected error occurred.");
                 setScanning(false);
-                source.close();
+                stopRegisterSource(source);
             }
         };
 
         source.onerror = (err) => {
+            if (registerSourceRef.current !== source) return;
+
             console.error("SSE connection error:", err);
+            setScanFeedbackKey((value) => value + 1);
             setScanStatus("error");
-            setScanMessage("❌ Could not reach fingerprint service.");
+            setScanMessage("Could not reach fingerprint service.");
             setScanning(false);
-            source.close();
+            stopRegisterSource(source);
         };
     };
 
@@ -218,82 +253,40 @@ const EmployeeManagement = ({
                         office,
                     } = data.employee;
 
-                    setTestEmployee({
-                        first_name,
-                        middle_name,
-                        last_name,
-                        position,
-                        office,
-                    });
-
                     setTestStatus("success");
                     setTestMessage(
-                        `✅ Match: ${first_name} ${last_name} (${office?.name || "No office"} - ${position})`,
+                        `Match: ${first_name} ${last_name} (${office?.name || "No office"} - ${position})`,
                     );
 
-                    // countdown to reset UI
-                    let count = 3;
-                    setTestCountdown(count);
-                    const interval = setInterval(() => {
-                        count -= 1;
-                        setTestCountdown(count);
-                        if (count <= 0) {
-                            clearInterval(interval);
-                            setTestCountdown(null);
-                            setTestStatus("scanning");
-                            setTestMessage(
-                                "Place your finger on the scanner...",
-                            );
-                        }
-                    }, 1000);
+                    setTimeout(() => {
+                        setTestStatus("scanning");
+                        setTestMessage("Place your finger on the scanner...");
+                    }, 3000);
                 } else if (data.message) {
                     setTestStatus("error");
-                    setTestMessage(`❌ ${data.message}`);
+                    setTestMessage(`${data.message}`);
 
-                    // optional retry countdown
-                    let count = 3;
-                    const interval = setInterval(() => {
-                        count -= 1;
-                        if (count <= 0) {
-                            clearInterval(interval);
-                            setTestStatus("scanning");
-                            setTestMessage(
-                                "Place your finger on the scanner...",
-                            );
-                        }
-                    }, 1000);
+                    setTimeout(() => {
+                        setTestStatus("scanning");
+                        setTestMessage("Place your finger on the scanner...");
+                    }, 3000);
                 }
             } catch (err) {
                 console.error("SSE parse error:", err);
                 setTestStatus("error");
-                setTestMessage("❌ Test error.");
+                setTestMessage("Test error.");
             }
         };
 
         source.onerror = (err) => {
             console.error("SSE error:", err);
             setTestStatus("error");
-            setTestMessage("❌ Lost connection to fingerprint service.");
+            setTestMessage("Lost connection to fingerprint service.");
             source.close();
 
             setTimeout(() => startTestFingerprint(), 3000);
         };
     };
-
-    const fingerOptions = [
-        { value: 1, label: "Finger 1" },
-        { value: 2, label: "Finger 2" },
-        { value: 3, label: "Finger 3" },
-    ];
-
-    const [form, setForm] = useState({
-        first_name: "",
-        middle_name: "",
-        last_name: "",
-        position: "",
-        office_id: "",
-        work_type: "",
-    });
 
     const [editForm, setEditForm] = useState(editEmployeeModal);
 
@@ -332,7 +325,11 @@ const EmployeeManagement = ({
         setSelectedFingerprintEmployee(employee);
 
         const params = new URLSearchParams(window.location.search);
-        params.set("fingerprint_employee_id", employee.id);
+        params.delete("fingerprint_employee_id");
+        params.set(
+            "fingerprint_registration",
+            formatFingerprintRegistrationParam(employee),
+        );
 
         router.get(route("employeemanagement"), Object.fromEntries(params), {
             preserveState: false,
@@ -347,6 +344,7 @@ const EmployeeManagement = ({
 
         const params = new URLSearchParams(window.location.search);
         params.delete("fingerprint_employee_id");
+        params.delete("fingerprint_registration");
 
         router.get(route("employeemanagement"), Object.fromEntries(params), {
             preserveState: false,
@@ -411,14 +409,37 @@ const EmployeeManagement = ({
         }
 
         if (selectedEmployee) {
-            query.fingerprint_employee_id = selectedEmployee;
+            query.fingerprint_registration =
+                formatFingerprintRegistrationParam(
+                    selectedFingerprintEmployee ||
+                        filteredEmployees.find(
+                            (employee) =>
+                                String(employee.id) ===
+                                String(selectedEmployee),
+                        ),
+                ) || selectedEmployee;
         }
 
-        router.get(route("employeemanagement"), query, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
+        axios
+            .get(route("employees.list"), { params: query })
+            .then((response) => {
+                setEmployeeListData(response.data.filteredEmployeesList);
+                setSearchInput(formatSearchDisplay(response.data.search));
+                setStatusFilter(response.data.status || "Active");
+
+                const nextOffice = findOfficeByName(response.data.officeName);
+                setSelectedOffice(nextOffice?.id || "all");
+
+                const queryString = new URLSearchParams(query).toString();
+                const nextUrl = `${route("employeemanagement")}${
+                    queryString ? `?${queryString}` : ""
+                }`;
+
+                window.history.replaceState({}, "", nextUrl);
+            })
+            .catch((error) => {
+                console.error("Failed to load employees:", error);
+            });
     };
 
     return (
@@ -442,31 +463,29 @@ const EmployeeManagement = ({
                         selectedEmployee={selectedEmployee}
                         setSelectedEmployee={setSelectedEmployee}
                         selectedEmployeeRecord={selectedFingerprintEmployee}
-                        setSelectedEmployeeRecord={setSelectedFingerprintEmployee}
+                        setSelectedEmployeeRecord={
+                            setSelectedFingerprintEmployee
+                        }
                         onSelectEmployee={selectFingerprintEmployee}
                         onClearEmployee={clearFingerprintEmployee}
                         availableFingers={availableFingers}
                         scanning={scanning}
                         scanStatus={scanStatus}
                         scanMessage={scanMessage}
+                        scanFeedbackKey={scanFeedbackKey}
                         cancelScan={cancelScan}
                         registerFingerprint={registerFingerprint}
-                        open={open}
-                        setOpen={setOpen}
                         testOpen={testOpen}
                         setTestOpen={handleTestFingerprintOpenChange}
-                        testSource={testSource}
                         testMessage={testMessage}
-                        setTestMessage={setTestMessage}
                         testStatus={testStatus}
-                        setTestStatus={setTestStatus}
                         startTestFingerprint={startTestFingerprint}
                     />
                 </div>
 
                 <EmployeeList
                     filteredEmployees={filteredEmployees}
-                    pagination={filteredEmployeesList}
+                    pagination={employeeListData}
                     isRegistered={isRegistered}
                     handleEdit={handleEdit}
                     searchInput={searchInput}

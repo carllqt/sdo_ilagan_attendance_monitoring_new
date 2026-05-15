@@ -70,7 +70,12 @@ class Employee extends Model
 
     public function biometric()
     {
-        return $this->hasOne(Biometric::class, 'employee_id');
+        return $this->biometrics();
+    }
+
+    public function biometrics()
+    {
+        return $this->hasMany(Biometric::class, 'employee_id');
     }
 
     public function sickLeaves()

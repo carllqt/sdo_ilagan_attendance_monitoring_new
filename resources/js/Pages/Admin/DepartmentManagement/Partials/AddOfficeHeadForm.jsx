@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { router } from "@inertiajs/react";
 import {
     Dialog,
@@ -9,19 +10,29 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import FloatingInput from "@/components/floating-input";
-import { Building2, Check, Search, ShieldCheck, Users } from "lucide-react";
+import {
+    Building2,
+    Check,
+    Loader2,
+    Search,
+    ShieldCheck,
+    Users,
+} from "lucide-react";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 
 const AddOfficeHeadForm = ({
     open,
     setOpen,
-    employees = [],
     offices = [],
     preselectedOffice = null,
 }) => {
     const [officeId, setOfficeId] = useState("");
     const [employeeId, setEmployeeId] = useState("");
+    const [employees, setEmployees] = useState([]);
+    const [employeeTotal, setEmployeeTotal] = useState(0);
     const [search, setSearch] = useState("");
+    const [loading, setLoading] = useState(false);
+    const requestRef = useRef(0);
 
     useEffect(() => {
         if (open) {
@@ -41,22 +52,47 @@ const AddOfficeHeadForm = ({
         [employees, employeeId],
     );
 
-    const filteredEmployees = useMemo(() => {
-        return employees
-            .filter(
-                (emp) =>
-                    !officeId || String(emp.office_id) === String(officeId),
-            )
-            .filter((emp) => {
-                const fullName =
-                    `${emp.first_name || ""} ${emp.middle_name || ""} ${emp.last_name || ""}`
-                        .replace(/\s+/g, " ")
-                        .trim()
-                        .toLowerCase();
+    useEffect(() => {
+        if (!open || !officeId) {
+            setEmployees([]);
+            setEmployeeTotal(0);
+            setLoading(false);
+            return;
+        }
 
-                return fullName.includes(search.toLowerCase());
-            });
-    }, [employees, officeId, search]);
+        const requestId = requestRef.current + 1;
+        requestRef.current = requestId;
+        setLoading(true);
+
+        const timeout = setTimeout(() => {
+            axios
+                .get(route("department.employees"), {
+                    params: {
+                        office_id: officeId,
+                        search: search.trim(),
+                    },
+                })
+                .then((response) => {
+                    if (requestRef.current !== requestId) return;
+
+                    setEmployees(response.data?.data || []);
+                    setEmployeeTotal(response.data?.total || 0);
+                })
+                .catch(() => {
+                    if (requestRef.current !== requestId) return;
+
+                    setEmployees([]);
+                    setEmployeeTotal(0);
+                })
+                .finally(() => {
+                    if (requestRef.current !== requestId) return;
+
+                    setLoading(false);
+                });
+        }, 250);
+
+        return () => clearTimeout(timeout);
+    }, [open, officeId, search]);
 
     const canSubmit = Boolean(employeeId && officeId);
 
@@ -130,13 +166,20 @@ const AddOfficeHeadForm = ({
                                 Employees
                             </div>
                             <div className="text-xs text-slate-400">
-                                {filteredEmployees.length} found
+                                {loading
+                                    ? "Searching..."
+                                    : `Showing ${employees.length ? 1 : 0} to ${employees.length} of ${employeeTotal}`}
                             </div>
                         </div>
 
                         <div className="h-[12rem] space-y-2 overflow-y-auto p-2">
-                            {filteredEmployees.length > 0 ? (
-                                filteredEmployees.map((emp) => {
+                            {loading ? (
+                                <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500">
+                                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                    Loading employees...
+                                </div>
+                            ) : employees.length > 0 ? (
+                                employees.map((emp) => {
                                     const fullName =
                                         `${emp.first_name || ""} ${emp.middle_name || ""} ${emp.last_name || ""}`
                                             .replace(/\s+/g, " ")

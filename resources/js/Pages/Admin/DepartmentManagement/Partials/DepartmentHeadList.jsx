@@ -40,7 +40,6 @@ const getOfficeSearchText = (office) =>
 const DepartmentHeadList = ({
     office_heads = [],
     offices = [],
-    employees = [],
     officeSearch = "",
     assignOfficeHeadModal = null,
     deleteOfficeHeadModal = null,
@@ -197,6 +196,7 @@ const DepartmentHeadList = ({
 
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
         query.set("modal", modal);
 
@@ -219,6 +219,7 @@ const DepartmentHeadList = ({
         query.delete("modal");
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
 
         router.get(route("departmentmanagement"), Object.fromEntries(query), {
@@ -315,7 +316,6 @@ const DepartmentHeadList = ({
                 setOpen={(nextOpen) => {
                     if (!nextOpen) closeDepartmentModal();
                 }}
-                employees={employees}
                 offices={offices}
                 preselectedOffice={assignOfficeHeadModal?.office_id || null}
             />
@@ -385,13 +385,21 @@ const DepartmentHeadList = ({
                                             </span>
                                         </TableCell>
                                         <TableCell className="p-3">
-                                            <div className="flex items-center gap-2 min-w-0">
+                                            <div className="flex items-start gap-2 min-w-0">
                                                 <div className="w-7 h-7 min-w-[28px] flex items-center justify-center rounded-full bg-gray-300">
                                                     <Building2 className="w-4 h-4 text-blue-600" />
                                                 </div>
-                                                <span className="truncate">
-                                                    {row.office.name}
-                                                </span>
+
+                                                <div className="min-w-0">
+                                                    <div className="truncate font-medium">
+                                                        {row.office.name}
+                                                    </div>
+
+                                                    <div className="truncate text-xs text-gray-500">
+                                                        {row.office.division
+                                                            ?.name || "-"}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="p-3">

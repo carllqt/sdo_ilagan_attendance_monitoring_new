@@ -17,16 +17,10 @@ class LocatorSlipController extends Controller
         $user = Auth::user();
         $employee = $user?->employee()->with('station')->first();
 
-        $query = LocatorSlip::with('employee.station')
-            ->when($employee, fn ($q) => $q->where('employee_id', $employee->id))
-            ->when(!$employee, fn ($q) => $q->whereNull('employee_id'));
-
-        // FILTER BY DATE
-        if ($request->filled('date')) {
-            $query->whereDate('travel_datetime', $request->date);
-        }
-
-        $locator_slips = $query
+        $locator_slips = LocatorSlip::with('employee.station')
+            ->when($employee, function ($query) use ($employee) {
+                $query->where('employee_id', $employee->id);
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();

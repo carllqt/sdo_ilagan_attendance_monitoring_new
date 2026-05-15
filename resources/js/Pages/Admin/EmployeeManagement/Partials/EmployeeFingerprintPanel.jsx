@@ -14,6 +14,58 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import FloatingInput from "@/components/floating-input";
+import { toast } from "sonner";
+
+const clampAvailableFingers = (value) => {
+    const available = Number(value ?? 3);
+
+    if (Number.isNaN(available)) {
+        return 3;
+    }
+
+    return Math.min(Math.max(available, 0), 3);
+};
+
+const statusVisuals = {
+    success: {
+        icon: "text-green-800",
+        bg: "bg-green-50",
+        ring: "ring-green-300",
+        glow: "bg-green-400/25",
+    },
+    error: {
+        icon: "text-red-800",
+        bg: "bg-red-50",
+        ring: "ring-red-300",
+        glow: "",
+    },
+    scanning: {
+        icon: "text-blue-800",
+        bg: "bg-blue-50",
+        ring: "ring-blue-300",
+        glow: "bg-blue-400/25",
+    },
+};
+
+const fingerprintIdleVisual = (icon, ring = "ring-white") => ({
+    icon,
+    bg: "bg-slate-100",
+    ring,
+    glow: "",
+});
+
+const fingerprintStatusVisual = ({
+    status,
+    scanning = false,
+    idleIcon = "text-slate-400",
+    idleRing = "ring-white",
+}) => {
+    if (status === "success") return statusVisuals.success;
+    if (status === "error") return statusVisuals.error;
+    if (scanning || status === "scanning") return statusVisuals.scanning;
+
+    return fingerprintIdleVisual(idleIcon, idleRing);
+};
 
 const EmployeeFingerprintPanel = ({
     employees = [],
@@ -27,12 +79,13 @@ const EmployeeFingerprintPanel = ({
     scanning,
     scanStatus,
     scanMessage,
+    scanFeedbackKey = 0,
     cancelScan,
     availableFingers,
     testOpen,
     setTestOpen,
-    testMessage = "Waiting for scan...",
-    testStatus = "idle",
+    testMessage,
+    testStatus,
     startTestFingerprint,
     getFingerprintColor = () => "text-gray-400",
 }) => {
@@ -43,16 +96,27 @@ const EmployeeFingerprintPanel = ({
     const searchBoxRef = useRef(null);
     const suggestionRequestRef = useRef(0);
     const testStartedRef = useRef(false);
+    const lastScanToastRef = useRef("");
+    const lastTestToastRef = useRef("");
     const selectedEmployeeRecord =
-        selectedEmployeeRecordProp ||
-        employees.find((emp) => String(emp.id) === String(selectedEmployee)) ||
+        (selectedEmployeeRecordProp &&
+        clampAvailableFingers(selectedEmployeeRecordProp.available_fingers) > 0
+            ? selectedEmployeeRecordProp
+            : null) ||
+        employees.find(
+            (emp) =>
+                String(emp.id) === String(selectedEmployee) &&
+                clampAvailableFingers(emp.available_fingers) > 0,
+        ) ||
         null;
     const selectedOfficeName =
         selectedEmployeeRecord?.office?.name || "Department";
+    const selectedAvailableFingers = clampAvailableFingers(
+        selectedEmployeeRecord?.available_fingers ??
+            availableFingers(selectedEmployee),
+    );
     const fingerprintStatusLabel = selectedEmployeeRecord
-        ? `${availableFingers(selectedEmployee)} Available Fingerprint${
-              availableFingers(selectedEmployee) !== 1 ? "s" : ""
-          }`
+        ? `Available fingerprints: ${selectedAvailableFingers}/3`
         : "Choose an employee to begin";
     const panelMessage =
         scanStatus === "error"
@@ -62,6 +126,17 @@ const EmployeeFingerprintPanel = ({
               : scanning
                 ? scanMessage
                 : fingerprintStatusLabel;
+    const fingerprintVisual = selectedEmployeeRecord
+        ? fingerprintStatusVisual({
+              status: scanStatus,
+              scanning,
+              idleIcon: getFingerprintColor(),
+          })
+        : fingerprintIdleVisual("text-slate-400");
+    const testVisual = fingerprintStatusVisual({
+        status: testStatus,
+        idleRing: "ring-slate-200",
+    });
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -95,6 +170,67 @@ const EmployeeFingerprintPanel = ({
     }, [testOpen, startTestFingerprint]);
 
     useEffect(() => {
+        const cleanMessage = String(scanMessage || "").trim();
+
+        if (
+            !selectedEmployeeRecord ||
+            !cleanMessage ||
+            cleanMessage === "Place your fingerprint"
+        ) {
+            return;
+        }
+
+        const toastKey = `${scanFeedbackKey}:${scanStatus}:${cleanMessage}`;
+        if (lastScanToastRef.current === toastKey) {
+            return;
+        }
+
+        lastScanToastRef.current = toastKey;
+
+        if (scanStatus === "success") {
+            toast.success(cleanMessage);
+        } else if (scanStatus === "error") {
+            toast.error(cleanMessage);
+        } else if (scanning) {
+            toast(cleanMessage);
+        }
+    }, [
+        scanStatus,
+        scanMessage,
+        scanFeedbackKey,
+        scanning,
+        selectedEmployeeRecord,
+    ]);
+
+    useEffect(() => {
+        const cleanMessage = String(testMessage || "").trim();
+
+        if (
+            !testOpen ||
+            !cleanMessage ||
+            cleanMessage === "Waiting for scan..." ||
+            cleanMessage === "Place your finger on the scanner..."
+        ) {
+            return;
+        }
+
+        const toastKey = `${testStatus}:${cleanMessage}`;
+        if (lastTestToastRef.current === toastKey) {
+            return;
+        }
+
+        lastTestToastRef.current = toastKey;
+
+        if (testStatus === "success") {
+            toast.success(cleanMessage);
+        } else if (testStatus === "error") {
+            toast.error(cleanMessage);
+        } else {
+            toast(cleanMessage);
+        }
+    }, [testOpen, testStatus, testMessage]);
+
+    useEffect(() => {
         if (!showSuggestions) {
             setSuggestionMatches([]);
             setSuggestionsLoading(false);
@@ -109,7 +245,10 @@ const EmployeeFingerprintPanel = ({
         const timeout = setTimeout(() => {
             axios
                 .get(route("employees.suggestions"), {
-                    params: { search: query },
+                    params: {
+                        search: query,
+                        available_for_fingerprint: 1,
+                    },
                 })
                 .then((response) => {
                     if (suggestionRequestRef.current !== requestId) return;
@@ -189,54 +328,55 @@ const EmployeeFingerprintPanel = ({
                                         </div>
                                     ) : suggestionMatches.length > 0 ? (
                                         <div className="py-1">
-                                            {suggestionMatches.slice(0, 10).map((emp) => (
-                                                <button
-                                                    key={emp.id}
-                                                    type="button"
-                                                    onMouseDown={() => {
-                                                        setSelectedEmployee(
-                                                            emp.id,
-                                                        );
-                                                        setSelectedEmployeeRecord(
-                                                            emp,
-                                                        );
-                                                        onSelectEmployee?.(emp);
-                                                        setSearchValue("");
-                                                        setShowSuggestions(
-                                                            false,
-                                                        );
-                                                    }}
-                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
-                                                >
-                                                    <div className="min-w-0">
-                                                        <div className="truncate font-medium text-slate-800">
-                                                            {emp.full_name ||
-                                                                emp.label}
+                                            {suggestionMatches
+                                                .slice(0, 10)
+                                                .map((emp) => (
+                                                    <button
+                                                        key={emp.id}
+                                                        type="button"
+                                                        onMouseDown={() => {
+                                                            setSelectedEmployee(
+                                                                emp.id,
+                                                            );
+                                                            setSelectedEmployeeRecord(
+                                                                emp,
+                                                            );
+                                                            onSelectEmployee?.(
+                                                                emp,
+                                                            );
+                                                            setSearchValue("");
+                                                            setShowSuggestions(
+                                                                false,
+                                                            );
+                                                        }}
+                                                        className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <div className="truncate font-medium text-slate-800">
+                                                                {emp.full_name ||
+                                                                    emp.label}
+                                                            </div>
+                                                            <div className="truncate text-xs text-slate-500">
+                                                                {emp.meta ||
+                                                                    emp.office
+                                                                        ?.name ||
+                                                                    "No Office"}
+                                                            </div>
+                                                            <div className="mt-1 text-xs font-medium text-blue-600">
+                                                                Available
+                                                                fingerprints:{" "}
+                                                                {clampAvailableFingers(
+                                                                    emp.available_fingers,
+                                                                )}
+                                                                /3
+                                                            </div>
                                                         </div>
-                                                        <div className="truncate text-xs text-slate-500">
-                                                            {emp.meta ||
-                                                                emp.office
-                                                                    ?.name ||
-                                                                "No Office"}
-                                                        </div>
-                                                        <div className="mt-1 text-xs font-medium text-blue-600">
-                                                            {
-                                                                emp.available_fingers
-                                                            }{" "}
-                                                            available
-                                                            fingerprint
-                                                            {emp.available_fingers !==
-                                                            1
-                                                                ? "s"
-                                                                : ""}
-                                                        </div>
-                                                    </div>
 
-                                                    <span className="shrink-0 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold text-blue-700">
-                                                        Select
-                                                    </span>
-                                                </button>
-                                            ))}
+                                                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                                                            Select
+                                                        </span>
+                                                    </button>
+                                                ))}
                                         </div>
                                     ) : (
                                         <div className="px-3 py-4 text-sm text-slate-500">
@@ -291,13 +431,26 @@ const EmployeeFingerprintPanel = ({
                     <div className="h-[205px] w-px self-center bg-slate-200" />
 
                     <div className="flex min-h-[150px] flex-col items-center text-center">
-                        <div className="flex h-28 w-28 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white">
+                        <div
+                            className={`relative flex h-28 w-28 items-center justify-center rounded-full ${fingerprintVisual.bg} text-slate-500 ring-4 ${fingerprintVisual.ring} transition-all duration-500`}
+                        >
+                            {fingerprintVisual.glow ? (
+                                <span
+                                    className={`absolute inset-0 rounded-full ${fingerprintVisual.glow} animate-ping`}
+                                />
+                            ) : null}
+                            {scanning ? (
+                                <span className="absolute inset-2 rounded-full border border-blue-300/60" />
+                            ) : null}
                             <Fingerprint
-                                className={`h-16 w-16 transition-all duration-300 ${getFingerprintColor()}`}
+                                className={`relative z-10 h-16 w-16 transition-all duration-500 ${fingerprintVisual.icon}`}
                             />
                         </div>
                         <div className="mt-5 flex min-h-[35px] w-full max-w-[220px] items-start justify-center">
-                            <p className="text-sm leading-5 text-slate-700">
+                            <p
+                                key={scanFeedbackKey}
+                                className="text-sm leading-5 text-slate-700"
+                            >
                                 {selectedEmployeeRecord
                                     ? panelMessage
                                     : "Choose an employee to begin"}
@@ -325,10 +478,7 @@ const EmployeeFingerprintPanel = ({
                                 : "Register Fingerprint"}
                     </Button>
 
-                    <AlertDialog
-                        open={testOpen}
-                        onOpenChange={setTestOpen}
-                    >
+                    <AlertDialog open={testOpen} onOpenChange={setTestOpen}>
                         <AlertDialogTrigger asChild>
                             <Button
                                 variant="blue"
@@ -350,15 +500,21 @@ const EmployeeFingerprintPanel = ({
                             </AlertDialogHeader>
 
                             <div className="flex flex-col items-center py-4">
-                                <Fingerprint
-                                    className={`w-20 h-20 ${
-                                        testStatus === "scanning"
-                                            ? "text-blue-500 animate-pulse"
-                                            : testStatus === "success"
-                                              ? "text-green-500 animate-bounce"
-                                              : "text-red-500"
-                                    }`}
-                                />
+                                <div
+                                    className={`relative flex h-24 w-24 items-center justify-center rounded-full ${testVisual.bg} ring-4 ${testVisual.ring} transition-all duration-500`}
+                                >
+                                    {testVisual.glow ? (
+                                        <span
+                                            className={`absolute inset-0 rounded-full ${testVisual.glow} animate-ping`}
+                                        />
+                                    ) : null}
+                                    {testStatus === "scanning" ? (
+                                        <span className="absolute inset-2 rounded-full border border-blue-300/60" />
+                                    ) : null}
+                                    <Fingerprint
+                                        className={`relative z-10 h-16 w-16 transition-all duration-500 ${testVisual.icon}`}
+                                    />
+                                </div>
                                 <p className="mt-3 text-sm text-gray-700">
                                     {testMessage}
                                 </p>

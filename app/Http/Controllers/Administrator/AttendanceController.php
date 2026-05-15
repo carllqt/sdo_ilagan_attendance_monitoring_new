@@ -18,6 +18,15 @@ public function index()
 
     return Inertia::render('Attendance/Attendance', [
         'attendances' => $attendances,
+        'fingerprintServiceUrl' => $this->fingerprintServiceUrl(),
     ]);
+}
+
+private function fingerprintServiceUrl(): string
+{
+    return rtrim(
+        env('BIOMETRIC_SERVICE_URL') ?: request()->getScheme() . '://' . request()->getHost() . ':5000',
+        '/',
+    );
 }
 }
