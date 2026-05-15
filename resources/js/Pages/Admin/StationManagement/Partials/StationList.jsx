@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { router } from "@inertiajs/react";
 import {
     Table,
@@ -44,10 +45,15 @@ const StationList = ({
 }) => {
     const [chartReady, setChartReady] = useState(false);
     const [openAddStationModal, setOpenAddStationModal] = useState(false);
+    const [stationRowsData, setStationRowsData] = useState(stations);
 
-    const paginatedStations = stations?.data || [];
-    const activePage = stations?.current_page || 1;
-    const totalPages = stations?.last_page || 1;
+    useEffect(() => {
+        setStationRowsData(stations);
+    }, [stations]);
+
+    const paginatedStations = stationRowsData?.data || [];
+    const activePage = stationRowsData?.current_page || 1;
+    const totalPages = stationRowsData?.last_page || 1;
 
     const handlePageChange = (page) => {
         if (page < 1 || page > totalPages) return;
@@ -56,11 +62,32 @@ const StationList = ({
         params.set("station_page", page);
         params.set("station_limit", stationLimit);
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
+        axios
+            .get(route("stations.list"), {
+                params: Object.fromEntries(params),
+            })
+            .then((response) => {
+                setStationRowsData(response.data.stations);
+
+                const nextParams = new URLSearchParams(window.location.search);
+                nextParams.set(
+                    "station_page",
+                    response.data.stationPage || page,
+                );
+                nextParams.set(
+                    "station_limit",
+                    response.data.stationLimit || stationLimit,
+                );
+
+                window.history.replaceState(
+                    {},
+                    "",
+                    `${route("stationmanagement")}?${nextParams.toString()}`,
+                );
+            })
+            .catch((error) => {
+                console.error("Failed to load station rows:", error);
+            });
     };
 
     const openStationModal = (modal, station) => {
@@ -132,9 +159,9 @@ const StationList = ({
         return pages;
     };
 
-    const totalEntries = stations?.total || 0;
-    const startIndex = stations?.from || 0;
-    const endIndex = stations?.to || 0;
+    const totalEntries = stationRowsData?.total || 0;
+    const startIndex = stationRowsData?.from || 0;
+    const endIndex = stationRowsData?.to || 0;
 
     const assignedCount = stationStats.assigned || 0;
     const missingCount = stationStats.missing || 0;

@@ -2,6 +2,17 @@
 
 import React from "react";
 import { useForm } from "@inertiajs/react";
+import FloatingInput from "@/components/floating-input";
+import {
+    User,
+    Briefcase,
+    Building2,
+    FileText,
+    Users,
+    CalendarDays,
+    MapPin,
+    Wallet,
+} from "lucide-react";
 
 export default function TravelAuthorityForm({ onClose, employee }) {
     const employeeName = employee?.full_name || employee?.name || "";
@@ -10,9 +21,9 @@ export default function TravelAuthorityForm({ onClose, employee }) {
         employee?.station?.name || employee?.permanent_station || "";
 
     const { data, setData, post, processing, reset, errors } = useForm({
-        employee_name: employeeName,
-        position: employeePosition,
-        permanent_station: employeeStation,
+        employee_name: "",
+        position: "",
+        permanent_station: "",
         purpose_of_travel: "",
         host_of_activity: "",
         inclusive_dates: "",
@@ -46,49 +57,42 @@ export default function TravelAuthorityForm({ onClose, employee }) {
 
                 <form onSubmit={submit} className="space-y-5">
                     {/* Employee Info */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-600">
-                                Name
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.employee_name}
-                                onChange={(e) =>
-                                    setData("employee_name", e.target.value)
-                                }
-                            />
-                            {errors.employee_name && (
-                                <p className="text-sm text-red-500">
-                                    {errors.employee_name}
-                                </p>
-                            )}
-                        </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FloatingInput
+                            label="Name"
+                            icon={User}
+                            name="employee_name"
+                            value={data.employee_name}
+                            onChange={(e) =>
+                                setData("employee_name", e.target.value)
+                            }
+                        />
+                        {errors.employee_name && (
+                            <p className="text-sm text-red-500">
+                                {errors.employee_name}
+                            </p>
+                        )}
 
-                        <div>
-                            <label className="text-sm font-medium text-gray-600">
-                                Position / Designation
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.position}
-                                onChange={(e) =>
-                                    setData("position", e.target.value)
-                                }
-                            />
-                            {errors.position && (
-                                <p className="text-sm text-red-500">
-                                    {errors.position}
-                                </p>
-                            )}
-                        </div>
+                        <FloatingInput
+                            label="Position / Designation"
+                            icon={Briefcase}
+                            name="position"
+                            value={data.position}
+                            onChange={(e) =>
+                                setData("position", e.target.value)
+                            }
+                        />
+                        {errors.position && (
+                            <p className="text-sm text-red-500">
+                                {errors.position}
+                            </p>
+                        )}
 
-                        <div className="col-span-2">
-                            <label className="text-sm font-medium text-gray-600">
-                                Permanent Station
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded-lg border p-2"
+                        <div className="md:col-span-2">
+                            <FloatingInput
+                                label="Permanent Station"
+                                icon={Building2}
+                                name="permanent_station"
                                 value={data.permanent_station}
                                 onChange={(e) =>
                                     setData("permanent_station", e.target.value)
@@ -104,12 +108,10 @@ export default function TravelAuthorityForm({ onClose, employee }) {
 
                     {/* Purpose */}
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
-                            Purpose of Travel
-                        </label>
-                        <input
-                            type="text"
-                            className="mt-1 w-full rounded-lg border p-2"
+                        <FloatingInput
+                            label="Purpose of Travel"
+                            icon={FileText}
+                            name="purpose_of_travel"
                             value={data.purpose_of_travel}
                             onChange={(e) =>
                                 setData("purpose_of_travel", e.target.value)
@@ -124,12 +126,10 @@ export default function TravelAuthorityForm({ onClose, employee }) {
 
                     {/* Host */}
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
-                            Host of Activity
-                        </label>
-                        <input
-                            type="text"
-                            className="mt-1 w-full rounded-lg border p-2"
+                        <FloatingInput
+                            label="Host of Activity"
+                            icon={Users}
+                            name="host_of_activity"
                             value={data.host_of_activity}
                             onChange={(e) =>
                                 setData("host_of_activity", e.target.value)
@@ -139,12 +139,11 @@ export default function TravelAuthorityForm({ onClose, employee }) {
 
                     {/* Dates */}
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
-                            Inclusive Dates
-                        </label>
-                        <input
+                        <FloatingInput
+                            label="Inclusive Dates"
+                            icon={CalendarDays}
                             type="date"
-                            className="mt-1 w-full rounded-lg border p-2"
+                            name="inclusive_dates"
                             value={data.inclusive_dates}
                             onChange={(e) =>
                                 setData("inclusive_dates", e.target.value)
@@ -153,34 +152,26 @@ export default function TravelAuthorityForm({ onClose, employee }) {
                     </div>
 
                     {/* Destination + Fund */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">
-                                Destination
-                            </label>
-                            <input
-                                type="text"
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.destination}
-                                onChange={(e) =>
-                                    setData("destination", e.target.value)
-                                }
-                            />
-                        </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FloatingInput
+                            label="Destination"
+                            icon={MapPin}
+                            name="destination"
+                            value={data.destination}
+                            onChange={(e) =>
+                                setData("destination", e.target.value)
+                            }
+                        />
 
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">
-                                Fund Source
-                            </label>
-                            <input
-                                type="text"
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.fund_source}
-                                onChange={(e) =>
-                                    setData("fund_source", e.target.value)
-                                }
-                            />
-                        </div>
+                        <FloatingInput
+                            label="Fund Source"
+                            icon={Wallet}
+                            name="fund_source"
+                            value={data.fund_source}
+                            onChange={(e) =>
+                                setData("fund_source", e.target.value)
+                            }
+                        />
                     </div>
 
                     {/* Buttons */}

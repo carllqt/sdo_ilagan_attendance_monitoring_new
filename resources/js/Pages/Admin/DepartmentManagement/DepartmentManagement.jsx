@@ -10,7 +10,6 @@ const DepartmentManagement = ({
     office_heads = [],
     filtered_office_heads = [],
     division_heads = [],
-    employees = [],
     divisions = [],
     offices = [],
     office_search = "",
@@ -19,6 +18,7 @@ const DepartmentManagement = ({
     editOfficeModal = null,
     deleteOfficeModal = null,
     assignOfficeHeadModal = null,
+    assignDivisionHeadModal = null,
     deleteOfficeHeadModal = null,
     deleteDivisionHeadModal = null,
 }) => {
@@ -69,8 +69,8 @@ const DepartmentManagement = ({
                 >
                     <DivisionHeadList
                         division_heads={division_heads}
-                        employees={employees}
                         divisions={divisions}
+                        assignDivisionHeadModal={assignDivisionHeadModal}
                         deleteDivisionHeadModal={deleteDivisionHeadModal}
                     />
                 </div>
@@ -81,7 +81,6 @@ const DepartmentManagement = ({
                     <DepartmentHeadList
                         office_heads={office_heads}
                         filteredOfficeHeads={filtered_office_heads}
-                        employees={employees}
                         divisions={divisions}
                         offices={offices}
                         assignOfficeHeadModal={assignOfficeHeadModal}

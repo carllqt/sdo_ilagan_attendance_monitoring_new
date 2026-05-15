@@ -40,7 +40,6 @@ const getOfficeSearchText = (office) =>
 const DepartmentHeadList = ({
     office_heads = [],
     offices = [],
-    employees = [],
     officeSearch = "",
     assignOfficeHeadModal = null,
     deleteOfficeHeadModal = null,
@@ -197,6 +196,7 @@ const DepartmentHeadList = ({
 
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
         query.set("modal", modal);
 
@@ -219,6 +219,7 @@ const DepartmentHeadList = ({
         query.delete("modal");
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
 
         router.get(route("departmentmanagement"), Object.fromEntries(query), {
@@ -315,7 +316,6 @@ const DepartmentHeadList = ({
                 setOpen={(nextOpen) => {
                     if (!nextOpen) closeDepartmentModal();
                 }}
-                employees={employees}
                 offices={offices}
                 preselectedOffice={assignOfficeHeadModal?.office_id || null}
             />

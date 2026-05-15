@@ -1,12 +1,11 @@
-import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
-    DialogTitle,
     DialogDescription,
     DialogFooter,
-    DialogClose,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import {
     HoverCard,
@@ -16,20 +15,25 @@ import {
 import { Button } from "@/components/ui/button";
 import FloatingInput from "@/components/floating-input";
 import {
-    CheckCircle,
+    BadgeCheck,
     Briefcase,
     Building2,
-    User,
+    CheckCircle,
     FileSpreadsheetIcon,
+    Image as ImageIcon,
+    ShieldAlert,
+    UploadCloud,
+    User,
+    X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ShieldAlert } from "lucide-react";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
 import {
     CustomDropdownCheckbox,
     CustomDropdownCheckboxObject,
 } from "@/components/dropdown-menu-main";
-import { toast } from "sonner";
+
+const workTypeChoices = ["Full", "Fixed", "Work From Home"];
 
 const EmployeeEditDialog = ({
     editForm,
@@ -37,268 +41,500 @@ const EmployeeEditDialog = ({
     editOpen,
     setEditOpen,
     offices = [],
-    stations,
+    stations = [],
     userStationId,
 }) => {
-    const [confirmOpen, setConfirmOpen] = React.useState(false);
+    const fileInputRef = useRef(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
     const safeForm = editForm || {};
-    const canEditOffice = userStationId === 1;
-
-    console.log("SAFE FORM:", safeForm);
+    const canEditOffice = Number(userStationId) === 1;
 
     const isHead =
         safeForm?.is_unit_head ||
         safeForm?.is_division_head ||
         safeForm?.is_department_head;
 
+    const selectedStation = useMemo(
+        () =>
+            stations?.find(
+                (station) => Number(station.id) === Number(safeForm.station_id),
+            ),
+        [stations, safeForm.station_id],
+    );
+
+    const selectedOffice = useMemo(
+        () =>
+            offices?.find(
+                (office) => Number(office.id) === Number(safeForm.office_id),
+            ),
+        [offices, safeForm.office_id],
+    );
+
+    const currentImageUrl =
+        typeof safeForm.profile_img === "string" && safeForm.profile_img
+            ? `/storage/${safeForm.profile_img}`
+            : null;
+
+    const displayImage = previewUrl || currentImageUrl;
+    const initials =
+        `${safeForm.first_name?.[0] || ""}${safeForm.last_name?.[0] || ""}`.toUpperCase();
+
+    useEffect(() => {
+        if (!editOpen) {
+            setPreviewUrl(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
+    }, [editOpen]);
+
+    useEffect(() => {
+        return () => {
+            if (previewUrl?.startsWith("blob:")) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
+    const updateForm = (key, value) => {
+        setEditForm((prev) => ({
+            ...(prev || {}),
+            [key]: value,
+        }));
+    };
+
+    const handleNameChange = (key, value) => {
+        const regex = /^[A-Za-z\s-]*$/;
+        if (!regex.test(value)) return;
+
+        updateForm(key, value);
+    };
+
+    const handleProfileImageChange = (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (previewUrl?.startsWith("blob:")) {
+            URL.revokeObjectURL(previewUrl);
+        }
+
+        updateForm("profile_img", file);
+        setPreviewUrl(URL.createObjectURL(file));
+    };
+
+    const clearNewProfileImage = () => {
+        if (previewUrl?.startsWith("blob:")) {
+            URL.revokeObjectURL(previewUrl);
+        }
+
+        setPreviewUrl(null);
+        updateForm("profile_img", safeForm.original_profile_img || "");
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const buildUpdatePayload = () => {
+        const payload = { ...safeForm };
+
+        delete payload.full_name;
+        delete payload.office;
+        delete payload.original_profile_img;
+        delete payload.is_department_head;
+        delete payload.is_division_head;
+        delete payload.is_unit_head;
+        delete payload.is_school_admin;
+        delete payload.department;
+
+        if (!(payload.profile_img instanceof File)) {
+            delete payload.profile_img;
+        }
+
+        return payload;
+    };
+
+    const handleOpenChange = (nextOpen) => {
+        setEditOpen(nextOpen);
+    };
+
+    useEffect(() => {
+        if (
+            editOpen &&
+            safeForm.profile_img &&
+            !safeForm.original_profile_img
+        ) {
+            updateForm("original_profile_img", safeForm.profile_img);
+        }
+    }, [editOpen, safeForm.profile_img, safeForm.original_profile_img]);
+
     return (
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Edit Employee</DialogTitle>
-                    <DialogDescription>
-                        Update employee information.
-                    </DialogDescription>
-                </DialogHeader>
+        <Dialog open={editOpen} onOpenChange={handleOpenChange}>
+            <DialogContent className="max-h-[92vh] overflow-y-auto border-0 p-0 sm:max-w-[56rem]">
+                <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-white">
+                    <div className="absolute inset-x-0 top-0 h-24 bg-blue-700" />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-                    <FloatingInput
-                        label="First Name"
-                        icon={User}
-                        value={safeForm.first_name || ""}
-                        onChange={(e) =>
-                            setEditForm((prev) => ({
-                                ...prev,
-                                first_name: e.target.value,
-                            }))
-                        }
-                    />
-
-                    <FloatingInput
-                        label="Middle Name"
-                        icon={User}
-                        value={safeForm.middle_name || ""}
-                        onChange={(e) =>
-                            setEditForm((prev) => ({
-                                ...prev,
-                                middle_name: e.target.value,
-                            }))
-                        }
-                    />
-
-                    <FloatingInput
-                        label="Last Name"
-                        icon={User}
-                        value={safeForm.last_name || ""}
-                        onChange={(e) =>
-                            setEditForm((prev) => ({
-                                ...prev,
-                                last_name: e.target.value,
-                            }))
-                        }
-                    />
-
-                    {/* Station */}
-                    <div className="relative w-full">
-                        <FloatingInput
-                            label="Station"
-                            icon={Building2}
-                            value={
-                                stations?.find(
-                                    (s) => s.id === safeForm.station_id,
-                                )?.name || ""
-                            }
-                            readOnly
-                            inputClassName="truncate pr-12"
-                        />
-
-                        <div className="absolute right-2 top-0 h-full flex items-center">
-                            <CustomDropdownCheckbox
-                                label="Select Station"
-                                items={stations?.map((s) => s.name) || []}
-                                value={
-                                    stations?.find(
-                                        (s) =>
-                                            s.id ===
-                                            Number(safeForm.station_id),
-                                    )?.name
-                                }
-                                onChange={(val) => {
-                                    const selectedStation = stations?.find(
-                                        (s) => s.name === val,
-                                    );
-
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        station_id: selectedStation?.id || "",
-                                    }));
-                                }}
-                                buttonVariant="white"
-                                iconOnly
-                            />
-                        </div>
-                    </div>
-
-                    <FloatingInput
-                        label="Position"
-                        icon={Briefcase}
-                        value={safeForm.position || ""}
-                        onChange={(e) =>
-                            setEditForm((prev) => ({
-                                ...prev,
-                                position: e.target.value,
-                            }))
-                        }
-                    />
-
-                    {/* Office */}
-                    <div className="relative w-full">
-                        <FloatingInput
-                            label="Office"
-                            icon={Building2}
-                            value={
-                                offices?.find(
-                                    (office) =>
-                                        office.id === safeForm.office_id,
-                                )?.name || ""
-                            }
-                            readOnly
-                            inputClassName="truncate pr-12"
-                        />
-
-                        {/* HoverCard ONLY when employee is head */}
-                        {isHead && (
-                            <div className="absolute right-2 top-0 h-full flex items-center">
-                                <HoverCard>
-                                    <HoverCardTrigger asChild>
-                                        <div className="cursor-pointer">
-                                            <Badge className="bg-red-100 text-red-700 border border-red-300 flex items-center gap-1">
-                                                <ShieldAlert className="w-3.5 h-3.5" />
-                                            </Badge>
-                                        </div>
-                                    </HoverCardTrigger>
-
-                                    <HoverCardContent className="text-xs px-3 py-2 rounded-lg shadow-md border bg-white w-fit">
-                                        <span className="flex flex-col gap-1 text-red-600 font-medium">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                                Head Assignment Active
-                                            </div>
-
-                                            <p className="text-gray-600 font-normal">
-                                                This employee is currently
-                                                assigned as a head for{" "}
-                                                <span className="font-semibold text-black">
-                                                    {safeForm.office?.name}
-                                                </span>
-                                            </p>
-
-                                            <p className="text-red-500 font-semibold">
-                                                Remove the assignment first
-                                                before changing office.
-                                            </p>
-                                        </span>
-                                    </HoverCardContent>
-                                </HoverCard>
+                    <div className="relative px-5 py-4">
+                        <DialogHeader className="mb-12 text-white">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-3xl bg-white/15 backdrop-blur">
+                                    <BadgeCheck className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-lg font-bold text-white">
+                                        Edit Employee
+                                    </DialogTitle>
+                                    <DialogDescription className="max-w-2xl text-sm text-blue-100">
+                                        Update profile photo, identity,
+                                        assignment, work type, and employment
+                                        status.
+                                    </DialogDescription>
+                                </div>
                             </div>
-                        )}
+                        </DialogHeader>
 
-                        {/* Dropdown */}
-                        <div className="absolute right-2 top-0 h-full flex items-center">
-                            {canEditOffice && !isHead && (
-                                <CustomDropdownCheckboxObject
-                                    label="Select Office"
-                                    items={offices}
-                                    onChange={(val) =>
-                                        setEditForm((prev) => ({
-                                            ...prev,
-                                            office_id: val,
-                                        }))
+                        <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+                            <div className="rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-5 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="rounded-2xl bg-blue-100 p-2 text-blue-700">
+                                        <ImageIcon className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-slate-800">
+                                            Profile Photo
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                            Upload a new employee photo.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-center mt-5">
+                                    <div className="relative">
+                                        <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-gradient-to-br from-blue-100 to-slate-200 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.55)]">
+                                            {displayImage ? (
+                                                <img
+                                                    src={displayImage}
+                                                    alt="Profile preview"
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-600 to-sky-400 text-4xl font-bold text-white">
+                                                    {initials || (
+                                                        <User className="h-12 w-12" />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {previewUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={clearNewProfileImage}
+                                                className="absolute right-2 top-2 rounded-full bg-white p-2 text-slate-600 shadow-md transition hover:bg-slate-100"
+                                                aria-label="Remove new profile image"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-5 w-full">
+                                        <input
+                                            ref={fileInputRef}
+                                            id="edit_profile_img"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleProfileImageChange}
+                                            className="hidden"
+                                        />
+
+                                        <label
+                                            htmlFor="edit_profile_img"
+                                            className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-200 bg-white px-4 py-3 text-sm font-medium text-blue-700 transition hover:border-blue-400 hover:bg-blue-50"
+                                        >
+                                            <UploadCloud className="h-4 w-4" />
+                                            Change Photo
+                                        </label>
+
+                                        <p className="mt-2 text-center text-xs text-slate-500">
+                                            JPG, PNG, or WEBP up to 2MB.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="mb-4">
+                                    <h3 className="text-base font-semibold text-slate-800">
+                                        Employee Details
+                                    </h3>
+                                    <p className="text-sm text-slate-500">
+                                        Keep employee profile and assignment
+                                        data accurate.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <FloatingInput
+                                        label="First Name"
+                                        icon={User}
+                                        value={safeForm.first_name || ""}
+                                        onChange={(event) =>
+                                            handleNameChange(
+                                                "first_name",
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+
+                                    <FloatingInput
+                                        label="Last Name"
+                                        icon={User}
+                                        value={safeForm.last_name || ""}
+                                        onChange={(event) =>
+                                            handleNameChange(
+                                                "last_name",
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+
+                                    <FloatingInput
+                                        label="Middle Name"
+                                        icon={User}
+                                        value={safeForm.middle_name || ""}
+                                        onChange={(event) =>
+                                            handleNameChange(
+                                                "middle_name",
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+
+                                    <FloatingInput
+                                        label="Position"
+                                        icon={Briefcase}
+                                        value={safeForm.position || ""}
+                                        onChange={(event) =>
+                                            updateForm(
+                                                "position",
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+
+                                    <div className="relative w-full md:col-span-2">
+                                        <FloatingInput
+                                            label="Station"
+                                            icon={Building2}
+                                            value={selectedStation?.name || ""}
+                                            readOnly
+                                            inputClassName="truncate pr-12"
+                                        />
+
+                                        <div className="absolute right-2 top-0 flex h-full items-center">
+                                            <CustomDropdownCheckbox
+                                                label="Select Station"
+                                                items={
+                                                    stations?.map(
+                                                        (station) =>
+                                                            station.name,
+                                                    ) || []
+                                                }
+                                                selected={selectedStation?.name}
+                                                onChange={(value) => {
+                                                    const station =
+                                                        stations?.find(
+                                                            (item) =>
+                                                                item.name ===
+                                                                value,
+                                                        );
+
+                                                    updateForm(
+                                                        "station_id",
+                                                        station?.id || "",
+                                                    );
+                                                }}
+                                                buttonVariant="white"
+                                                iconOnly
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="relative w-full md:col-span-2">
+                                        <FloatingInput
+                                            label="Office"
+                                            icon={Building2}
+                                            value={selectedOffice?.name || ""}
+                                            readOnly
+                                            inputClassName="truncate pr-12"
+                                        />
+
+                                        {isHead ? (
+                                            <div className="absolute right-2 top-0 flex h-full items-center">
+                                                <HoverCard>
+                                                    <HoverCardTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <Badge className="flex items-center gap-1 border border-red-300 bg-red-100 text-red-700">
+                                                                <ShieldAlert className="h-3.5 w-3.5" />
+                                                            </Badge>
+                                                        </button>
+                                                    </HoverCardTrigger>
+
+                                                    <HoverCardContent
+                                                        side="left"
+                                                        align="center"
+                                                        sideOffset={10}
+                                                        collisionPadding={24}
+                                                        className="z-[120] w-64 rounded-lg border bg-white px-3 py-2 text-xs shadow-md"
+                                                    >
+                                                        <div className="font-medium text-red-600">
+                                                            Head Assignment
+                                                            Active
+                                                        </div>
+                                                        <p className="mt-1 text-slate-600">
+                                                            Remove the head
+                                                            assignment first
+                                                            before changing the
+                                                            office.
+                                                        </p>
+                                                    </HoverCardContent>
+                                                </HoverCard>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className={`absolute right-2 top-0 flex h-full items-center ${
+                                                    !canEditOffice
+                                                        ? "pointer-events-none opacity-50"
+                                                        : ""
+                                                }`}
+                                            >
+                                                <CustomDropdownCheckboxObject
+                                                    label="Select Office"
+                                                    items={offices}
+                                                    selected={
+                                                        safeForm.office_id || ""
+                                                    }
+                                                    onChange={(value) =>
+                                                        updateForm(
+                                                            "office_id",
+                                                            value,
+                                                        )
+                                                    }
+                                                    buttonVariant="white"
+                                                    iconOnly
+                                                    disabled={!canEditOffice}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="relative w-full">
+                                        <FloatingInput
+                                            label="Work Type"
+                                            icon={Briefcase}
+                                            value={safeForm.work_type || ""}
+                                            readOnly
+                                        />
+
+                                        <div className="absolute right-2 top-0 flex h-full items-center">
+                                            <CustomDropdownCheckbox
+                                                label="Select Work Type"
+                                                items={workTypeChoices}
+                                                selected={safeForm.work_type}
+                                                onChange={(value) =>
+                                                    updateForm(
+                                                        "work_type",
+                                                        value,
+                                                    )
+                                                }
+                                                buttonVariant="white"
+                                                iconOnly
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="relative w-full">
+                                        <FloatingInput
+                                            label="Status"
+                                            icon={CheckCircle}
+                                            value={
+                                                safeForm.active_status
+                                                    ? "Active"
+                                                    : "Inactive"
+                                            }
+                                            readOnly
+                                        />
+
+                                        <div className="absolute right-2 top-0 flex h-full items-center">
+                                            <CustomDropdownCheckbox
+                                                label="Select Status"
+                                                items={["Active", "Inactive"]}
+                                                selected={
+                                                    safeForm.active_status
+                                                        ? "Active"
+                                                        : "Inactive"
+                                                }
+                                                onChange={(value) =>
+                                                    updateForm(
+                                                        "active_status",
+                                                        value === "Active"
+                                                            ? 1
+                                                            : 0,
+                                                    )
+                                                }
+                                                buttonVariant="white"
+                                                iconOnly
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="mt-5 gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setEditOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+
+                            {safeForm?.id && (
+                                <ConfirmPasswordDialog
+                                    trigger={
+                                        <Button variant="blue">
+                                            Save Changes
+                                        </Button>
                                     }
-                                    buttonVariant="white"
-                                    iconOnly
+                                    action={route(
+                                        "employees.update",
+                                        safeForm.id,
+                                    )}
+                                    method="put"
+                                    data={buildUpdatePayload()}
+                                    forceFormData={
+                                        safeForm.profile_img instanceof File
+                                    }
+                                    onSuccess={() => setEditOpen(false)}
+                                    onError={() => {}}
+                                    confirmText="Confirm Update"
+                                    processingText="Updating..."
+                                    danger={FileSpreadsheetIcon}
+                                    title="Confirm Employee Update"
+                                    description="You are about to update this employee's information."
+                                    itemLabel="Employee"
+                                    itemName={`${safeForm.first_name || ""} ${safeForm.last_name || ""}`.trim()}
                                 />
                             )}
-                        </div>
-                    </div>
-                    {/* Work Type */}
-                    <div className="relative w-full">
-                        <FloatingInput
-                            label="Work Type"
-                            icon={Briefcase}
-                            value={safeForm.work_type || ""}
-                            readOnly
-                        />
-
-                        <div className="absolute right-2 top-0 h-full flex items-center">
-                            <CustomDropdownCheckbox
-                                label="Select Work Type"
-                                items={["Full", "Fixed", "Work From Home"]}
-                                onChange={(val) =>
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        work_type: val,
-                                    }))
-                                }
-                                buttonVariant="white"
-                                iconOnly
-                            />
-                        </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className="relative w-full">
-                        <FloatingInput
-                            label="Status"
-                            icon={CheckCircle}
-                            value={
-                                safeForm.active_status ? "Active" : "Inactive"
-                            }
-                            readOnly
-                        />
-
-                        <div className="absolute right-2 top-0 h-full flex items-center">
-                            <CustomDropdownCheckbox
-                                label="Select Status"
-                                items={["Active", "Inactive"]}
-                                onChange={(val) =>
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        active_status: val === "Active" ? 1 : 0,
-                                    }))
-                                }
-                                buttonVariant="white"
-                                iconOnly
-                            />
-                        </div>
+                        </DialogFooter>
                     </div>
                 </div>
-
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-
-                    {safeForm?.id && (
-                        <ConfirmPasswordDialog
-                            trigger={
-                                <Button variant="blue">Save Changes</Button>
-                            }
-                            action={route("employees.update", safeForm.id)}
-                            method="put"
-                            data={safeForm}
-                            onSuccess={() => setEditOpen(false)}
-                            onError={() => {}}
-                            confirmText="Confirm Update"
-                            processingText="Updating..."
-                            danger={FileSpreadsheetIcon}
-                            title="Confirm Employee Update"
-                            description="You are about to update this employee's information."
-                            itemLabel="Employee"
-                            itemName={`${safeForm.first_name || ""} ${safeForm.last_name || ""}`.trim()}
-                        />
-                    )}
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

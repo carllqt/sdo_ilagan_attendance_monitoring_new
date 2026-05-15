@@ -16,19 +16,12 @@ class TravelOrderController extends Controller
     public function index()
     {
         $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        $employee = $user->employee()->with('station')->first();
-
-        if (!$employee) {
-            abort(404, 'Employee record not found for this user.');
-        }
+        $employee = $user?->employee()->with('station')->first();
 
         $travel_orders = TravelOrder::with('employee.station')
-            ->where('employee_id', $employee->id)
+            ->when($employee, function ($query) use ($employee) {
+                $query->where('employee_id', $employee->id);
+            })
             ->latest()
             ->get();
 

@@ -45,7 +45,7 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
 
                     score = service.zkfp2.DBMatch(tmp, existing_template)
                     if score >= duplicate_threshold:
-                        yield f"data: {json.dumps({'success': False, 'message': '❌ Fingerprint already registered to another employee.'})}\n\n"
+                        yield f"data: {json.dumps({'success': False, 'message': 'Fingerprint already registered to another employee.'})}\n\n"
                         return
             except Exception as e:
                 logger.error(f"MySQL duplicate check failed: {e}")
@@ -54,7 +54,7 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
             if templates:
                 score = service.zkfp2.DBMatch(templates[-1], tmp)
                 if score < match_threshold:
-                    yield f"data: {json.dumps({'success': None, 'message': f'❌ Fingerprint {len(templates)+1} mismatch. Try again.'})}\n\n"
+                    yield f"data: {json.dumps({'success': None, 'message': f'Fingerprint {len(templates)+1} mismatch. Try again.'})}\n\n"
                     continue
 
             templates.append(tmp)

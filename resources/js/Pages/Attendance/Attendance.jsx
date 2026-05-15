@@ -5,9 +5,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Fingerprint, User2, Search } from "lucide-react";
 import { AttendanceTable } from "./Partials/AttendanceTable";
 
-const fingerprintServiceUrl = `http://${window.location.hostname}:5000`;
+const defaultFingerprintServiceUrl = `http://${window.location.hostname}:5000`;
 
-const Attendance = ({ attendances }) => {
+const Attendance = ({
+    attendances,
+    fingerprintServiceUrl = defaultFingerprintServiceUrl,
+}) => {
     const [time, setTime] = useState(new Date());
     const [employee, setEmployee] = useState(null);
     const [scanMessage, setScanMessage] = useState("Place your fingerprint");

@@ -17,17 +17,19 @@ import {
     PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
-import { Building2, AlertTriangle, SquarePen, Trash2 } from "lucide-react";
+import { Building2, SquarePen, Trash2 } from "lucide-react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
 import AddDivisionModal from "./AddDivisionModal";
 import AddOfficeModal from "./AddOfficeModal";
 import EditOfficeModal from "./EditOfficeModal";
+import DeleteDepartmentModal from "./DeleteDepartmentModal";
+import EditDivisionModal from "./EditDivisionModal";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const ITEMS_PER_PAGE = 7;
+const ITEMS_PER_PAGE = 6;
 
 const DepartmentList = ({
     divisions = [],
@@ -37,21 +39,33 @@ const DepartmentList = ({
     addOfficeModal = false,
     editOfficeModal = null,
     deleteOfficeModal = null,
-    onAssignNow,
 }) => {
-    const [currentPage, setCurrentPage] = useState(1);
+    const [officePage, setOfficePage] = useState(1);
+    const [divisionPage, setDivisionPage] = useState(1);
+    const [editDivision, setEditDivision] = useState(null);
 
     const sortedOffices = [...offices].sort((a, b) =>
         (a?.name || "").localeCompare(b?.name || ""),
     );
+    const sortedDivisions = [...divisions].sort((a, b) =>
+        (a?.name || "").localeCompare(b?.name || ""),
+    );
 
-    const totalPages = Math.max(
+    const totalOfficePages = Math.max(
         Math.ceil(sortedOffices.length / ITEMS_PER_PAGE),
         1,
     );
     const paginatedOffices = sortedOffices.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE,
+        (officePage - 1) * ITEMS_PER_PAGE,
+        officePage * ITEMS_PER_PAGE,
+    );
+    const totalDivisionPages = Math.max(
+        Math.ceil(sortedDivisions.length / ITEMS_PER_PAGE),
+        1,
+    );
+    const paginatedDivisions = sortedDivisions.slice(
+        (divisionPage - 1) * ITEMS_PER_PAGE,
+        divisionPage * ITEMS_PER_PAGE,
     );
 
     const assignedCount = sortedOffices.filter((office) =>
@@ -142,11 +156,20 @@ const DepartmentList = ({
         return () => clearTimeout(timer);
     }, []);
 
+    useEffect(() => {
+        setOfficePage((page) => Math.min(page, totalOfficePages));
+    }, [totalOfficePages]);
+
+    useEffect(() => {
+        setDivisionPage((page) => Math.min(page, totalDivisionPages));
+    }, [totalDivisionPages]);
+
     const openDepartmentModal = (modal, params = {}) => {
         const query = new URLSearchParams(window.location.search);
 
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
         query.set("modal", modal);
 
@@ -169,6 +192,7 @@ const DepartmentList = ({
         query.delete("modal");
         query.delete("head_id");
         query.delete("division_id");
+        query.delete("division_name");
         query.delete("office_id");
 
         router.get(route("departmentmanagement"), Object.fromEntries(query), {
@@ -179,8 +203,8 @@ const DepartmentList = ({
     };
 
     return (
-        <div className="flex gap-5">
-            <div className="w-[60%] rounded-xl p-4 border-2 shadow-lg">
+        <div className="grid gap-5 xl:grid-cols-2">
+            <div className="rounded-xl p-4 border-2 shadow-lg">
                 <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
                         <h2 className="text-lg font-bold">Office List</h2>
@@ -191,14 +215,8 @@ const DepartmentList = ({
 
                     <div className="flex flex-wrap justify-end gap-2">
                         <Button
-                            onClick={() => openDepartmentModal("add-division")}
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                        >
-                            + Add Division
-                        </Button>
-                        <Button
                             onClick={() => openDepartmentModal("add-office")}
-                            className="bg-slate-900 text-white hover:bg-slate-700"
+                            className="bg-blue-600 text-white hover:bg-blue-700"
                         >
                             + Add Office
                         </Button>
@@ -229,14 +247,22 @@ const DepartmentList = ({
                     divisions={divisions}
                 />
 
+                <EditDivisionModal
+                    open={!!editDivision}
+                    setOpen={(nextOpen) => {
+                        if (!nextOpen) setEditDivision(null);
+                    }}
+                    division={editDivision}
+                />
+
                 <div className="overflow-x-auto border rounded-lg">
                     <Table className="w-full table-fixed">
                         <TableHeader>
                             <TableRow className="bg-blue-900 hover:bg-blue-800">
-                                <TableHead className="text-white text-left pl-7 pr-3 w-[35%]">
+                                <TableHead className="text-white text-left pl-7 pr-3 w-[40%]">
                                     Office
                                 </TableHead>
-                                <TableHead className="text-white text-left pl-7 pr-3 w-[40%]">
+                                <TableHead className="text-white text-left pl-7 pr-3 w-[35%]">
                                     Division
                                 </TableHead>
                                 <TableHead className="text-white p-3 w-[20%] text-center">
@@ -255,17 +281,17 @@ const DepartmentList = ({
                                                     <div className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-300">
                                                         <Building2 className="w-4 h-4 text-blue-600" />
                                                     </div>
-                                                    <span className="font-medium">
+                                                    <span className="truncate font-medium">
                                                         {office.name}
                                                     </span>
                                                 </div>
                                             </TableCell>
 
                                             <TableCell className="p-3 text-sm text-gray-600">
-                                                <div className="font-medium text-gray-800">
+                                                <div className="truncate font-medium text-gray-800">
                                                     {office.division?.code}
                                                 </div>
-                                                <div className="text-xs text-gray-500">
+                                                <div className="truncate text-xs text-gray-500">
                                                     {office.division?.name}
                                                 </div>
                                             </TableCell>
@@ -327,36 +353,36 @@ const DepartmentList = ({
                         Showing{" "}
                         {sortedOffices.length === 0
                             ? 0
-                            : (currentPage - 1) * ITEMS_PER_PAGE + 1}{" "}
+                            : (officePage - 1) * ITEMS_PER_PAGE + 1}{" "}
                         to{" "}
                         {Math.min(
-                            currentPage * ITEMS_PER_PAGE,
+                            officePage * ITEMS_PER_PAGE,
                             sortedOffices.length,
                         )}{" "}
                         of {sortedOffices.length}
                     </div>
 
                     <div className="ml-auto">
-                        {totalPages > 1 && (
+                        {totalOfficePages > 1 && (
                             <Pagination>
                                 <PaginationPrevious
                                     onClick={() =>
-                                        setCurrentPage((value) =>
+                                        setOfficePage((value) =>
                                             Math.max(1, value - 1),
                                         )
                                     }
                                 />
                                 <PaginationContent>
                                     {Array.from(
-                                        { length: totalPages },
+                                        { length: totalOfficePages },
                                         (_, i) => (
                                             <PaginationItem key={i}>
                                                 <PaginationLink
                                                     isActive={
-                                                        currentPage === i + 1
+                                                        officePage === i + 1
                                                     }
                                                     onClick={() =>
-                                                        setCurrentPage(i + 1)
+                                                        setOfficePage(i + 1)
                                                     }
                                                 >
                                                     {i + 1}
@@ -367,8 +393,11 @@ const DepartmentList = ({
                                 </PaginationContent>
                                 <PaginationNext
                                     onClick={() =>
-                                        setCurrentPage((value) =>
-                                            Math.min(totalPages, value + 1),
+                                        setOfficePage((value) =>
+                                            Math.min(
+                                                totalOfficePages,
+                                                value + 1,
+                                            ),
                                         )
                                     }
                                 />
@@ -399,194 +428,289 @@ const DepartmentList = ({
                 }}
             />
 
-            <div className="w-[40%] flex flex-col gap-2">
-                <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 px-5 py-3 shadow-sm">
-                    <div className="mb-2 text-base font-bold text-gray-800">
-                        Office Head Coverage
-                    </div>
-
-                    <div className="flex items-center gap-16">
-                        <div className="relative ml-5 h-32 w-32 shrink-0">
-                            <Doughnut
-                                data={
-                                    chartReady
-                                        ? chartData
-                                        : {
-                                              ...chartData,
-                                              datasets: [
-                                                  {
-                                                      ...chartData.datasets[0],
-                                                      data: [0, 0],
-                                                  },
-                                              ],
-                                          }
-                                }
-                                options={chartOptions}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-md font-semibold text-gray-900">
-                                    {coverage}%
-                                </span>
-                            </div>
+            <div className="flex flex-col gap-5">
+                <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 px-5 py-3 shadow-sm">
+                        <div className="mb-2 text-base font-bold text-gray-800">
+                            Office Head Coverage
                         </div>
 
-                        <div className="min-w-0 space-y-3 text-sm">
-                            <div className="flex items-center gap-2">
-                                <span className="h-3 w-3 bg-blue-700" />
-                                <span className="text-gray-700">Assigned</span>
-                                <span className="font-semibold text-gray-800">
-                                    ({assignedCount})
-                                </span>
+                        <div className="flex items-center gap-8">
+                            <div className="relative h-[7.5rem] w-[7.5rem] shrink-0">
+                                <Doughnut
+                                    data={
+                                        chartReady
+                                            ? chartData
+                                            : {
+                                                  ...chartData,
+                                                  datasets: [
+                                                      {
+                                                          ...chartData
+                                                              .datasets[0],
+                                                          data: [0, 0],
+                                                      },
+                                                  ],
+                                              }
+                                    }
+                                    options={chartOptions}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-md font-semibold text-gray-900">
+                                        {coverage}%
+                                    </span>
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                <span className="h-3 w-3 bg-gray-300" />
-                                <span className="text-gray-700">Missing</span>
-                                <span className="font-semibold text-gray-800">
-                                    ({missingOffices.length})
-                                </span>
+                            <div className="min-w-0 space-y-2 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <span className="h-3 w-3 bg-blue-700" />
+                                    <span className="text-gray-700">
+                                        Assigned
+                                    </span>
+                                    <span className="font-semibold text-gray-800">
+                                        ({assignedCount})
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <span className="h-3 w-3 bg-gray-300" />
+                                    <span className="text-gray-700">
+                                        Missing
+                                    </span>
+                                    <span className="font-semibold text-gray-800">
+                                        ({missingOffices.length})
+                                    </span>
+                                </div>
+
+                                <p className="pt-1 text-xs text-gray-600">
+                                    {assignedCount} of {sortedOffices.length}{" "}
+                                    offices covered
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-100 px-5 py-3 shadow-sm">
+                        <div className="mb-2 text-base font-bold text-gray-800">
+                            Offices per Division
+                        </div>
+
+                        <div className="flex items-center gap-8">
+                            <div className="relative h-[7.5rem] w-[7.5rem] shrink-0">
+                                <Doughnut
+                                    data={
+                                        chartReady
+                                            ? divisionAnalytics
+                                            : {
+                                                  ...divisionAnalytics,
+                                                  datasets: [
+                                                      {
+                                                          ...divisionAnalytics
+                                                              .datasets[0],
+                                                          data: divisionAnalytics.datasets[0].data.map(
+                                                              () => 0,
+                                                          ),
+                                                      },
+                                                  ],
+                                              }
+                                    }
+                                    options={divisionChartOptions}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-md font-semibold text-gray-900">
+                                        {sortedOffices.length}
+                                    </span>
+                                </div>
                             </div>
 
-                            <p className="pt-1 text-xs text-gray-600">
-                                {assignedCount} of {sortedOffices.length}{" "}
-                                offices covered
-                            </p>
+                            <div className="min-w-0 space-y-2 text-sm">
+                                {Object.entries(divisionSummary)
+                                    .slice(0, 3)
+                                    .map(([division, count], index) => (
+                                        <div
+                                            key={division}
+                                            className="flex items-center gap-2"
+                                        >
+                                            <span
+                                                className="h-3 w-3"
+                                                style={{
+                                                    backgroundColor:
+                                                        blueBlackPalette[
+                                                            index %
+                                                                blueBlackPalette.length
+                                                        ],
+                                                }}
+                                            />
+                                            <span className="truncate text-gray-700">
+                                                {division}
+                                            </span>
+                                            <span className="font-semibold text-gray-800">
+                                                ({count})
+                                            </span>
+                                        </div>
+                                    ))}
+
+                                <p className="pt-1 text-xs text-gray-600">
+                                    {Object.keys(divisionSummary).length}{" "}
+                                    divisions total
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-100 px-5 py-3 shadow-sm">
-                    <div className="mb-2 text-base font-bold text-gray-800">
-                        Offices per Division
-                    </div>
-
-                    <div className="flex items-center gap-16">
-                        <div className="relative ml-5 h-32 w-32 shrink-0">
-                            <Doughnut
-                                data={
-                                    chartReady
-                                        ? divisionAnalytics
-                                        : {
-                                              ...divisionAnalytics,
-                                              datasets: [
-                                                  {
-                                                      ...divisionAnalytics
-                                                          .datasets[0],
-                                                      data: divisionAnalytics.datasets[0].data.map(
-                                                          () => 0,
-                                                      ),
-                                                  },
-                                              ],
-                                          }
-                                }
-                                options={divisionChartOptions}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-md font-semibold text-gray-900">
-                                    {sortedOffices.length}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="min-w-0 space-y-3 text-sm">
-                            {Object.entries(divisionSummary)
-                                .slice(0, 3)
-                                .map(([division, count], index) => (
-                                    <div
-                                        key={division}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <span
-                                            className="h-3 w-3"
-                                            style={{
-                                                backgroundColor:
-                                                    blueBlackPalette[
-                                                        index %
-                                                            blueBlackPalette.length
-                                                    ],
-                                            }}
-                                        />
-                                        <span className="truncate text-gray-700">
-                                            {division}
-                                        </span>
-                                        <span className="font-semibold text-gray-800">
-                                            ({count})
-                                        </span>
-                                    </div>
-                                ))}
-
-                            <p className="pt-1 text-xs text-gray-600">
-                                {Object.keys(divisionSummary).length} divisions
-                                total
+                <div className="rounded-xl p-4 border-2 shadow-lg">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                            <h2 className="text-lg font-bold">Division List</h2>
+                            <p className="text-sm text-gray-500">
+                                Manage division records
                             </p>
                         </div>
-                    </div>
-                </div>
 
-                <div className="p-5 flex flex-col rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-red-100 shadow-sm min-h-[240px] h-auto">
-                    <div className="flex items-center gap-2">
-                        <div className="p-2 bg-red-100 rounded-lg">
-                            <AlertTriangle className="text-red-500 w-4 h-4" />
+                        <Button
+                            onClick={() => openDepartmentModal("add-division")}
+                            className="bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                            + Add Division
+                        </Button>
+                    </div>
+
+                    <div className="overflow-x-auto border rounded-lg">
+                        <Table className="w-full table-fixed">
+                            <TableHeader>
+                                <TableRow className="bg-blue-900 hover:bg-blue-800">
+                                    <TableHead className="text-white text-left pl-7 pr-3 w-[60%]">
+                                        Division
+                                    </TableHead>
+                                    <TableHead className="text-white p-3 w-[40%] text-center">
+                                        Actions
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+
+                            <TableBody>
+                                {paginatedDivisions.length > 0 ? (
+                                    paginatedDivisions.map((division) => (
+                                        <TableRow key={division.id}>
+                                            <TableCell className="p-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-300">
+                                                        <Building2 className="w-4 h-4 text-blue-600" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-medium">
+                                                            {division.name}
+                                                        </div>
+                                                        <div className="truncate text-xs text-gray-500">
+                                                            {division.code}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+
+                                            <TableCell className="p-3 text-center">
+                                                <div className="flex justify-center gap-2">
+                                                    <Button
+                                                        onClick={() =>
+                                                            setEditDivision(
+                                                                division,
+                                                            )
+                                                        }
+                                                        className="h-8 w-8 rounded-full bg-blue-600 text-white hover:bg-blue-800"
+                                                        size="icon"
+                                                    >
+                                                        <SquarePen className="h-4 w-4" />
+                                                    </Button>
+
+                                                    <DeleteDepartmentModal
+                                                        department={division}
+                                                        trigger={
+                                                            <Button
+                                                                className="h-8 w-8 rounded-full bg-red-100 text-red-600 hover:bg-red-600 hover:text-white"
+                                                                size="icon"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        }
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan="2"
+                                            className="p-5 text-center text-gray-500"
+                                        >
+                                            No Divisions Found
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    <div className="mt-4 flex items-center">
+                        <div className="text-sm text-gray-500">
+                            Showing{" "}
+                            {sortedDivisions.length === 0
+                                ? 0
+                                : (divisionPage - 1) * ITEMS_PER_PAGE + 1}{" "}
+                            to{" "}
+                            {Math.min(
+                                divisionPage * ITEMS_PER_PAGE,
+                                sortedDivisions.length,
+                            )}{" "}
+                            of {sortedDivisions.length}
                         </div>
 
-                        <h3 className="font-semibold text-red-600">
-                            Missing Offices
-                        </h3>
-                    </div>
-
-                    <p className="text-sm text-red-500 mb-2">
-                        These offices don&apos;t have assigned heads yet.
-                    </p>
-
-                    <div
-                        className={`flex flex-wrap gap-2 mb-3 ${
-                            missingOffices.length === 0
-                                ? "flex-1 items-center justify-center"
-                                : ""
-                        }`}
-                    >
-                        {missingOffices.length === 0 && (
-                            <div className="text-sm text-red-600 text-center">
-                                No missing offices
-                            </div>
-                        )}
-
-                        {missingOffices.length > 0 &&
-                            missingOffices.slice(0, 8).map((office) => (
-                                <button
-                                    key={office.id}
-                                    type="button"
-                                    onClick={() => onAssignNow?.(office.id)}
-                                    className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-600 hover:text-white"
-                                >
-                                    {office.name}
-                                </button>
-                            ))}
-
-                        {missingOffices.length > 9 && (
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    onAssignNow?.(missingOffices[8]?.id)
-                                }
-                                className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-600 hover:text-white"
-                            >
-                                +{missingOffices.length - 8} more
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="mt-auto flex justify-end">
-                        {missingOffices.length > 0 && (
-                            <Button
-                                onClick={() =>
-                                    onAssignNow?.(missingOffices[0]?.id)
-                                }
-                                className="text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition shadow-sm"
-                            >
-                                Assign Now
-                            </Button>
-                        )}
+                        <div className="ml-auto">
+                            {totalDivisionPages > 1 && (
+                                <Pagination>
+                                    <PaginationPrevious
+                                        onClick={() =>
+                                            setDivisionPage((value) =>
+                                                Math.max(1, value - 1),
+                                            )
+                                        }
+                                    />
+                                    <PaginationContent>
+                                        {Array.from(
+                                            { length: totalDivisionPages },
+                                            (_, i) => (
+                                                <PaginationItem key={i}>
+                                                    <PaginationLink
+                                                        isActive={
+                                                            divisionPage ===
+                                                            i + 1
+                                                        }
+                                                        onClick={() =>
+                                                            setDivisionPage(
+                                                                i + 1,
+                                                            )
+                                                        }
+                                                    >
+                                                        {i + 1}
+                                                    </PaginationLink>
+                                                </PaginationItem>
+                                            ),
+                                        )}
+                                    </PaginationContent>
+                                    <PaginationNext
+                                        onClick={() =>
+                                            setDivisionPage((value) =>
+                                                Math.min(
+                                                    totalDivisionPages,
+                                                    value + 1,
+                                                ),
+                                            )
+                                        }
+                                    />
+                                </Pagination>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

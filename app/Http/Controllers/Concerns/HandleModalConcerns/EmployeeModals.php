@@ -27,6 +27,7 @@ trait EmployeeModals
                 'position',
                 'office_id',
                 'station_id',
+                'work_type',
                 'active_status',
             )
             ->find(request('employee_id'));
@@ -46,7 +47,12 @@ trait EmployeeModals
             'office_id' => $employee->office_id,
             'office' => $employee->office,
             'station_id' => $employee->station_id,
+            'work_type' => $employee->work_type,
             'active_status' => $employee->active_status,
+            'is_department_head' => $employee->is_department_head,
+            'is_unit_head' => $employee->is_unit_head,
+            'is_division_head' => $employee->is_division_head,
+            'is_school_admin' => $employee->is_school_admin,
         ];
     }
 
@@ -57,14 +63,14 @@ trait EmployeeModals
 
     public function resolveFingerprintEmployee(int $stationId): ?array
     {
-        $employeeId = request('fingerprint_employee_id');
+        $fingerprintEmployee = request('fingerprint_registration', request('fingerprint_employee_id'));
+        $employeeId = (int) preg_replace('/\D.*/', '', (string) $fingerprintEmployee);
 
         if (! $employeeId) {
             return null;
         }
 
         $employee = Employee::with('office.division:id,code,name')
-            ->withCount(['biometric'])
             ->select(
                 'id',
                 'first_name',
@@ -74,7 +80,9 @@ trait EmployeeModals
                 'position',
                 'office_id',
             )
+            ->withCount(['biometrics'])
             ->where('station_id', $stationId)
+            ->having('biometrics_count', '<', 3)
             ->find($employeeId);
 
         return $employee ? $this->formatFingerprintEmployee($employee) : null;
@@ -98,7 +106,7 @@ trait EmployeeModals
     public function formatFingerprintEmployee(Employee $employee): array
     {
         $fullName = $this->formatEmployeeName($employee);
-        $availableFingers = max(3 - $employee->biometric_count, 0);
+        $availableFingers = max(3 - (int) $employee->biometrics_count, 0);
 
         return [
             'id' => $employee->id,

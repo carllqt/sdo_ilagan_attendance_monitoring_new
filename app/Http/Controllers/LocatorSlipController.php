@@ -15,21 +15,15 @@ class LocatorSlipController extends Controller
     {
         /** @var User|null $user */
         $user = Auth::user();
-
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        $employee = $user->employee()->with('station')->first();
-
-        if (!$employee) {
-            abort(404, 'Employee record not found for this user.');
-        }
+        $employee = $user?->employee()->with('station')->first();
 
         $locator_slips = LocatorSlip::with('employee.station')
-            ->where('employee_id', $employee->id)
+            ->when($employee, function ($query) use ($employee) {
+                $query->where('employee_id', $employee->id);
+            })
             ->latest()
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Employee/LocatorSlip/LocatorSlipPage', [
             'locator_slips' => $locator_slips,

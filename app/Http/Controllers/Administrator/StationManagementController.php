@@ -46,32 +46,8 @@ class StationManagementController extends Controller
             ]));
         }
 
-        $stationRowsQuery = $this->stationRowsQuery();
-
-        $stationRowsPage = DB::query()
-            ->fromSub($stationRowsQuery, 'station_rows')
-            ->orderByRaw("CASE WHEN source = 'sdo' THEN 0 ELSE 1 END")
-            ->orderBy('name')
-            ->paginate($stationLimit, ['*'], 'station_page', $stationPage)
-            ->withQueryString();
-
-        $adminRowsQuery = DB::query()->fromSub($this->stationRowsQuery(), 'station_rows');
-
-        if ($search !== '') {
-            $adminRowsQuery->where(function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
-        }
-
-        $adminRowsPage = $adminRowsQuery
-            ->orderByRaw("CASE WHEN source = 'sdo' THEN 0 ELSE 1 END")
-            ->orderBy('name')
-            ->paginate($adminLimit, ['*'], 'admin_page', $adminPage)
-            ->withQueryString();
-
-        $stationRowsPage->setCollection($this->attachAdminsToStationRows($stationRowsPage->getCollection()));
-        $adminRowsPage->setCollection($this->attachAdminsToStationRows($adminRowsPage->getCollection()));
+        $stationRowsPage = $this->stationRowsPage($stationLimit, $stationPage);
+        $adminRowsPage = $this->adminRowsPage($search, $adminLimit, $adminPage);
 
         $stationTotal = DB::query()
             ->fromSub($this->stationRowsQuery(), 'station_rows')
@@ -137,6 +113,76 @@ class StationManagementController extends Controller
             'stationLimit' => $stationLimit,
             'adminLimit' => $adminLimit,
         ]);
+    }
+
+    public function adminRows(Request $request)
+    {
+        $search = trim((string) $request->query('search', ''));
+        $adminPage = max((int) $request->query('admin_page', 1), 1);
+        $adminLimit = (int) $request->query('admin_limit', 10);
+
+        if (! in_array($adminLimit, [10, 25, 50, 100], true)) {
+            $adminLimit = 10;
+        }
+
+        return response()->json([
+            'stationAdminRows' => $this->adminRowsPage($search, $adminLimit, $adminPage),
+            'search' => $search,
+            'adminPage' => $adminPage,
+            'adminLimit' => $adminLimit,
+        ]);
+    }
+
+    public function stationRows(Request $request)
+    {
+        $stationPage = max((int) $request->query('station_page', 1), 1);
+        $stationLimit = (int) $request->query('station_limit', 5);
+
+        if (! in_array($stationLimit, [5, 10, 25, 50], true)) {
+            $stationLimit = 5;
+        }
+
+        return response()->json([
+            'stations' => $this->stationRowsPage($stationLimit, $stationPage),
+            'stationPage' => $stationPage,
+            'stationLimit' => $stationLimit,
+        ]);
+    }
+
+    private function stationRowsPage(int $stationLimit, int $stationPage)
+    {
+        $stationRowsPage = DB::query()
+            ->fromSub($this->stationRowsQuery(), 'station_rows')
+            ->orderByRaw("CASE WHEN source = 'sdo' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->paginate($stationLimit, ['*'], 'station_page', $stationPage)
+            ->withQueryString();
+
+        $stationRowsPage->setCollection($this->attachAdminsToStationRows($stationRowsPage->getCollection()));
+
+        return $stationRowsPage;
+    }
+
+    private function adminRowsPage(string $search, int $adminLimit, int $adminPage)
+    {
+        $adminRowsQuery = DB::query()->fromSub($this->stationRowsQuery(), 'station_rows');
+
+        if ($search !== '') {
+            $adminRowsQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        $adminRowsPage = $adminRowsQuery
+            ->orderByRaw("CASE WHEN source = 'sdo' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->paginate($adminLimit, ['*'], 'admin_page', $adminPage)
+            ->withQueryString();
+
+        $adminRowsPage->setCollection($this->attachAdminsToStationRows($adminRowsPage->getCollection()));
+
+        return $adminRowsPage;
     }
 
     private function stationRowsQuery()
@@ -381,7 +427,7 @@ class StationManagementController extends Controller
         $search = trim((string) ($validated['search'] ?? ''));
         $stationId = $validated['station_id'];
 
-        return Employee::with('user:id,employee_id,email,created_at')
+        $employeesQuery = Employee::with('user:id,employee_id,email,created_at')
             ->select(
                 'id',
                 'first_name',
@@ -407,9 +453,15 @@ class StationManagementController extends Controller
                 });
             })
             ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->limit(5 )
-            ->get();
+            ->orderBy('first_name');
+
+        $total = (clone $employeesQuery)->count();
+        $employees = $employeesQuery->limit(5)->get();
+
+        return response()->json([
+            'data' => $employees,
+            'total' => $total,
+        ]);
     }
 
     public function destroy(Request $request, $id)

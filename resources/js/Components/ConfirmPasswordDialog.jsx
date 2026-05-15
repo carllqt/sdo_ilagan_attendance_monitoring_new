@@ -35,6 +35,7 @@ export default function ConfirmPasswordDialog({
     showSecurityNote = true,
     open: controlledOpen,
     onOpenChange,
+    forceFormData = false,
 }) {
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const open = controlledOpen ?? uncontrolledOpen;
@@ -90,23 +91,43 @@ export default function ConfirmPasswordDialog({
             },
         };
 
+        if (forceFormData && ["put", "patch"].includes(method.toLowerCase())) {
+            router.post(
+                action,
+                {
+                    ...submitData,
+                    _method: method.toLowerCase(),
+                },
+                {
+                    ...options,
+                    forceFormData: true,
+                },
+            );
+            return;
+        }
+
+        const submitOptions = {
+            ...options,
+            ...(forceFormData ? { forceFormData: true } : {}),
+        };
+
         switch (method.toLowerCase()) {
             case "post":
-                router.post(action, submitData, options);
+                router.post(action, submitData, submitOptions);
                 break;
 
             case "put":
-                router.put(action, submitData, options);
+                router.put(action, submitData, submitOptions);
                 break;
 
             case "patch":
-                router.patch(action, submitData, options);
+                router.patch(action, submitData, submitOptions);
                 break;
 
             case "delete":
             default:
                 router.delete(action, {
-                    ...options,
+                    ...submitOptions,
                     data: submitData,
                 });
                 break;

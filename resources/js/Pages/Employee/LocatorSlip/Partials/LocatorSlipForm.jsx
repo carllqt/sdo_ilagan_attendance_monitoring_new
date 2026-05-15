@@ -3,6 +3,17 @@
 import React, { useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 
+import FloatingInput from "@/components/floating-input";
+
+import {
+    User,
+    Briefcase,
+    Building2,
+    FileText,
+    MapPin,
+    CalendarDays,
+} from "lucide-react";
+
 export default function LocatorSlipForm({ onClose, employee }) {
     const employeeName = employee?.full_name || employee?.name || "";
     const employeePosition = employee?.position || "";
@@ -11,26 +22,14 @@ export default function LocatorSlipForm({ onClose, employee }) {
 
     const { data, setData, post, processing, reset, errors } = useForm({
         employee_id: "",
-        employee_name: employeeName,
-        position: employeePosition,
-        permanent_station: employeeStation,
+        employee_name: "",
+        position: "",
+        permanent_station: "",
         purpose_of_travel: "",
         destination: "",
         travel_datetime: "",
         travel_type: "",
     });
-
-    useEffect(() => {
-        if (employee?.id) {
-            setData({
-                ...data,
-                employee_id: employee.id,
-                employee_name: employeeName,
-                position: employeePosition,
-                permanent_station: employeeStation,
-            });
-        }
-    }, [employee]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -57,86 +56,59 @@ export default function LocatorSlipForm({ onClose, employee }) {
                 </div>
 
                 <form onSubmit={submit} className="space-y-5">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-600">
-                                Name
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.employee_name}
-                                onChange={(e) =>
-                                    setData("employee_name", e.target.value)
-                                }
-                            />
-                            {errors.employee_name && (
-                                <p className="mt-1 text-sm text-red-500">
-                                    {errors.employee_name}
-                                </p>
-                            )}
-                        </div>
+                    {/* Employee Info */}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FloatingInput
+                            label="Name"
+                            icon={User}
+                            name="employee_name"
+                            value={data.employee_name}
+                            onChange={(e) =>
+                                setData("employee_name", e.target.value)
+                            }
+                        />
 
-                        <div>
-                            <label className="text-sm font-medium text-gray-600">
-                                Position / Designation
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.position}
-                                onChange={(e) =>
-                                    setData("position", e.target.value)
-                                }
-                            />
-                            {errors.position && (
-                                <p className="mt-1 text-sm text-red-500">
-                                    {errors.position}
-                                </p>
-                            )}
-                        </div>
+                        <FloatingInput
+                            label="Position / Designation"
+                            icon={Briefcase}
+                            name="position"
+                            value={data.position}
+                            onChange={(e) =>
+                                setData("position", e.target.value)
+                            }
+                        />
 
-                        <div className="col-span-2">
-                            <label className="text-sm font-medium text-gray-600">
-                                Permanent Station
-                            </label>
-                            <input
-                                className="mt-1 w-full rounded-lg border p-2"
+                        <div className="md:col-span-2">
+                            <FloatingInput
+                                label="Permanent Station"
+                                icon={Building2}
+                                name="permanent_station"
                                 value={data.permanent_station}
                                 onChange={(e) =>
                                     setData("permanent_station", e.target.value)
                                 }
                             />
-                            {errors.permanent_station && (
-                                <p className="mt-1 text-sm text-red-500">
-                                    {errors.permanent_station}
-                                </p>
-                            )}
                         </div>
                     </div>
 
-                    <div>
-                        <label className="text-sm font-medium text-gray-700">
-                            Purpose of Travel
-                        </label>
-                        <input
-                            type="text"
-                            className="mt-1 w-full rounded-lg border p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                            value={data.purpose_of_travel}
-                            onChange={(e) =>
-                                setData("purpose_of_travel", e.target.value)
-                            }
-                        />
-                        {errors.purpose_of_travel && (
-                            <p className="mt-1 text-sm text-red-500">
-                                {errors.purpose_of_travel}
-                            </p>
-                        )}
-                    </div>
+                    {/* Purpose */}
+                    <FloatingInput
+                        label="Purpose of Travel"
+                        icon={FileText}
+                        name="purpose_of_travel"
+                        value={data.purpose_of_travel}
+                        onChange={(e) =>
+                            setData("purpose_of_travel", e.target.value)
+                        }
+                    />
 
+                    {/* Travel Type */}
                     <div>
                         <label className="text-sm font-medium text-gray-700">
                             Travel Type
                         </label>
-                        <div className="mt-2 flex gap-6">
+
+                        <div className="mt-3 flex gap-6 rounded-xl border p-4">
                             <label className="flex cursor-pointer items-center gap-2">
                                 <input
                                     type="radio"
@@ -175,46 +147,42 @@ export default function LocatorSlipForm({ onClose, employee }) {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">
-                                Date and Time
-                            </label>
-                            <input
-                                type="datetime-local"
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.travel_datetime}
-                                onChange={(e) =>
-                                    setData("travel_datetime", e.target.value)
-                                }
-                            />
-                            {errors.travel_datetime && (
-                                <p className="mt-1 text-sm text-red-500">
-                                    {errors.travel_datetime}
-                                </p>
-                            )}
-                        </div>
+                    {/* Date + Destination */}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FloatingInput
+                            label="Date and Time"
+                            icon={CalendarDays}
+                            type="datetime-local"
+                            name="travel_datetime"
+                            value={data.travel_datetime}
+                            onChange={(e) =>
+                                setData("travel_datetime", e.target.value)
+                            }
+                        />
 
-                        <div>
-                            <label className="text-sm font-medium text-gray-700">
-                                Destination
-                            </label>
-                            <input
-                                type="text"
-                                className="mt-1 w-full rounded-lg border p-2"
-                                value={data.destination}
-                                onChange={(e) =>
-                                    setData("destination", e.target.value)
-                                }
-                            />
-                            {errors.destination && (
-                                <p className="mt-1 text-sm text-red-500">
-                                    {errors.destination}
-                                </p>
-                            )}
-                        </div>
+                        <FloatingInput
+                            label="Destination"
+                            icon={MapPin}
+                            name="destination"
+                            value={data.destination}
+                            onChange={(e) =>
+                                setData("destination", e.target.value)
+                            }
+                        />
                     </div>
 
+                    {/* Errors */}
+                    {Object.keys(errors).length > 0 && (
+                        <div className="space-y-1">
+                            {Object.entries(errors).map(([key, value]) => (
+                                <p key={key} className="text-sm text-red-500">
+                                    {value}
+                                </p>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Buttons */}
                     <div className="flex justify-between gap-3 border-t pt-4">
                         <div className="flex gap-2">
                             <button

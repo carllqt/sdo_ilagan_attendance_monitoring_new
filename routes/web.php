@@ -44,10 +44,22 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/landing', fn () => Inertia::render('LandingPage'))->name('landing');
+
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
 Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'index'])->name('attendance-monitoring');
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
+
+Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])
+    ->name('locator-slips');
+Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])
+    ->name('locator-slips.store');
+Route::get('/travel-order', [TravelOrderController::class, 'index'])
+    ->name('travelorder');
+Route::post('/employee/travel-order', [TravelOrderController::class, 'store'])
+    ->name('travelorder.store');
+    
 /*
 |--------------------------------------------------------------------------
 | Authenticated & Verified Routes
@@ -82,6 +94,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
     //Employee Managements
     Route::get('/employeemanagement/suggestions', [EmployeeManagementController::class, 'suggestions'])->name('employees.suggestions');
+    Route::get('/employeemanagement/list', [EmployeeManagementController::class, 'list'])->name('employees.list');
     Route::get('/employeemanagement', [EmployeeManagementController::class, 'index'])->name('employeemanagement');
     Route::post('/employeestore', [EmployeeManagementController::class, 'store'])->name('employees.store');
     Route::put('/employeeedit/{id}', [EmployeeManagementController::class, 'update'])->name('employees.update');
@@ -95,6 +108,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
     // Department Management
     Route::get('/departmentmanagement', [DepartmentManagementController::class, 'index'])->name('departmentmanagement');
+    Route::get('/departmentmanagement/employees', [DepartmentManagementController::class, 'employeeCandidates'])->name('department.employees');
     Route::post('/departmentmanagement/depheadstore', [DepartmentManagementController::class, 'storeHead'])->name('departmenthead.storeHead');
     Route::post('/departmentmanagement/divisionheadstore', [DepartmentManagementController::class, 'storeDivisionHead'])->name('divisionhead.storeDivisionHead');
     Route::post('/departmentmanagement/addDepartment', [DepartmentManagementController::class, 'storeDepartment'])->name('division.storeDivision');
@@ -109,6 +123,8 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
     //Station Management
     Route::get('/stations/suggestions', [StationManagementController::class, 'suggestions'])->name('stations.suggestions');
+    Route::get('/stations/admin/list', [StationManagementController::class, 'adminRows'])->name('stationadmin.list');
+    Route::get('/stations/list', [StationManagementController::class, 'stationRows'])->name('stations.list');
     Route::get('/stations', [StationManagementController::class, 'index'])->name('stationmanagement');
     Route::post('/stations', [StationManagementController::class, 'storeStation'])->name('stations.store');
     Route::get('/stations/admin/employees', [StationManagementController::class, 'adminEmployeeCandidates'])->name('stationadmin.employees');
