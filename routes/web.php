@@ -17,6 +17,7 @@ use App\Http\Controllers\HumanResource\{
     SickLeaveController,
 };
 use App\Http\Controllers\AttendanceMonitoringController;
+use App\Http\Controllers\ApplicationForLeaveController;
 use App\Http\Controllers\EmployeeLeaveController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -51,6 +52,10 @@ Route::get('/travel-order', [TravelOrderController::class, 'index'])
     ->name('travelorder');
 Route::post('/employee/travel-order', [TravelOrderController::class, 'store'])
     ->name('travelorder.store');
+Route::get('/employee/application-leave', [ApplicationForLeaveController::class, 'index'])
+    ->name('application-leave');
+Route::post('/employee/application-leave', [ApplicationForLeaveController::class, 'store'])
+    ->name('application-leave.store');
 
 /*
 |--------------------------------------------------------------------------
