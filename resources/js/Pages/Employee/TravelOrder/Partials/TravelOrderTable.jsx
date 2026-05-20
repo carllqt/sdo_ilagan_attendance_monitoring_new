@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import { router } from "@inertiajs/react";
 import TravelOrderPrintDialog from "./TravelOrderPrintDialog";
 
-const TravelOrderTable = ({ travelOrders = [] }) => {
+const TravelOrderTable = ({ travelOrders = [], pagination = null }) => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [open, setOpen] = useState(false);
 
@@ -98,6 +99,36 @@ const TravelOrderTable = ({ travelOrders = [] }) => {
                     )}
                 </tbody>
             </table>
+
+            {pagination?.links && (
+                <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-200 p-4">
+                    {pagination.links.map((link, index) => (
+                        <button
+                            key={index}
+                            disabled={!link.url}
+                            onClick={() => {
+                                if (link.url) {
+                                    router.visit(link.url, {
+                                        preserveState: true,
+                                    });
+                                }
+                            }}
+                            dangerouslySetInnerHTML={{
+                                __html: link.label,
+                            }}
+                            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                                link.active
+                                    ? "bg-blue-700 text-white"
+                                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                            } ${
+                                !link.url
+                                    ? "cursor-not-allowed opacity-50"
+                                    : ""
+                            }`}
+                        />
+                    ))}
+                </div>
+            )}
 
             <TravelOrderPrintDialog
                 open={open}

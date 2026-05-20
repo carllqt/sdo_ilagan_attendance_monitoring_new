@@ -17,20 +17,9 @@ class LocatorSlipController extends Controller
         $user = Auth::user();
         $employee = $user?->employee()->with('station')->first();
 
-        $locator_slips = LocatorSlip::with('employee.station')
-            ->when($employee, function ($query) use ($employee) {
-                $query->where('employee_id', $employee->id);
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
-
         return Inertia::render('Employee/LocatorSlip/LocatorSlipPage', [
-            'locator_slips' => $locator_slips,
             'employee' => $employee,
-            'filters' => [
-                'date' => $request->date,
-            ],
+            'created_slip' => session('created_slip'),
             'success_message' => session('success_message'),
             'error_message' => session('error_message'),
         ]);
@@ -52,7 +41,7 @@ class LocatorSlipController extends Controller
             'travel_datetime' => 'required|date',
         ]);
 
-        LocatorSlip::create([
+        $locatorSlip = LocatorSlip::create([
             'employee_id' => $employee?->id,
             'employee_name' => $validated['employee_name'],
             'position' => $validated['position'],
@@ -65,6 +54,7 @@ class LocatorSlipController extends Controller
 
         return redirect()
             ->route('locator-slips')
-            ->with('success_message', 'Locator Slip created successfully.');
+            ->with('success_message', 'Locator Slip created successfully.')
+            ->with('created_slip', $locatorSlip->load('employee.station')->toArray());
     }
 }

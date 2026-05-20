@@ -18,6 +18,8 @@ const ApplicationLeaveTable = ({
     applications = [],
     filters = {},
     leaveApplications = {},
+    filterRoute = "application-leave",
+    filterParams = {},
 }) => {
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [open, setOpen] = useState(false);
@@ -46,8 +48,11 @@ const ApplicationLeaveTable = ({
                             value={filters.date || ""}
                             onChange={(e) => {
                                 router.get(
-                                    route("application-leave"),
-                                    { date: e.target.value },
+                                    route(filterRoute),
+                                    {
+                                        ...filterParams,
+                                        date: e.target.value,
+                                    },
                                     {
                                         preserveState: true,
                                         replace: true,
@@ -60,7 +65,7 @@ const ApplicationLeaveTable = ({
 
                     <button
                         onClick={() =>
-                            router.get(route("application-leave"))
+                            router.get(route(filterRoute), filterParams)
                         }
                         className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                     >

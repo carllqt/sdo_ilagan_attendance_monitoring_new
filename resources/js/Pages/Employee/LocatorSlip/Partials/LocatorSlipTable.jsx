@@ -17,7 +17,13 @@ const itemVariants = {
     },
 };
 
-const LocatorSlipTable = ({ slips = [], filters = {}, locator_slips = {} }) => {
+const LocatorSlipTable = ({
+    slips = [],
+    filters = {},
+    locator_slips = {},
+    filterRoute = "locator-slips",
+    filterParams = {},
+}) => {
     const [selectedSlip, setSelectedSlip] = useState(null);
     const [open, setOpen] = useState(false);
 
@@ -46,8 +52,9 @@ const LocatorSlipTable = ({ slips = [], filters = {}, locator_slips = {} }) => {
                             value={filters.date || ""}
                             onChange={(e) => {
                                 router.get(
-                                    route("locator-slips"),
+                                    route(filterRoute),
                                     {
+                                        ...filterParams,
                                         date: e.target.value,
                                     },
                                     {
@@ -61,7 +68,9 @@ const LocatorSlipTable = ({ slips = [], filters = {}, locator_slips = {} }) => {
                     </div>
 
                     <button
-                        onClick={() => router.get(route("locator-slips"))}
+                        onClick={() =>
+                            router.get(route(filterRoute), filterParams)
+                        }
                         className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                     >
                         Reset Filter

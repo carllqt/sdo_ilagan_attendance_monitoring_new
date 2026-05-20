@@ -5,16 +5,14 @@ import { Head, Link } from "@inertiajs/react";
 import { motion } from "framer-motion";
 import {
     ArrowLeft,
-    CalendarDays,
     ClipboardPlus,
-    FileCheck2,
-    FileText,
     History,
+    Printer,
     ShieldCheck,
     Umbrella,
 } from "lucide-react";
 import ApplicationLeaveForm from "./Partials/ApplicationLeaveForm";
-import ApplicationLeaveTable from "./Partials/ApplicationLeaveTable";
+import ApplicationLeavePrintDialog from "./Partials/ApplicationLeavePrintDialog";
 
 const pageVariants = {
     hidden: { opacity: 0 },
@@ -33,48 +31,13 @@ const itemVariants = {
     },
 };
 
-const statCards = [
-    {
-        label: "Total Applications",
-        icon: FileText,
-        color: "text-blue-700",
-        getValue: ({ applicationCount }) => applicationCount,
-    },
-    {
-        label: "Latest Filing",
-        icon: CalendarDays,
-        color: "text-emerald-700",
-        getValue: ({ latestDate }) => latestDate,
-    },
-    {
-        label: "Latest Leave Type",
-        icon: FileCheck2,
-        color: "text-amber-600",
-        getValue: ({ latestApplication }) =>
-            latestApplication?.type_of_leave || "No leave type",
-    },
-];
-
 export default function ApplicationLeavePage({
-    leave_applications,
     employee = null,
-    filters = {},
+    created_application = null,
     success_message,
 }) {
     const [showForm, setShowForm] = useState(false);
-    const applications = leave_applications.data || [];
-    const applicationCount = leave_applications.total || 0;
-    const latestApplication = applications[0];
-    const latestDate = latestApplication?.date_of_filing
-        ? new Date(latestApplication.date_of_filing).toLocaleDateString(
-              "en-PH",
-              {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-              },
-          )
-        : "No records";
+    const [printOpen, setPrintOpen] = useState(false);
 
     return (
         <>
@@ -109,9 +72,19 @@ export default function ApplicationLeavePage({
                     {success_message && (
                         <motion.div
                             variants={itemVariants}
-                            className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
+                            className="mb-5 flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800 sm:flex-row sm:items-center sm:justify-between"
                         >
-                            {success_message}
+                            <span>{success_message}</span>
+                            {created_application && (
+                                <button
+                                    type="button"
+                                    onClick={() => setPrintOpen(true)}
+                                    className="inline-flex w-fit items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-800"
+                                >
+                                    <Printer className="h-4 w-4" />
+                                    Print / Download PDF
+                                </button>
+                            )}
                         </motion.div>
                     )}
 
@@ -162,52 +135,24 @@ export default function ApplicationLeavePage({
                                             <History className="h-5 w-5" />
                                         </div>
                                         <p className="mt-5 text-sm font-semibold text-slate-300">
-                                            Current Applications
+                                            Admin Monitoring
                                         </p>
                                         <p className="mt-1 text-5xl font-black">
-                                            {applicationCount}
+                                            Private
                                         </p>
                                     </div>
 
                                     <div className="mt-8 rounded-lg border border-white/10 bg-white/10 p-4">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                                            Latest leave type
+                                            Submitted records
                                         </p>
-                                        <p className="mt-2 truncate text-lg font-bold text-white">
-                                            {latestApplication?.type_of_leave ||
-                                                "No leave application yet"}
+                                        <p className="mt-2 text-lg font-bold text-white">
+                                            Available in Slip Monitoring
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
-
-                    <motion.div
-                        variants={itemVariants}
-                        className="mt-8 grid gap-4 md:grid-cols-3"
-                    >
-                        {statCards.map(
-                            ({ label, icon: Icon, color, getValue }) => (
-                                <motion.div
-                                    key={label}
-                                    whileHover={{ y: -4 }}
-                                    className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-                                >
-                                    <Icon className={`h-5 w-5 ${color}`} />
-                                    <p className="mt-4 text-sm font-semibold text-slate-500">
-                                        {label}
-                                    </p>
-                                    <p className="mt-1 truncate text-2xl font-black text-slate-950 sm:text-3xl">
-                                        {getValue({
-                                            applicationCount,
-                                            latestDate,
-                                            latestApplication,
-                                        })}
-                                    </p>
-                                </motion.div>
-                            ),
-                        )}
                     </motion.div>
 
                     {showForm && (
@@ -217,33 +162,11 @@ export default function ApplicationLeavePage({
                         />
                     )}
 
-                    <motion.div
-                        variants={itemVariants}
-                        className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
-                    >
-                        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-950">
-                                    Leave Application Records
-                                </h2>
-                                <p className="text-sm text-slate-500">
-                                    Recently submitted leave applications
-                                    appear here.
-                                </p>
-                            </div>
-                            <span className="inline-flex w-fit items-center rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                                {applicationCount}{" "}
-                                {applicationCount === 1 ? "record" : "records"}
-                            </span>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <ApplicationLeaveTable
-                                applications={applications}
-                                filters={filters}
-                                leaveApplications={leave_applications}
-                            />
-                        </div>
-                    </motion.div>
+                    <ApplicationLeavePrintDialog
+                        open={printOpen}
+                        onClose={() => setPrintOpen(false)}
+                        application={created_application}
+                    />
                 </motion.section>
             </main>
         </>

@@ -16,23 +16,9 @@ class ApplicationForLeaveController extends Controller
         $user = Auth::user();
         $employee = $user?->employee()->with('station', 'office')->first();
 
-        $leaveApplications = ApplicationForLeave::with('employee.station', 'employee.office')
-            ->when($employee, function ($query) use ($employee) {
-                $query->where('employee_id', $employee->id);
-            })
-            ->when($request->date, function ($query, $date) {
-                $query->whereDate('date_of_filing', $date);
-            })
-            ->orderByDesc('id')
-            ->paginate(10)
-            ->withQueryString();
-
         return Inertia::render('Employee/ApplicationLeave/ApplicationLeavePage', [
-            'leave_applications' => $leaveApplications,
             'employee' => $employee,
-            'filters' => [
-                'date' => $request->date,
-            ],
+            'created_application' => session('created_application'),
             'success_message' => session('success_message'),
             'error_message' => session('error_message'),
         ]);
@@ -64,13 +50,14 @@ class ApplicationForLeaveController extends Controller
             'commutation' => 'required|in:not_requested,requested',
         ]);
 
-        ApplicationForLeave::create([
+        $application = ApplicationForLeave::create([
             'employee_id' => $employee?->id,
             ...$validated,
         ]);
 
         return redirect()
             ->route('application-leave')
-            ->with('success_message', 'Application for Leave created successfully.');
+            ->with('success_message', 'Application for Leave created successfully.')
+            ->with('created_application', $application->load('employee.station', 'employee.office')->toArray());
     }
 }
