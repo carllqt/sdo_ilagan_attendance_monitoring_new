@@ -22,10 +22,14 @@ const line = (value = "", width = "150px") => (
     <span
         style={{
             display: "inline-block",
-            minWidth: width,
+            width,
+            maxWidth: "100%",
             borderBottom: "1px solid #000",
-            padding: "0 4px",
-            lineHeight: 1.2,
+            minHeight: "15px",
+            padding: "0 4px 3px",
+            lineHeight: 1,
+            boxSizing: "border-box",
+            verticalAlign: "bottom",
         }}
     >
         {value}
@@ -34,7 +38,7 @@ const line = (value = "", width = "150px") => (
 
 const cellStyle = {
     border: "1px solid #000",
-    padding: "5px 6px",
+    padding: "3px 5px",
     verticalAlign: "top",
 };
 
@@ -46,20 +50,78 @@ const headerCellStyle = {
     backgroundColor: "#f7f7f7",
 };
 
+const paperLayouts = {
+    legal: {
+        width: "816px",
+        minHeight: "1344px",
+        padding: "34px 50px",
+        fontSize: "10px",
+        headerTop: "10px",
+        sectionLineHeight: 1.5,
+    },
+    a4: {
+        width: "794px",
+        minHeight: "1123px",
+        padding: "20px 38px",
+        fontSize: "9px",
+        headerTop: "6px",
+        sectionLineHeight: 1.32,
+    },
+};
+
 const leaveTypes = [
-    "Vacation Leave",
-    "Mandatory/Forced Leave",
-    "Sick Leave",
-    "Maternity Leave",
-    "Paternity Leave",
-    "Special Privilege Leave",
-    "Solo Parent Leave",
-    "Study Leave",
-    "10-Day VAWC Leave",
-    "Rehabilitation Privilege",
-    "Special Leave Benefits for Women",
-    "Special Emergency (Calamity) Leave",
-    "Adoption Leave",
+    {
+        label: "Vacation Leave",
+        detail: "(Sec. 51, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+    },
+    {
+        label: "Mandatory/Forced Leave",
+        detail: "(Sec. 25, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+    },
+    {
+        label: "Sick Leave",
+        detail: "(Sec. 43, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+    },
+    {
+        label: "Maternity Leave",
+        detail: "(R.A. No. 11210 / IRR issued by CSC, DOLE and SSS)",
+    },
+    {
+        label: "Paternity Leave",
+        detail: "(R.A. No. 8187 / CSC MC No. 71, s. 1998, as amended)",
+    },
+    {
+        label: "Special Privilege Leave",
+        detail: "(Sec. 21, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+    },
+    {
+        label: "Solo Parent Leave",
+        detail: "(R.A. No. 8972 / CSC MC No. 8, s. 2004)",
+    },
+    {
+        label: "Study Leave",
+        detail: "(Sec. 68, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+    },
+    {
+        label: "10-Day VAWC Leave",
+        detail: "(RA No. 9262 / CSC MC No. 15, s. 2005)",
+    },
+    {
+        label: "Rehabilitation Privilege",
+        detail: "(Sec. 55, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+    },
+    {
+        label: "Special Leave Benefits for Women",
+        detail: "(RA No. 9710 / CSC MC No. 25, s. 2010)",
+    },
+    {
+        label: "Special Emergency (Calamity) Leave",
+        detail: "(CSC MC No. 2, s. 2012, as amended)",
+    },
+    {
+        label: "Adoption Leave",
+        detail: "(R.A. No. 8552)",
+    },
 ];
 
 const ApplicationLeaveReport = React.forwardRef(
@@ -82,27 +144,51 @@ const ApplicationLeaveReport = React.forwardRef(
             workingDays = "",
             inclusiveDates = "",
             commutation = "",
+            recommendingOfficerName = "MARY ANN M. BELTRAN, LIB, PhD.",
+            recommendingOfficerTitle = "Administrative Officer V",
+            approvingOfficerName = "CHERYL R. RAMIRO, PhD, CESO VI",
+            approvingOfficerTitle = "ASSISTANT SCHOOLS DIVISION SUPERINTENDENT",
+            paperSize = "legal",
         },
         ref,
     ) => {
-        const nameParts = String(employeeName).trim().split(/\s+/);
-        const firstName = nameParts.length > 1 ? nameParts[0] : "";
+        const layout = paperLayouts[paperSize] || paperLayouts.legal;
+        const rawName = String(employeeName).replace(/\s+/g, " ").trim();
+        const commaNameParts = rawName.split(",").map((part) => part.trim());
+        const nameParts =
+            commaNameParts.length > 1
+                ? commaNameParts[1].split(/\s+/)
+                : rawName.split(/\s+/);
         const lastName =
-            nameParts.length > 1
+            commaNameParts.length > 1
+                ? commaNameParts[0]
+                : nameParts.length > 1
+                  ? nameParts[nameParts.length - 1]
+                  : rawName;
+        const firstName =
+            commaNameParts.length > 1
+                ? nameParts[0] || ""
+                : nameParts.length > 1
+                  ? nameParts[0]
+                  : "";
+        const middleName =
+            commaNameParts.length > 1
                 ? nameParts.slice(1).join(" ")
-                : employeeName;
+                : nameParts.length > 2
+                  ? nameParts.slice(1, -1).join(" ")
+                  : "";
 
         return (
             <div
                 ref={ref}
                 style={{
-                    width: "794px",
-                    minHeight: "1123px",
+                    width: layout.width,
+                    minHeight: layout.minHeight,
                     backgroundColor: "#fff",
                     color: "#000",
                     fontFamily: "Arial, Helvetica, sans-serif",
-                    fontSize: "10.5px",
-                    padding: "22px 50px",
+                    fontSize: layout.fontSize,
+                    padding: layout.padding,
                     boxSizing: "border-box",
                     margin: "0 auto",
                 }}
@@ -118,7 +204,7 @@ const ApplicationLeaveReport = React.forwardRef(
                         display: "grid",
                         gridTemplateColumns: "90px 1fr 90px",
                         alignItems: "center",
-                        marginTop: "8px",
+                        marginTop: layout.headerTop,
                     }}
                 >
                     <img
@@ -162,7 +248,7 @@ const ApplicationLeaveReport = React.forwardRef(
                         <div
                             style={{
                                 marginTop: "5px",
-                                fontSize: "20px",
+                                fontSize: "21px",
                                 fontWeight: "bold",
                                 letterSpacing: 0,
                             }}
@@ -188,29 +274,31 @@ const ApplicationLeaveReport = React.forwardRef(
                                 <br />
                                 {line(officeDepartment, "180px")}
                             </td>
-                            <td style={{ ...cellStyle, width: "44%" }}>
+                            <td colSpan={2} style={{ ...cellStyle, width: "66%" }}>
                                 2. NAME
-                                <span style={{ marginLeft: "35px" }}>
+                                <span style={{ marginLeft: "85px" }}>
                                     (Last)
                                 </span>
-                                <span style={{ marginLeft: "58px" }}>
+                                <span style={{ marginLeft: "95px" }}>
                                     (First)
                                 </span>
-                                <span style={{ marginLeft: "55px" }}>
+                                <span style={{ marginLeft: "95px" }}>
                                     (Middle)
                                 </span>
                                 <br />
-                                {line(lastName, "92px")} {line(firstName, "92px")}{" "}
-                                {line("", "78px")}
+                                {line(lastName, "145px")} {line(firstName, "145px")}{" "}
+                                {line(middleName, "125px")}
                             </td>
-                            <td style={cellStyle}>5. SALARY {line(salary, "72px")}</td>
                         </tr>
                         <tr>
                             <td style={cellStyle}>
                                 3. DATE OF FILING {line(dateOfFiling, "120px")}
                             </td>
-                            <td colSpan={2} style={cellStyle}>
-                                4. POSITION {line(position, "245px")}
+                            <td style={cellStyle}>
+                                4. POSITION {line(position, "185px")}
+                            </td>
+                            <td style={cellStyle}>
+                                5. SALARY {line(salary, "105px")}
                             </td>
                         </tr>
                         <tr>
@@ -221,11 +309,19 @@ const ApplicationLeaveReport = React.forwardRef(
                         <tr>
                             <td colSpan={2} style={{ ...cellStyle, width: "50%" }}>
                                 <b>6.A TYPE OF LEAVE TO BE AVAILED OF</b>
-                                <div style={{ marginTop: "8px", lineHeight: 1.55 }}>
+                                <div
+                                    style={{
+                                        marginTop: "8px",
+                                        lineHeight: layout.sectionLineHeight,
+                                    }}
+                                >
                                     {leaveTypes.map((leaveType) => (
-                                        <div key={leaveType}>
-                                            {box(typeOfLeave === leaveType)}
-                                            {leaveType}
+                                        <div key={leaveType.label}>
+                                            {box(typeOfLeave === leaveType.label)}
+                                            <span>{leaveType.label}</span>{" "}
+                                            <span style={{ fontSize: "6.7px" }}>
+                                                {leaveType.detail}
+                                            </span>
                                         </div>
                                     ))}
                                     <div style={{ marginTop: "18px" }}>
@@ -235,7 +331,13 @@ const ApplicationLeaveReport = React.forwardRef(
                             </td>
                             <td style={cellStyle}>
                                 <b>6.B DETAILS OF LEAVE</b>
-                                <div style={{ marginTop: "8px", lineHeight: 1.55 }}>
+                                <div
+                                    style={{
+                                        marginTop: "8px",
+                                        lineHeight:
+                                            layout.sectionLineHeight + 0.05,
+                                    }}
+                                >
                                     <i>
                                         In case of Vacation/Special Privilege
                                         Leave:
@@ -422,10 +524,10 @@ const ApplicationLeaveReport = React.forwardRef(
                                 </div>
                                 <div style={{ marginTop: "48px", textAlign: "center" }}>
                                     <b>
-                                        <u>MARY ANN M. BELTRAN, LIB, PhD.</u>
+                                        <u>{recommendingOfficerName}</u>
                                     </b>
                                     <br />
-                                    Administrative Officer V
+                                    {recommendingOfficerTitle}
                                 </div>
                             </td>
                         </tr>
@@ -440,14 +542,16 @@ const ApplicationLeaveReport = React.forwardRef(
                                     {line("", "70px")} others (Specify)
                                 </div>
                             </td>
-                            <td style={cellStyle}>
+                            <td style={{ ...cellStyle, height: "90px" }}>
                                 <b>7.D DISAPPROVED DUE TO:</b>
                                 <br />
-                                {line("", "250px")}
-                                <br />
-                                {line("", "250px")}
-                                <br />
-                                {line("", "250px")}
+                                <div style={{ marginTop: "8px", lineHeight: 1.8 }}>
+                                    {line("", "92%")}
+                                    <br />
+                                    {line("", "92%")}
+                                    <br />
+                                    {line("", "92%")}
+                                </div>
                             </td>
                         </tr>
                         <tr>
@@ -462,10 +566,10 @@ const ApplicationLeaveReport = React.forwardRef(
                                 }}
                             >
                                 <b>
-                                    <u>CHERYL R. RAMIRO, PhD, CESO VI</u>
+                                    <u>{approvingOfficerName}</u>
                                 </b>
                                 <br />
-                                ASSISTANT SCHOOLS DIVISION SUPERINTENDENT
+                                {approvingOfficerTitle}
                             </td>
                         </tr>
                     </tbody>

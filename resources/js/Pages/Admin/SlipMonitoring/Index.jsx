@@ -6,9 +6,28 @@ import TravelOrderTable from "@/Pages/Employee/TravelOrder/Partials/TravelOrderT
 import ApplicationLeaveTable from "@/Pages/Employee/ApplicationLeave/Partials/ApplicationLeaveTable";
 
 const slipTypes = [
-    { value: "locator-slip", label: "LocatorSlip" },
-    { value: "travel-order", label: "TravelOrder" },
-    { value: "application-leave", label: "ApplicationLeave" },
+    { value: "locator-slip", label: "Locator Slip" },
+    { value: "travel-order", label: "Travel Order" },
+    { value: "application-leave", label: "Application for Leave" },
+];
+
+const countCards = [
+    {
+        key: "locatorSlipsToday",
+        label: "Locator Slips Today",
+    },
+    {
+        key: "travelOrdersThisMonth",
+        label: "Travel Orders This Month",
+    },
+    {
+        key: "leaveApplicationsThisMonth",
+        label: "Leave Applications This Month",
+    },
+    {
+        key: "totalRecords",
+        label: "Total Records",
+    },
 ];
 
 export default function Index({
@@ -17,6 +36,7 @@ export default function Index({
     travel_orders = null,
     leave_applications = null,
     filters = {},
+    dashboardCounts = {},
 }) {
     const handleTypeChange = (type) => {
         router.get(
@@ -65,6 +85,22 @@ export default function Index({
                     </div>
                 </div>
 
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {countCards.map((card) => (
+                        <div
+                            key={card.key}
+                            className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+                        >
+                            <p className="text-sm font-semibold text-slate-500">
+                                {card.label}
+                            </p>
+                            <p className="mt-2 text-3xl font-black text-slate-950">
+                                {dashboardCounts[card.key] ?? 0}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+
                 {selectedType === "locator-slip" && locator_slips && (
                     <LocatorSlipTable
                         slips={locator_slips.data || []}
@@ -76,12 +112,13 @@ export default function Index({
                 )}
 
                 {selectedType === "travel-order" && travel_orders && (
-                    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-                        <TravelOrderTable
-                            travelOrders={travel_orders.data || []}
-                            pagination={travel_orders}
-                        />
-                    </div>
+                    <TravelOrderTable
+                        travelOrders={travel_orders.data || []}
+                        pagination={travel_orders}
+                        filters={filters}
+                        filterRoute="slip-monitoring.index"
+                        filterParams={{ type: selectedType }}
+                    />
                 )}
 
                 {selectedType === "application-leave" &&

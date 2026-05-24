@@ -12,17 +12,38 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/Components/ui/button";
-import { Printer } from "lucide-react";
+import { Briefcase, FileText, Printer, User } from "lucide-react";
 import ApplicationLeaveReport from "@/Pages/DocumentsFormats/ApplicationLeaveReport";
+import FloatingInput from "@/components/floating-input";
+
+const paperSizeOptions = {
+    legal: { label: "Legal", width: 816, height: 1344, previewScale: 0.66 },
+    a4: { label: "A4", width: 794, height: 1123, previewScale: 0.72 },
+};
 
 const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
     const previewRef = useRef(null);
     const pdfRef = useRef(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [paperSize, setPaperSize] = useState("legal");
+    const [signatories, setSignatories] = useState({
+        recommendingOfficerName: "MARY ANN M. BELTRAN, LIB, PhD.",
+        recommendingOfficerTitle: "Administrative Officer V",
+        approvingOfficerName: "CHERYL R. RAMIRO, PhD, CESO VI",
+        approvingOfficerTitle: "ASSISTANT SCHOOLS DIVISION SUPERINTENDENT",
+    });
+
+    const updateSignatory = (field, value) => {
+        setSignatories((current) => ({
+            ...current,
+            [field]: value,
+        }));
+    };
 
     const handleDownloadPDF = async () => {
         if (!pdfRef.current || !application) return;
 
+        const selectedPaper = paperSizeOptions[paperSize];
         setIsGenerating(true);
         await new Promise((resolve) => setTimeout(resolve, 150));
 
@@ -43,7 +64,7 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
                 },
                 jsPDF: {
                     unit: "px",
-                    format: [794, 1123],
+                    format: [selectedPaper.width, selectedPaper.height],
                     orientation: "portrait",
                 },
             })
@@ -63,6 +84,7 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
         "";
 
     const reportProps = {
+        paperSize,
         officeDepartment: application.office_department || "",
         employeeName: fullName,
         dateOfFiling: application.date_of_filing
@@ -82,7 +104,9 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
         workingDays: application.working_days || "",
         inclusiveDates: application.inclusive_dates || "",
         commutation: application.commutation || "",
+        ...signatories,
     };
+    const selectedPaper = paperSizeOptions[paperSize];
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -95,10 +119,87 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="max-h-[65vh] overflow-auto rounded-md border bg-gray-100 p-3">
+                <div className="grid gap-3 rounded-md border bg-white p-3 md:grid-cols-2">
+                    <label className="flex h-12 items-center gap-2 rounded-md border px-3 text-sm text-gray-700">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        <span className="shrink-0 font-medium">Paper</span>
+                        <select
+                            value={paperSize}
+                            onChange={(event) => setPaperSize(event.target.value)}
+                            className="h-9 flex-1 rounded-md border border-gray-300 bg-white px-2 text-sm outline-none focus:border-blue-500"
+                        >
+                            {Object.entries(paperSizeOptions).map(
+                                ([value, option]) => (
+                                    <option key={value} value={value}>
+                                        {option.label}
+                                    </option>
+                                ),
+                            )}
+                        </select>
+                    </label>
+                    <FloatingInput
+                        label="7.B Officer Name"
+                        icon={User}
+                        name="recommending_officer_name"
+                        value={signatories.recommendingOfficerName}
+                        onChange={(e) =>
+                            updateSignatory(
+                                "recommendingOfficerName",
+                                e.target.value,
+                            )
+                        }
+                    />
+                    <FloatingInput
+                        label="7.B Officer Position"
+                        icon={Briefcase}
+                        name="recommending_officer_title"
+                        value={signatories.recommendingOfficerTitle}
+                        onChange={(e) =>
+                            updateSignatory(
+                                "recommendingOfficerTitle",
+                                e.target.value,
+                            )
+                        }
+                    />
+                    <FloatingInput
+                        label="Approving Officer Name"
+                        icon={User}
+                        name="approving_officer_name"
+                        value={signatories.approvingOfficerName}
+                        onChange={(e) =>
+                            updateSignatory(
+                                "approvingOfficerName",
+                                e.target.value,
+                            )
+                        }
+                    />
+                    <FloatingInput
+                        label="Approving Officer Position"
+                        icon={Briefcase}
+                        name="approving_officer_title"
+                        value={signatories.approvingOfficerTitle}
+                        onChange={(e) =>
+                            updateSignatory(
+                                "approvingOfficerTitle",
+                                e.target.value,
+                            )
+                        }
+                    />
+                </div>
+
+                <div className="max-h-[55vh] overflow-auto rounded-md border bg-gray-100 p-3">
                     <div className="flex justify-center">
-                        <div className="origin-top scale-[0.72] sm:scale-[0.82]">
-                            <div className="w-[794px] bg-white shadow">
+                        <div
+                            className="origin-top"
+                            style={{
+                                transform: `scale(${selectedPaper.previewScale})`,
+                                transformOrigin: "top center",
+                            }}
+                        >
+                            <div
+                                className="bg-white shadow"
+                                style={{ width: `${selectedPaper.width}px` }}
+                            >
                                 <ApplicationLeaveReport
                                     ref={previewRef}
                                     {...reportProps}
@@ -128,7 +229,10 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
                 </DialogFooter>
 
                 <div className="fixed -left-[10000px] top-0 z-[-1]">
-                    <div className="w-[794px] bg-white">
+                    <div
+                        className="bg-white"
+                        style={{ width: `${selectedPaper.width}px` }}
+                    >
                         <ApplicationLeaveReport ref={pdfRef} {...reportProps} />
                     </div>
                 </div>
