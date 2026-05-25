@@ -110,8 +110,8 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-hidden p-4">
-                <DialogHeader className="pb-2">
+            <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-4xl flex-col overflow-hidden p-4">
+                <DialogHeader className="shrink-0 pb-2">
                     <DialogTitle>Application for Leave Preview</DialogTitle>
                     <DialogDescription>
                         Preview and download the leave application before
@@ -119,7 +119,7 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid gap-3 rounded-md border bg-white p-3 md:grid-cols-2">
+                <div className="grid shrink-0 gap-3 rounded-md border bg-white p-3 md:grid-cols-2">
                     <label className="flex h-12 items-center gap-2 rounded-md border px-3 text-sm text-gray-700">
                         <FileText className="h-4 w-4 text-gray-500" />
                         <span className="shrink-0 font-medium">Paper</span>
@@ -187,7 +187,7 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
                     />
                 </div>
 
-                <div className="max-h-[55vh] overflow-auto rounded-md border bg-gray-100 p-3">
+                <div className="min-h-0 flex-1 overflow-auto rounded-md border bg-gray-100 p-3">
                     <div className="flex justify-center">
                         <div
                             className="origin-top"
@@ -209,8 +209,9 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
                     </div>
                 </div>
 
-                <DialogFooter className="mt-4 flex justify-end gap-2">
+                <DialogFooter className="mt-4 shrink-0 border-t border-gray-200 bg-white pt-3 sm:justify-end">
                     <Button
+                        type="button"
                         variant="outline"
                         onClick={onClose}
                         disabled={isGenerating}
@@ -219,6 +220,7 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
                     </Button>
 
                     <Button
+                        type="button"
                         variant="blue"
                         onClick={handleDownloadPDF}
                         disabled={isGenerating}

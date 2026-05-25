@@ -69,12 +69,15 @@ export default function ApplicationLeavePage({
                     animate="visible"
                     className="mx-auto max-w-7xl px-5 py-8 sm:py-10"
                 >
-                    {success_message && (
+                    {(success_message || created_application) && (
                         <motion.div
                             variants={itemVariants}
                             className="mb-5 flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800 sm:flex-row sm:items-center sm:justify-between"
                         >
-                            <span>{success_message}</span>
+                            <span>
+                                {success_message ||
+                                    "Application for Leave is ready for PDF download."}
+                            </span>
                             {created_application && (
                                 <button
                                     type="button"
