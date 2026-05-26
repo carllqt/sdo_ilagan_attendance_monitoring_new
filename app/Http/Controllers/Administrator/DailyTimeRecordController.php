@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Administrator;
 use App\Data\Administrator\DailyTimeRecordListFilter\DailyTimeRecordFilter;
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Administrator\DailyTimeRecord\{
+    RecomputeDtrRequest,
+    UndoRecomputeDtrRequest,
+    WorkScheduleRequest,
+    WorkTypeRequest,
+};
 use App\Models\Administrator\WorkSchedule;
 use App\Models\Administrator\WorkType;
 use App\Services\Administrator\DailyTimeRecord\DailyTimeRecordService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class DailyTimeRecordController extends Controller
@@ -58,12 +63,9 @@ class DailyTimeRecordController extends Controller
         );
     }
 
-    public function recompute(Request $request, $employeeId)
+    public function recompute(RecomputeDtrRequest $request, $employeeId)
     {
-        $validated = $request->validate([
-            'from' => ['required', 'date'],
-            'to' => ['required', 'date', 'after_or_equal:from'],
-        ]);
+        $validated = $request->validated();
 
         $undoToken = $this->dailyTimeRecords->recomputeEmployeeDateRange(
             (int) $employeeId,
@@ -78,11 +80,9 @@ class DailyTimeRecordController extends Controller
         ]);
     }
 
-    public function undoRecompute(Request $request, $employeeId)
+    public function undoRecompute(UndoRecomputeDtrRequest $request, $employeeId)
     {
-        $validated = $request->validate([
-            'token' => ['required', 'string'],
-        ]);
+        $validated = $request->validated();
 
         $this->dailyTimeRecords->undoRecomputeEmployeeDateRange(
             (int) $employeeId,
@@ -93,17 +93,17 @@ class DailyTimeRecordController extends Controller
         return back();
     }
 
-    public function storeWorkType(Request $request)
+    public function storeWorkType(WorkTypeRequest $request)
     {
-        $this->dailyTimeRecords->storeWorkType($this->validateWorkType($request));
+        $this->dailyTimeRecords->storeWorkType($request->validated());
 
         return back()->with('success', 'Work type added successfully.');
     }
 
-    public function updateWorkType(Request $request, WorkType $workType)
+    public function updateWorkType(WorkTypeRequest $request, WorkType $workType)
     {
         $this->ensureValidPassword($request);
-        $this->dailyTimeRecords->updateWorkType($workType, $this->validateWorkType($request));
+        $this->dailyTimeRecords->updateWorkType($workType, $request->validated());
 
         return back()->with('success', 'Work type updated successfully.');
     }
@@ -123,17 +123,17 @@ class DailyTimeRecordController extends Controller
             ->with('success', 'Work type deleted successfully.');
     }
 
-    public function storeWorkSchedule(Request $request)
+    public function storeWorkSchedule(WorkScheduleRequest $request)
     {
-        $this->dailyTimeRecords->storeWorkSchedule($this->validateWorkSchedule($request));
+        $this->dailyTimeRecords->storeWorkSchedule($request->validated());
 
         return back()->with('success', 'Work schedule added successfully.');
     }
 
-    public function updateWorkSchedule(Request $request, WorkSchedule $workSchedule)
+    public function updateWorkSchedule(WorkScheduleRequest $request, WorkSchedule $workSchedule)
     {
         $this->ensureValidPassword($request);
-        $this->dailyTimeRecords->updateWorkSchedule($workSchedule, $this->validateWorkSchedule($request));
+        $this->dailyTimeRecords->updateWorkSchedule($workSchedule, $request->validated());
 
         return back()->with('success', 'Work schedule updated successfully.');
     }
@@ -177,20 +177,4 @@ class DailyTimeRecordController extends Controller
         return (int) $stationId;
     }
 
-    private function validateWorkType(Request $request): array
-    {
-        return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
-    }
-
-    private function validateWorkSchedule(Request $request): array
-    {
-        return $request->validate([
-            'work_type_id' => ['required', Rule::exists('work_types', 'id')],
-            'name' => ['required', 'string', 'max:255'],
-            'time_in' => ['required', 'date_format:H:i'],
-            'time_out' => ['required', 'date_format:H:i'],
-        ]);
-    }
 }

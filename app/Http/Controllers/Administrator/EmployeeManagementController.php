@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Administrator;
 
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Administrator\EmployeeManagement\StoreEmployeeRequest;
-use App\Http\Requests\Administrator\EmployeeManagement\UpdateEmployeeRequest;
+use App\Http\Requests\Administrator\EmployeeManagement\{StoreEmployeeRequest, UpdateEmployeeRequest};
 use App\Services\Administrator\EmployeeManagementService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;

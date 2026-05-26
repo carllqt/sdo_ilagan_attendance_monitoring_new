@@ -47,7 +47,7 @@ class TardinessRecordController extends Controller
             })
             ->values();
 
-        return Inertia::render('Admin/TardySummary/TardySummary', [
+        return Inertia::render('Admin/TardinessSummaryManagement/TardySummary', [
             'summary' => $records,
         ]);
     }
