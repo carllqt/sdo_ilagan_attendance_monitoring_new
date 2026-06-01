@@ -5,13 +5,15 @@ namespace App\Http\Controllers\Administrator;
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
 use App\Data\Administrator\DepartmentManagementListFilter\DepartmentEmployeeCandidateFilter;
-use App\Http\Requests\Administrator\DepartmentManagement\DepartmentEmployeeCandidateRequest;
-use App\Http\Requests\Administrator\DepartmentManagement\StoreDivisionHeadRequest;
-use App\Http\Requests\Administrator\DepartmentManagement\StoreDivisionRequest;
-use App\Http\Requests\Administrator\DepartmentManagement\StoreOfficeHeadRequest;
-use App\Http\Requests\Administrator\DepartmentManagement\StoreOfficeRequest;
-use App\Http\Requests\Administrator\DepartmentManagement\UpdateDivisionRequest;
-use App\Http\Requests\Administrator\DepartmentManagement\UpdateOfficeRequest;
+use App\Http\Requests\Administrator\DepartmentManagement\{
+    DepartmentEmployeeCandidateRequest,
+    StoreDivisionHeadRequest,
+    StoreDivisionRequest,
+    StoreOfficeHeadRequest,
+    StoreOfficeRequest,
+    UpdateDivisionRequest,
+    UpdateOfficeRequest,
+};
 use App\Services\Administrator\DepartmentManagementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

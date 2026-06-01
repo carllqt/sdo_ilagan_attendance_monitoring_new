@@ -141,3 +141,4 @@ export default function Index({
         </AuthenticatedLayout>
     );
 }
+

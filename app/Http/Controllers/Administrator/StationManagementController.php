@@ -6,11 +6,13 @@ use App\Data\Administrator\StationManagementListFilter\StationEmployeeCandidateF
 use App\Data\Administrator\StationManagementListFilter\StationPageFilter;
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Administrator\StationManagement\StationEmployeeCandidateRequest;
-use App\Http\Requests\Administrator\StationManagement\StoreStationAdminRequest;
-use App\Http\Requests\Administrator\StationManagement\StoreStationRequest;
-use App\Http\Requests\Administrator\StationManagement\UpdateStationAssignmentRequest;
-use App\Http\Requests\Administrator\StationManagement\UpdateStationRequest;
+use App\Http\Requests\Administrator\StationManagement\{
+    UpdateStationRequest,
+    UpdateStationAssignmentRequest,
+    StoreStationRequest,
+    StationEmployeeCandidateRequest,
+    StoreStationAdminRequest,
+};
 use App\Models\Administrator\Station;
 use App\Models\Administrator\StationAssignment;
 use App\Services\Administrator\StationManagementService;

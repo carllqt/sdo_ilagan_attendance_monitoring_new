@@ -88,3 +88,4 @@ const useEmployeeSearchSuggestions = ({
 };
 
 export default useEmployeeSearchSuggestions;
+
