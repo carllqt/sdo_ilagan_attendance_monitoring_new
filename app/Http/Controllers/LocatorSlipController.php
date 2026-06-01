@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Models\User;
 use App\Models\LocatorSlip;
+use App\Models\Administrator\Employee;
 use Carbon\Carbon;
 
 class LocatorSlipController extends Controller
@@ -27,11 +28,8 @@ class LocatorSlipController extends Controller
 
     public function store(Request $request)
     {
-        /** @var User|null $user */
-        $user = Auth::user();
-        $employee = $user?->employee;
-
         $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
             'employee_name' => 'required|string|max:255',
             'position' => 'required|string|max:255',
             'permanent_station' => 'required|string|max:255',
@@ -41,11 +39,14 @@ class LocatorSlipController extends Controller
             'travel_datetime' => 'required|date',
         ]);
 
+        $selectedEmployee = Employee::with('station')
+            ->findOrFail($validated['employee_id']);
+
         $locatorSlip = LocatorSlip::create([
-            'employee_id' => $employee?->id,
-            'employee_name' => $validated['employee_name'],
-            'position' => $validated['position'],
-            'permanent_station' => $validated['permanent_station'],
+            'employee_id' => $selectedEmployee->id,
+            'employee_name' => $selectedEmployee->full_name,
+            'position' => $selectedEmployee->position,
+            'permanent_station' => $selectedEmployee->station?->name ?? $validated['permanent_station'],
             'purpose_of_travel' => $validated['purpose_of_travel'],
             'destination' => $validated['destination'],
             'travel_type' => $validated['travel_type'],

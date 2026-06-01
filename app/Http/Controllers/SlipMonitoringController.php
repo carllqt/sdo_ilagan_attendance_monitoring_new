@@ -2,15 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Models\ApplicationForLeave;
 use App\Models\LocatorSlip;
 use App\Models\TravelOrder;
+use App\Services\DtrAdjustmentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SlipMonitoringController extends Controller
 {
+    use ValidatesPassword;
+
+    public function __construct(private readonly DtrAdjustmentService $dtrAdjustmentService) {}
+
     public function index(Request $request)
     {
         $selectedType = $this->resolveType($request);
@@ -196,6 +203,97 @@ class SlipMonitoringController extends Controller
             ->orWhereHas('station', function ($stationQuery) use ($search) {
                 $stationQuery->where('name', 'like', "%{$search}%");
             });
+    }
+
+    public function destroy(Request $request, string $type, int $id)
+    {
+        $this->ensureValidPassword($request);
+
+        $model = match ($type) {
+            'locator-slip' => LocatorSlip::class,
+            'travel-order' => TravelOrder::class,
+            'application-leave' => ApplicationForLeave::class,
+            default => null,
+        };
+
+        abort_if($model === null, 404);
+
+        $record = $model::query()->findOrFail($id);
+        $this->dtrAdjustmentService->removeSourceEntries($model, $record->id);
+        $record->delete();
+
+        return back()->with('success', 'Slip record deleted successfully.');
+    }
+
+    public function destroyMany(Request $request, string $type)
+    {
+        $this->ensureValidPassword($request);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $model = match ($type) {
+            'locator-slip' => LocatorSlip::class,
+            'travel-order' => TravelOrder::class,
+            'application-leave' => ApplicationForLeave::class,
+            default => null,
+        };
+
+        abort_if($model === null, 404);
+
+        $records = $model::query()
+            ->whereIn('id', $validated['ids'])
+            ->get(['id']);
+
+        foreach ($records as $record) {
+            $this->dtrAdjustmentService->removeSourceEntries($model, $record->id);
+        }
+
+        $deletedCount = $model::query()
+            ->whereIn('id', $records->pluck('id'))
+            ->delete();
+
+        return back()->with(
+            'success',
+            "{$deletedCount} slip record(s) deleted successfully.",
+        );
+    }
+
+    public function updateStatus(Request $request, string $type, int $id)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:approved,rejected,cancelled,pending'],
+        ]);
+
+        $model = match ($type) {
+            'locator-slip' => LocatorSlip::class,
+            'travel-order' => TravelOrder::class,
+            'application-leave' => ApplicationForLeave::class,
+            default => null,
+        };
+
+        abort_if($model === null, 404);
+
+        $record = $model::query()->findOrFail($id);
+        $record->forceFill([
+            'status' => $validated['status'],
+            'approved_by' => $validated['status'] === 'approved' ? Auth::id() : null,
+            'approved_at' => $validated['status'] === 'approved' ? now() : null,
+        ])->save();
+
+        $this->dtrAdjustmentService->removeSourceEntries($model, $record->id);
+
+        if ($validated['status'] === 'approved') {
+            match ($type) {
+                'locator-slip' => $this->dtrAdjustmentService->syncFromLocatorSlip($record),
+                'travel-order' => $this->dtrAdjustmentService->syncFromTravelOrder($record),
+                'application-leave' => $this->dtrAdjustmentService->syncFromApplicationForLeave($record),
+            };
+        }
+
+        return back()->with('success', 'Request status updated successfully.');
     }
 
 }
