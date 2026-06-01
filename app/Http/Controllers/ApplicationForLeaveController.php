@@ -26,9 +26,6 @@ class ApplicationForLeaveController extends Controller
 
     public function store(Request $request)
     {
-        $user = Auth::user();
-        $employee = $user?->employee;
-
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'employee_name' => 'required|string|max:255',
@@ -51,7 +48,7 @@ class ApplicationForLeaveController extends Controller
         ]);
 
         $selectedEmployee = Employee::with('station', 'office')
-            ->findOrFail($employee?->id ?? $validated['employee_id']);
+            ->findOrFail($validated['employee_id']);
 
         $application = ApplicationForLeave::create([
             ...$validated,

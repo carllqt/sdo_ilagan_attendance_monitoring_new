@@ -28,10 +28,6 @@ class LocatorSlipController extends Controller
 
     public function store(Request $request)
     {
-        /** @var User|null $user */
-        $user = Auth::user();
-        $employee = $user?->employee;
-
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'employee_name' => 'required|string|max:255',
@@ -44,7 +40,7 @@ class LocatorSlipController extends Controller
         ]);
 
         $selectedEmployee = Employee::with('station')
-            ->findOrFail($employee?->id ?? $validated['employee_id']);
+            ->findOrFail($validated['employee_id']);
 
         $locatorSlip = LocatorSlip::create([
             'employee_id' => $selectedEmployee->id,
