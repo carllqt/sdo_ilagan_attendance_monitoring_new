@@ -3,18 +3,39 @@ import { router } from "@inertiajs/react";
 import {
     blueBlackPalette,
     closeDepartmentModalParams,
-    ITEMS_PER_PAGE,
-    paginateItems,
 } from "../utils";
 import { sortAlphabetically } from "@/lib/utils";
+import { buildPaginationItems } from "@/Components/PaginationMain";
 
-const useDepartmentList = ({ offices, office_heads }) => {
-    const [officePage, setOfficePage] = useState(1);
-    const [divisionPage, setDivisionPage] = useState(1);
+const useDepartmentList = ({
+    divisionLimit,
+    divisionList,
+    initialDivisionPage = 1,
+    officeLimit,
+    officeList,
+    offices,
+    office_heads,
+}) => {
     const [chartReady, setChartReady] = useState(false);
+    const [officeLoading, setOfficeLoading] = useState(false);
+    const [divisionLoading, setDivisionLoading] = useState(false);
     const sortedOffices = useMemo(
         () => sortAlphabetically(offices, "name"),
         [offices],
+    );
+    const officeRows = officeList?.data || [];
+    const officePage = officeList?.current_page || 1;
+    const totalOfficePages = officeList?.last_page || 1;
+    const officePaginationItems = useMemo(
+        () => buildPaginationItems(officePage, totalOfficePages),
+        [officePage, totalOfficePages],
+    );
+    const divisionRows = divisionList?.data || [];
+    const divisionPage = divisionList?.current_page || initialDivisionPage || 1;
+    const totalDivisionPages = divisionList?.last_page || 1;
+    const divisionPaginationItems = useMemo(
+        () => buildPaginationItems(divisionPage, totalDivisionPages),
+        [divisionPage, totalDivisionPages],
     );
     const assignedCount = sortedOffices.filter((office) =>
         office_heads.some((head) => head.employee?.office_id === office.id),
@@ -80,6 +101,47 @@ const useDepartmentList = ({ offices, office_heads }) => {
         return () => clearTimeout(timer);
     }, []);
 
+    const loadOfficeList = ({ page = officePage } = {}) => {
+        const query = new URLSearchParams(window.location.search);
+
+        query.set("office_page", page);
+        query.set("limit", officeLimit);
+        query.delete("organization_search");
+
+        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+            only: ["officeList", "officeLimit"],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            onStart: () => setOfficeLoading(true),
+            onFinish: () => setOfficeLoading(false),
+        });
+    };
+
+    const handleOfficePageChange = (page) => {
+        if (page < 1 || page > totalOfficePages) return;
+
+        loadOfficeList({ page });
+    };
+
+    const handleDivisionPageChange = (page) => {
+        if (page < 1 || page > totalDivisionPages) return;
+
+        const query = new URLSearchParams(window.location.search);
+
+        query.set("division_page", page);
+        query.set("division_limit", divisionLimit);
+
+        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+            only: ["divisionList", "divisionPage", "divisionLimit"],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            onStart: () => setDivisionLoading(true),
+            onFinish: () => setDivisionLoading(false),
+        });
+    };
+
     const openDepartmentModal = (modal, params = {}) => {
         const query = new URLSearchParams(window.location.search);
 
@@ -124,59 +186,19 @@ const useDepartmentList = ({ offices, office_heads }) => {
         divisionAnalytics,
         divisionChartOptions: chartOptions,
         divisionPage,
+        divisionPaginationItems,
+        divisionLoading,
+        divisionRows,
         divisionSummary,
+        handleDivisionPageChange,
+        handleOfficePageChange,
         missingOffices,
+        officeLoading,
+        officePaginationItems,
         officePage,
+        officeRows,
         openDepartmentModal,
-        setDivisionPage,
-        setOfficePage,
         sortedOffices,
-    };
-};
-
-export const useDepartmentPagination = ({
-    divisionPage,
-    divisions,
-    officePage,
-    setDivisionPage,
-    setOfficePage,
-    sortedOffices,
-}) => {
-    const sortedDivisions = useMemo(
-        () => sortAlphabetically(divisions, "name"),
-        [divisions],
-    );
-    const totalOfficePages = Math.max(
-        Math.ceil(sortedOffices.length / ITEMS_PER_PAGE),
-        1,
-    );
-    const totalDivisionPages = Math.max(
-        Math.ceil(sortedDivisions.length / ITEMS_PER_PAGE),
-        1,
-    );
-    const paginatedOffices = paginateItems(
-        sortedOffices,
-        officePage,
-        ITEMS_PER_PAGE,
-    );
-    const paginatedDivisions = paginateItems(
-        sortedDivisions,
-        divisionPage,
-        ITEMS_PER_PAGE,
-    );
-
-    useEffect(() => {
-        setOfficePage((page) => Math.min(page, totalOfficePages));
-    }, [setOfficePage, totalOfficePages]);
-
-    useEffect(() => {
-        setDivisionPage((page) => Math.min(page, totalDivisionPages));
-    }, [setDivisionPage, totalDivisionPages]);
-
-    return {
-        paginatedDivisions,
-        paginatedOffices,
-        sortedDivisions,
         totalDivisionPages,
         totalOfficePages,
     };

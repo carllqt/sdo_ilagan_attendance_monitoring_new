@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import { buildPaginationItems } from "@/Components/PaginationMain";
 import { sortAlphabetically } from "@/lib/utils";
 
 export const monthOptions = [
@@ -30,6 +31,7 @@ const useEmployeeListControls = ({
     selectedOffice,
     selectedYear,
     setSearch,
+    years = [],
 }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestionMatches, setSuggestionMatches] = useState([]);
@@ -38,7 +40,10 @@ const useEmployeeListControls = ({
     const searchBoxRef = useRef(null);
     const currentPage = pagination?.current_page || 1;
     const totalPages = pagination?.last_page || 1;
-    const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pageNumbers = useMemo(
+        () => buildPaginationItems(currentPage, totalPages),
+        [currentPage, totalPages],
+    );
     const officeItems = useMemo(
         () => [
             { id: "all", name: "All Offices" },
@@ -54,12 +59,12 @@ const useEmployeeListControls = ({
             (item) => Number(item.value) === Number(selectedMonth),
         )?.label || monthOptions[new Date().getMonth()].label;
     const yearOptions = useMemo(() => {
-        const currentYear = new Date().getFullYear();
+        if (years.length > 0) {
+            return years.map(String);
+        }
 
-        return Array.from({ length: 7 }, (_, index) =>
-            String(currentYear - 3 + index),
-        ).reverse();
-    }, []);
+        return [String(new Date().getFullYear())];
+    }, [years]);
 
     const handlePageChange = (page) => {
         if (page < 1 || page > totalPages) return;
@@ -154,4 +159,3 @@ const useEmployeeListControls = ({
 };
 
 export default useEmployeeListControls;
-

@@ -11,6 +11,7 @@ const useEmployeeFilters = ({
     limit,
     officeName,
     offices,
+    isSchoolAdmin = false,
     search,
     selectedEmployee,
     selectedFingerprintEmployee,
@@ -23,6 +24,7 @@ const useEmployeeFilters = ({
         findOfficeByName(offices, officeName)?.id || "all",
     );
     const [statusFilter, setStatusFilter] = useState(status || "Active");
+    const [employeesLoading, setEmployeesLoading] = useState(false);
 
     useEffect(() => {
         setSearchInput(formatSearchDisplay(search));
@@ -46,7 +48,7 @@ const useEmployeeFilters = ({
             query.search = searchValue.trim();
         }
 
-        if (officeValue !== "all") {
+        if (!isSchoolAdmin && officeValue !== "all") {
             const office = offices.find(
                 (item) => Number(item.id) === Number(officeValue),
             );
@@ -83,11 +85,14 @@ const useEmployeeFilters = ({
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            onStart: () => setEmployeesLoading(true),
+            onFinish: () => setEmployeesLoading(false),
         });
     };
 
     return {
         applyEmployeeFilters,
+        employeesLoading,
         searchInput,
         selectedOffice,
         setSearchInput,

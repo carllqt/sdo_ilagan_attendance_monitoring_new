@@ -17,7 +17,7 @@ import {
     MapPin,
     LandPlot,
     Building2,
-    Network,
+    Calculator,
     ClipboardList,
 } from "lucide-react";
 
@@ -54,9 +54,13 @@ export function AppSidebar({ active, user, ...props }) {
     const { url, props: pageProps } = usePage();
     const authUser = user || pageProps.auth?.user;
     const employee = authUser?.employee;
-    const employeeName = getEmployeeName(employee) || authUser?.email || "Administrator";
+    const employeeName =
+        getEmployeeName(employee) || authUser?.email || "Administrator";
     const stationName = employee?.station?.name || "No Station";
     const roleLabel = employee?.position || "Administrator";
+    const userRoles = authUser?.roles || [];
+    const isSdoAdmin = userRoles.includes("sdo_admin");
+    const isSchoolAdmin = userRoles.includes("school_admin");
 
     return (
         <Sidebar {...props}>
@@ -147,58 +151,63 @@ export function AppSidebar({ active, user, ...props }) {
                                         </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>
 
-                                    <SidebarMenuSubItem>
-                                        <SidebarMenuSubButton
-                                            asChild
-                                            isActive={
-                                                active ===
-                                                "departmentmanagement"
-                                            }
-                                        >
-                                            <Link
-                                                href={route(
-                                                    "departmentmanagement",
-                                                )}
-                                                className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
+                                    {isSdoAdmin && (
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={
+                                                    active ===
+                                                    "departmentmanagement"
+                                                }
                                             >
-                                                <Building2
-                                                    className={`h-4 w-4 ${
-                                                        active ===
-                                                        "departmentmanagement"
-                                                            ? "!text-black"
-                                                            : "!text-white"
-                                                    }`}
-                                                />
-                                                Organization Management
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
+                                                <Link
+                                                    href={route(
+                                                        "departmentmanagement",
+                                                    )}
+                                                    className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
+                                                >
+                                                    <Building2
+                                                        className={`h-4 w-4 ${
+                                                            active ===
+                                                            "departmentmanagement"
+                                                                ? "!text-black"
+                                                                : "!text-white"
+                                                        }`}
+                                                    />
+                                                    Organization Management
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                    )}
 
-                                    <SidebarMenuSubItem>
-                                        <SidebarMenuSubButton
-                                            asChild
-                                            isActive={
-                                                active === "stationmanagement"
-                                            }
-                                        >
-                                            <Link
-                                                href={route(
-                                                    "stationmanagement",
-                                                )}
-                                                className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
+                                    {isSdoAdmin && (
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={
+                                                    active ===
+                                                    "stationmanagement"
+                                                }
                                             >
-                                                <LandPlot
-                                                    className={`h-4 w-4 ${
-                                                        active ===
-                                                        "stationmanagement"
-                                                            ? "!text-black"
-                                                            : "!text-white"
-                                                    }`}
-                                                />
-                                                Station Management
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
+                                                <Link
+                                                    href={route(
+                                                        "stationmanagement",
+                                                    )}
+                                                    className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
+                                                >
+                                                    <LandPlot
+                                                        className={`h-4 w-4 ${
+                                                            active ===
+                                                            "stationmanagement"
+                                                                ? "!text-black"
+                                                                : "!text-white"
+                                                        }`}
+                                                    />
+                                                    Station Management
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                    )}
 
                                     <SidebarMenuSubItem>
                                         <SidebarMenuSubButton
@@ -236,7 +245,7 @@ export function AppSidebar({ active, user, ...props }) {
                                         >
                                             <Link
                                                 href={route("dailytimerecord")}
-                                                className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100     h-8"
+                                                className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100 h-8"
                                             >
                                                 <CalendarClock
                                                     className={`h-4 w-4 ${
@@ -256,17 +265,17 @@ export function AppSidebar({ active, user, ...props }) {
                                         <SidebarMenuSubButton
                                             asChild
                                             isActive={url.startsWith(
-                                                "/tardysummary",
+                                                "/tardinesssummary",
                                             )}
                                         >
                                             <Link
-                                                href={route("tardysummary")}
+                                                href={route("tardinesssummary")}
                                                 className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
                                             >
                                                 <ChartColumn
                                                     className={`h-4 w-4 ${
                                                         active ===
-                                                        "tardysummary"
+                                                        "tardinesssummary"
                                                             ? "!text-black"
                                                             : "!text-white"
                                                     }`}
@@ -302,93 +311,175 @@ export function AppSidebar({ active, user, ...props }) {
                                             </Link>
                                         </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>
-                                </SidebarMenuSub>
-                            )}
-                        </SidebarMenuItem>
 
-                        <SidebarMenuItem>
-                            <Button
-                                variant="ghost"
-                                className="w-full justify-between px-3 py-2 text-left font-semibold hover:bg-blue-900 hover:text-blue-100"
-                                onClick={() => setHROpen(!isHROpen)}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <UserCircle className="h-5 w-5" />
-                                    Human Resource
-                                </span>
-                                {isHROpen ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                )}
-                            </Button>
-
-                            {isHROpen && (
-                                <SidebarMenuSub>
-                                    <SidebarMenuSubItem>
-                                        <SidebarMenuSubButton
-                                            asChild
-                                            isActive={
-                                                active === "tardyconvertion"
-                                            }
-                                        >
-                                            <Link
-                                                href={route("tardyconvertion")}
-                                                className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
-                                            >
-                                                <ArrowLeftRight
-                                                    className={`h-4 w-4 ${
+                                    {isSchoolAdmin && (
+                                        <>
+                                            <SidebarMenuSubItem>
+                                                <SidebarMenuSubButton
+                                                    asChild
+                                                    isActive={
                                                         active ===
-                                                        "tardyconvertion"
-                                                            ? "!text-black"
-                                                            : "!text-white"
-                                                    }`}
-                                                />
-                                                Tardiness Convertion
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-
-                                    <SidebarMenuSubItem>
-                                        <SidebarMenuSubButton
-                                            asChild
-                                            isActive={
-                                                active === "tardyarchieve" ||
-                                                active === "batch-record"
-                                            }
-                                        >
-                                            <Link
-                                                href={route("tardyarchieve")}
-                                                className="flex items-center gap-2 text-xs hover:bg-blue-900"
-                                            >
-                                                <Archive
-                                                    className={`h-4 w-4 ${
-                                                        active ===
-                                                            "tardyarchieve" ||
-                                                        active ===
-                                                            "batch-record"
-                                                            ? "!text-black"
-                                                            : "!text-white"
-                                                    }`}
-                                                />
-                                                <span
-                                                    className={`${
-                                                        active ===
-                                                            "tardyarchieve" ||
-                                                        active ===
-                                                            "batch-record"
-                                                            ? "!text-black"
-                                                            : "!text-white"
-                                                    }`}
+                                                        "tardinessconvertion"
+                                                    }
                                                 >
-                                                    Tardiness Archive
-                                                </span>
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
+                                                    <Link
+                                                        href={route(
+                                                            "tardinessconvertion",
+                                                        )}
+                                                        className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100 h-8"
+                                                    >
+                                                        <ArrowLeftRight
+                                                            className={`h-4 w-4 ${
+                                                                active ===
+                                                                "tardinessconvertion"
+                                                                    ? "!text-black"
+                                                                    : "!text-white"
+                                                            }`}
+                                                        />
+                                                        Tardiness Summary /
+                                                        Convertion Management
+                                                    </Link>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+
+                                            <SidebarMenuSubItem>
+                                                <SidebarMenuSubButton
+                                                    asChild
+                                                    isActive={
+                                                        active ===
+                                                        "converted-tardiness-record"
+                                                    }
+                                                >
+                                                    <Link
+                                                        href={route(
+                                                            "converted-tardiness-record",
+                                                        )}
+                                                        className="flex min-h-8 items-start gap-2 py-1 text-xs hover:bg-blue-900 [&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:!text-clip"
+                                                    >
+                                                        <Archive
+                                                            className={`mt-0.5 h-4 w-4 ${
+                                                                active ===
+                                                                    "converted-tardiness-record" ||
+                                                                active ===
+                                                                    "converted-tardiness-record.batch"
+                                                                    ? "!text-black"
+                                                                    : "!text-white"
+                                                            }`}
+                                                        />
+                                                        <span
+                                                            className={`min-w-0 flex-1 leading-4 ${
+                                                                active ===
+                                                                    "converted-tardiness-record" ||
+                                                                active ===
+                                                                    "converted-tardiness-record.batch"
+                                                                    ? "!text-black"
+                                                                    : "!text-white"
+                                                            }`}
+                                                        >
+                                                            Converted Tardiness
+                                                            Record Management
+                                                        </span>
+                                                    </Link>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+                                        </>
+                                    )}
                                 </SidebarMenuSub>
                             )}
                         </SidebarMenuItem>
+
+                        {!isSchoolAdmin && (
+                            <SidebarMenuItem>
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-between px-3 py-2 text-left font-semibold hover:bg-blue-900 hover:text-blue-100"
+                                    onClick={() => setHROpen(!isHROpen)}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <UserCircle className="h-5 w-5" />
+                                        Human Resource
+                                    </span>
+                                    {isHROpen ? (
+                                        <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                        <ChevronRight className="h-4 w-4" />
+                                    )}
+                                </Button>
+
+                                {isHROpen && (
+                                    <SidebarMenuSub>
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={
+                                                    active ===
+                                                    "tardinessconvertion"
+                                                }
+                                            >
+                                                <Link
+                                                    href={route(
+                                                        "tardinessconvertion",
+                                                    )}
+                                                    className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100 h-8"
+                                                >
+                                                    <Calculator
+                                                        className={`h-4 w-4 ${
+                                                            active ===
+                                                            "tardinessconvertion"
+                                                                ? "!text-black"
+                                                                : "!text-white"
+                                                        }`}
+                                                    />
+                                                    Tardiness Summary /
+                                                    Convertion Management
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={
+                                                    active ===
+                                                    "converted-tardiness-record"
+                                                }
+                                            >
+                                                <Link
+                                                    href={route(
+                                                        "converted-tardiness-record",
+                                                    )}
+                                                    className="flex min-h-8 items-start gap-2 py-1 text-xs text-white hover:bg-blue-900 hover:text-blue-100 [&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:!text-clip"
+                                                >
+                                                    <Archive
+                                                            className={`mt-0.5 h-4 w-4 ${
+                                                            active ===
+                                                                "converted-tardiness-record" ||
+                                                            active ===
+                                                                "converted-tardiness-record.batch"
+                                                                ? "!text-black"
+                                                                : "!text-white"
+                                                        }`}
+                                                    />
+                                                    <span
+                                                            className={`min-w-0 flex-1 leading-4 ${
+                                                            active ===
+                                                                "converted-tardiness-record" ||
+                                                            active ===
+                                                                "converted-tardiness-record.batch"
+                                                                ? "!text-black"
+                                                                : "!text-white"
+                                                        }`}
+                                                    >
+                                                        Converted Tardiness
+                                                        Record Management
+                                                    </span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                    </SidebarMenuSub>
+                                )}
+                            </SidebarMenuItem>
+                        )}
                     </SidebarMenu>
                 </SidebarGroup>
 
@@ -457,4 +548,3 @@ export function AppSidebar({ active, user, ...props }) {
 }
 
 export default AppSidebar;
-

@@ -85,6 +85,20 @@ class DailyTimeRecordRepository
             ->get();
     }
 
+    public function attendanceYearsForStation(int $stationId)
+    {
+        return Attendance::query()
+            ->selectRaw('YEAR(date) as year')
+            ->whereHas('employee', function ($query) use ($stationId) {
+                $query->where('station_id', $stationId);
+            })
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->map(fn ($year) => (string) $year)
+            ->values();
+    }
+
     public function paginatedEmployees(DailyTimeRecordFilter $filter)
     {
         return Employee::with([
@@ -169,7 +183,7 @@ class DailyTimeRecordRepository
                     });
             })
             ->orderByName()
-            ->limit(8)
+            ->limit(10)
             ->get();
     }
 

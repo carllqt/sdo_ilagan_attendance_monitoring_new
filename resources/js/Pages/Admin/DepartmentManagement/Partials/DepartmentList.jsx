@@ -7,34 +7,30 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Building2, SquarePen, Trash2 } from "lucide-react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
+import PaginationMain from "@/Components/PaginationMain";
+import { Skeleton } from "@/components/ui/skeleton";
 import AddDivisionModal from "./AddDivisionModal";
 import AddOfficeModal from "./AddOfficeModal";
 import EditOfficeModal from "./EditOfficeModal";
 import EditDivisionModal from "./EditDivisionModal";
-import useDepartmentList, {
-    useDepartmentPagination,
-} from "../hooks/useDepartmentList";
-import { ITEMS_PER_PAGE } from "../utils";
+import useDepartmentList from "../hooks/useDepartmentList";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DepartmentList = ({
     divisions = [],
+    divisionList = {},
     offices = [],
+    officeList = {},
     office_heads = [],
+    officeLimit,
+    divisionPage: initialDivisionPage,
+    divisionLimit,
     addDivisionModal = false,
     addOfficeModal = false,
     editDivisionModal = null,
@@ -51,33 +47,37 @@ const DepartmentList = ({
         coverage,
         divisionAnalytics,
         divisionChartOptions,
+        divisionLoading,
         divisionPage,
+        divisionPaginationItems,
+        divisionRows,
         divisionSummary,
+        handleDivisionPageChange,
+        handleOfficePageChange,
         missingOffices,
+        officeLoading,
+        officePaginationItems,
         officePage,
+        officeRows,
         openDepartmentModal,
-        setDivisionPage,
-        setOfficePage,
         sortedOffices,
-    } = useDepartmentList({ offices, office_heads });
-    const {
-        paginatedDivisions,
-        paginatedOffices,
-        sortedDivisions,
         totalDivisionPages,
         totalOfficePages,
-    } = useDepartmentPagination({
-        divisionPage,
-        divisions,
-        officePage,
-        setDivisionPage,
-        setOfficePage,
-        sortedOffices,
+    } = useDepartmentList({
+        divisionLimit,
+        divisionList,
+        initialDivisionPage,
+        officeLimit,
+        officeList,
+        offices,
+        office_heads,
     });
+    const officeSkeletonRows = Math.max(5, Math.min(Number(officeLimit || 5), 10));
+    const divisionSkeletonRows = 3;
 
     return (
         <div className="grid gap-5 xl:grid-cols-2">
-            <div className="rounded-xl p-4 border-2 shadow-lg">
+            <div className="flex min-h-[400px] flex-col rounded-xl p-4 border-2 shadow-lg">
                 <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
                         <h2 className="text-lg font-bold">Section / Unit</h2>
@@ -86,7 +86,7 @@ const DepartmentList = ({
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                         <Button
                             onClick={() => openDepartmentModal("add-office")}
                             className="bg-blue-600 text-white hover:bg-blue-700"
@@ -145,8 +145,36 @@ const DepartmentList = ({
                         </TableHeader>
 
                         <TableBody>
-                            {paginatedOffices.length > 0 ? (
-                                paginatedOffices.map((office) => {
+                            {officeLoading ? (
+                                Array.from({ length: officeSkeletonRows }).map(
+                                    (_, index) => (
+                                        <TableRow
+                                            key={`office-list-skeleton-${index}`}
+                                            className="h-[56px]"
+                                        >
+                                            <TableCell className="p-3">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                    <Skeleton className="h-4 w-48 max-w-full" />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-3">
+                                                <div className="space-y-2">
+                                                    <Skeleton className="h-4 w-24 max-w-full" />
+                                                    <Skeleton className="h-3 w-40 max-w-full" />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-3">
+                                                <div className="flex justify-center gap-2">
+                                                    <Skeleton className="h-8 w-8 rounded-full" />
+                                                    <Skeleton className="h-8 w-8 rounded-full" />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ),
+                                )
+                            ) : officeRows.length > 0 ? (
+                                officeRows.map((office) => {
                                     return (
                                         <TableRow key={office.id}>
                                             <TableCell className="p-3">
@@ -223,63 +251,16 @@ const DepartmentList = ({
                     </Table>
                 </div>
 
-                <div className="mt-4 flex items-center">
-                    <div className="text-sm text-gray-500">
-                        Showing{" "}
-                        {sortedOffices.length === 0
-                            ? 0
-                            : (officePage - 1) * ITEMS_PER_PAGE + 1}{" "}
-                        to{" "}
-                        {Math.min(
-                            officePage * ITEMS_PER_PAGE,
-                            sortedOffices.length,
-                        )}{" "}
-                        of {sortedOffices.length}
-                    </div>
-
-                    <div className="ml-auto">
-                        {totalOfficePages > 1 && (
-                            <Pagination>
-                                <PaginationPrevious
-                                    onClick={() =>
-                                        setOfficePage((value) =>
-                                            Math.max(1, value - 1),
-                                        )
-                                    }
-                                />
-                                <PaginationContent>
-                                    {Array.from(
-                                        { length: totalOfficePages },
-                                        (_, i) => (
-                                            <PaginationItem key={i}>
-                                                <PaginationLink
-                                                    isActive={
-                                                        officePage === i + 1
-                                                    }
-                                                    onClick={() =>
-                                                        setOfficePage(i + 1)
-                                                    }
-                                                >
-                                                    {i + 1}
-                                                </PaginationLink>
-                                            </PaginationItem>
-                                        ),
-                                    )}
-                                </PaginationContent>
-                                <PaginationNext
-                                    onClick={() =>
-                                        setOfficePage((value) =>
-                                            Math.min(
-                                                totalOfficePages,
-                                                value + 1,
-                                            ),
-                                        )
-                                    }
-                                />
-                            </Pagination>
-                        )}
-                    </div>
-                </div>
+                <PaginationMain
+                    className="mt-auto pt-4"
+                    currentPage={officePage}
+                    from={officeList?.from || 0}
+                    onPageChange={handleOfficePageChange}
+                    pageNumbers={officePaginationItems}
+                    to={officeList?.to || 0}
+                    total={officeList?.total || 0}
+                    totalPages={totalOfficePages}
+                />
             </div>
 
             <ConfirmPasswordDialog
@@ -311,7 +292,7 @@ const DepartmentList = ({
                         </div>
 
                         <div className="flex items-center gap-8">
-                            <div className="relative h-[7.5rem] w-[7.5rem] shrink-0">
+                            <div className="relative h-[7.3rem] w-[7.3rem] shrink-0">
                                 <Doughnut
                                     data={
                                         chartReady
@@ -371,7 +352,7 @@ const DepartmentList = ({
                         </div>
 
                         <div className="flex items-center gap-8">
-                            <div className="relative h-[7.5rem] w-[7.5rem] shrink-0">
+                            <div className="relative h-[7.3rem] w-[7.3rem] shrink-0">
                                 <Doughnut
                                     data={
                                         chartReady
@@ -434,7 +415,7 @@ const DepartmentList = ({
                     </div>
                 </div>
 
-                <div className="rounded-xl p-4 border-2 shadow-lg">
+                <div className="flex min-h-[370px] flex-col rounded-xl p-4 border-2 shadow-lg">
                     <div className="mb-4 flex items-center justify-between gap-3">
                         <div>
                             <h2 className="text-lg font-bold">Division List</h2>
@@ -465,21 +446,47 @@ const DepartmentList = ({
                             </TableHeader>
 
                             <TableBody>
-                                {paginatedDivisions.length > 0 ? (
-                                    paginatedDivisions.map((division) => (
+                                {divisionLoading ? (
+                                    Array.from({
+                                        length: divisionSkeletonRows,
+                                    }).map((_, index) => (
+                                        <TableRow
+                                            key={`division-list-skeleton-${index}`}
+                                            className="h-[56px]"
+                                        >
+                                            <TableCell className="p-3">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                    <Skeleton className="h-4 w-52 max-w-full" />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-3">
+                                                <div className="flex justify-center gap-2">
+                                                    <Skeleton className="h-8 w-8 rounded-full" />
+                                                    <Skeleton className="h-8 w-8 rounded-full" />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : divisionRows.length > 0 ? (
+                                    divisionRows.map((division) => (
                                         <TableRow key={division.id}>
                                             <TableCell className="p-3">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-300">
                                                         <Building2 className="w-4 h-4 text-blue-600" />
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <div className="truncate font-medium">
+                                                    <div className="min-w-0 truncate font-medium">
+                                                        <span>
                                                             {division.name}
-                                                        </div>
-                                                        <div className="truncate text-xs text-gray-500">
-                                                            {division.code}
-                                                        </div>
+                                                        </span>
+                                                        {division.code ? (
+                                                            <span className="text-xs font-normal text-gray-500">
+                                                                {" "}
+                                                                ({division.code}
+                                                                )
+                                                            </span>
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -546,66 +553,16 @@ const DepartmentList = ({
                         </Table>
                     </div>
 
-                    <div className="mt-4 flex items-center">
-                        <div className="text-sm text-gray-500">
-                            Showing{" "}
-                            {sortedDivisions.length === 0
-                                ? 0
-                                : (divisionPage - 1) * ITEMS_PER_PAGE + 1}{" "}
-                            to{" "}
-                            {Math.min(
-                                divisionPage * ITEMS_PER_PAGE,
-                                sortedDivisions.length,
-                            )}{" "}
-                            of {sortedDivisions.length}
-                        </div>
-
-                        <div className="ml-auto">
-                            {totalDivisionPages > 1 && (
-                                <Pagination>
-                                    <PaginationPrevious
-                                        onClick={() =>
-                                            setDivisionPage((value) =>
-                                                Math.max(1, value - 1),
-                                            )
-                                        }
-                                    />
-                                    <PaginationContent>
-                                        {Array.from(
-                                            { length: totalDivisionPages },
-                                            (_, i) => (
-                                                <PaginationItem key={i}>
-                                                    <PaginationLink
-                                                        isActive={
-                                                            divisionPage ===
-                                                            i + 1
-                                                        }
-                                                        onClick={() =>
-                                                            setDivisionPage(
-                                                                i + 1,
-                                                            )
-                                                        }
-                                                    >
-                                                        {i + 1}
-                                                    </PaginationLink>
-                                                </PaginationItem>
-                                            ),
-                                        )}
-                                    </PaginationContent>
-                                    <PaginationNext
-                                        onClick={() =>
-                                            setDivisionPage((value) =>
-                                                Math.min(
-                                                    totalDivisionPages,
-                                                    value + 1,
-                                                ),
-                                            )
-                                        }
-                                    />
-                                </Pagination>
-                            )}
-                        </div>
-                    </div>
+                    <PaginationMain
+                        className="mt-auto pt-4"
+                        currentPage={divisionPage}
+                        from={divisionList?.from || 0}
+                        onPageChange={handleDivisionPageChange}
+                        pageNumbers={divisionPaginationItems}
+                        to={divisionList?.to || 0}
+                        total={divisionList?.total || 0}
+                        totalPages={totalDivisionPages}
+                    />
                 </div>
             </div>
         </div>
@@ -613,4 +570,3 @@ const DepartmentList = ({
 };
 
 export default DepartmentList;
-

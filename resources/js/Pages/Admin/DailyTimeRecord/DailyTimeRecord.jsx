@@ -1,6 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { Head, router } from "@inertiajs/react";
-import { toast } from "sonner";
+import React from "react";
+import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { CalendarClock } from "lucide-react";
 
@@ -12,18 +11,13 @@ import RecomputeDtrDialog from "./Partials/RecomputeDtrDialog";
 import WorkScheduleSettings from "./Partials/WorkScheduleSettings/WorkScheduleSettings";
 import useDailyTimeRecordFilters from "./hooks/useDailyTimeRecordFilters";
 import useDailyTimeRecordModals from "./hooks/useDailyTimeRecordModals";
-import usePreservedPageScroll from "./hooks/usePreservedPageScroll";
-import { extractTimeRecordEmployees, resolveCurrentDateParts } from "./utils";
-import {
-    sortAlphabetically,
-    sortEmployeesAlphabetically,
-} from "@/lib/utils";
-
-const recomputeScrollKey = "dtr-recompute-scroll-top";
+import useDailyTimeRecordPageData from "./hooks/useDailyTimeRecordPageData";
+import useDailyTimeRecordRecompute from "./hooks/useDailyTimeRecordRecompute";
 
 const Daily_Time_Record = ({
     time_record,
     offices = [],
+    years = [],
     search = "",
     office = "all",
     month,
@@ -41,23 +35,22 @@ const Daily_Time_Record = ({
     deleteWorkTypeModal = null,
     deleteWorkScheduleModal = null,
 }) => {
-    const { currentMonth, currentYear } = resolveCurrentDateParts({
-        month,
-        year,
-    });
-    const employees = useMemo(
-        () =>
-            sortEmployeesAlphabetically(
-                extractTimeRecordEmployees(time_record),
-            ),
-        [time_record],
-    );
-    const sortedOffices = useMemo(
-        () => sortAlphabetically(offices, "name"),
-        [offices],
-    );
+    const { currentMonth, currentYear, employees, sortedOffices } =
+        useDailyTimeRecordPageData({
+            month,
+            offices,
+            timeRecord: time_record,
+            year,
+        });
+    const {
+        closeRecomputeDialog,
+        handleRecomputeEmployee,
+        openRecomputeDialog,
+        recomputeEmployee,
+    } = useDailyTimeRecordRecompute();
     const {
         applyFilters,
+        recordsLoading,
         searchInput,
         selectedMonth,
         selectedOffice,
@@ -91,104 +84,6 @@ const Daily_Time_Record = ({
         departmentPrintModal,
         printDtrModal,
     });
-    const { rememberPageScroll, restorePageScroll } = usePreservedPageScroll({
-        storageKey: recomputeScrollKey,
-    });
-    const [recomputeEmployee, setRecomputeEmployee] = useState(null);
-
-    const handleUndoRecompute = (undo) => {
-        if (!undo?.token || !undo?.employee_id) return;
-
-        rememberPageScroll();
-
-        router.post(
-            route("dailytimerecord.recompute.undo", undo.employee_id),
-            {
-                token: undo.token,
-            },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    toast.success("Daily time record recompute undone.", {
-                        duration: 3000,
-                    });
-                },
-                onFinish: restorePageScroll,
-            },
-        );
-    };
-
-    const showRecomputeUndoToast = (undo) => {
-        const toastId = `dtr-recompute-${undo.token}`;
-        let secondsLeft = 8;
-        let timer;
-
-        const showToast = () => {
-            toast.success("Daily time record recomputed.", {
-                id: toastId,
-                description: `Undo available for ${secondsLeft}s.`,
-                duration: secondsLeft * 1000,
-                action: {
-                    label: "Undo",
-                    onClick: () => {
-                        clearInterval(timer);
-                        toast.dismiss(toastId);
-                        handleUndoRecompute(undo);
-                    },
-                },
-            });
-        };
-
-        timer = setInterval(() => {
-            secondsLeft -= 1;
-
-            if (secondsLeft <= 0) {
-                clearInterval(timer);
-                return;
-            }
-
-            showToast();
-        }, 1000);
-
-        showToast();
-    };
-
-    const openRecomputeDialog = (employee) => {
-        setRecomputeEmployee(employee);
-    };
-
-    const closeRecomputeDialog = () => {
-        setRecomputeEmployee(null);
-    };
-
-    const handleRecomputeEmployee = ({ from, to }) => {
-        if (!recomputeEmployee) return;
-
-        rememberPageScroll();
-
-        router.post(
-            route("dailytimerecord.recompute", recomputeEmployee.id),
-            {
-                from,
-                to,
-            },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: (page) => {
-                    const undo = page.props.flash?.recomputeUndo;
-
-                    if (!undo) return;
-
-                    showRecomputeUndoToast(undo);
-                    closeRecomputeDialog();
-                },
-                onFinish: restorePageScroll,
-            },
-        );
-    };
-
     return (
         <AuthenticatedLayout
             header={
@@ -198,7 +93,7 @@ const Daily_Time_Record = ({
                 </div>
             }
         >
-            <Head title="AMS" />
+            <Head title="Daily Time Record Management" />
             <main>
                 <WorkScheduleSettings
                     workTypes={workTypes}
@@ -219,6 +114,7 @@ const Daily_Time_Record = ({
                     search={searchInput}
                     setSearch={setSearchInput}
                     offices={sortedOffices}
+                    years={years}
                     selectedOffice={selectedOffice}
                     setSelectedOffice={setSelectedOffice}
                     selectedMonth={selectedMonth}
@@ -226,6 +122,7 @@ const Daily_Time_Record = ({
                     selectedYear={selectedYear}
                     setSelectedYear={setSelectedYear}
                     applyFilters={applyFilters}
+                    isLoading={recordsLoading}
                     onPreviewEmployee={handlePreviewEmployee}
                     onPrintEmployee={(employee) => openPrintDialog([employee])}
                     onPrintDepartment={openDepartmentPrintDialog}
@@ -270,4 +167,3 @@ const Daily_Time_Record = ({
 };
 
 export default Daily_Time_Record;
-

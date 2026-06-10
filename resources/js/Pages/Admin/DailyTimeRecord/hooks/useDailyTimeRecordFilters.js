@@ -16,6 +16,7 @@ const useDailyTimeRecordFilters = ({
     const [selectedOffice, setSelectedOffice] = useState(office || "all");
     const [selectedMonth, setSelectedMonth] = useState(Number(currentMonth));
     const [selectedYear, setSelectedYear] = useState(String(currentYear));
+    const [recordsLoading, setRecordsLoading] = useState(false);
 
     useEffect(() => {
         setSearchInput(formatSearchDisplay(search));
@@ -63,11 +64,14 @@ const useDailyTimeRecordFilters = ({
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            onStart: () => setRecordsLoading(true),
+            onFinish: () => setRecordsLoading(false),
         });
     };
 
     return {
         applyFilters,
+        recordsLoading,
         searchInput,
         selectedMonth,
         selectedOffice,

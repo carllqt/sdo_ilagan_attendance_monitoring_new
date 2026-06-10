@@ -5,15 +5,21 @@ import DepartmentHeadList from "./Partials/DepartmentHeadList";
 import DivisionHeadList from "./Partials/DivisionHeadList";
 import DepartmentList from "./Partials/DepartmentList";
 import { Building2 } from "lucide-react";
-import useDepartmentManagementFocus from "./hooks/useDepartmentManagementFocus";
 
 const DepartmentManagement = ({
     office_heads = [],
-    filtered_office_heads = [],
-    division_heads = [],
     divisions = [],
+    divisionList = {},
+    divisionHeadRows = {},
     offices = [],
+    officeList = {},
+    officeHeadRows = {},
     office_search = "",
+    officeLimit,
+    officeHeadLimit,
+    divisionPage,
+    divisionLimit,
+    divisionHeadLimit,
     addDivisionModal = false,
     addOfficeModal = false,
     editDivisionModal = null,
@@ -24,13 +30,6 @@ const DepartmentManagement = ({
     deleteOfficeHeadModal = null,
     deleteDivisionHeadModal = null,
 }) => {
-    const {
-        focusOfficeRow,
-        highlightedOfficeId,
-        highlightRequestKey,
-        sectionRef,
-    } = useDepartmentManagementFocus();
-
     return (
         <AuthenticatedLayout
             header={
@@ -48,39 +47,35 @@ const DepartmentManagement = ({
                         office_heads={office_heads}
                         divisions={divisions}
                         offices={offices}
+                        officeList={officeList}
+                        officeLimit={officeLimit}
+                        divisionList={divisionList}
+                        divisionPage={divisionPage}
+                        divisionLimit={divisionLimit}
                         addDivisionModal={addDivisionModal}
                         addOfficeModal={addOfficeModal}
                         editDivisionModal={editDivisionModal}
                         editOfficeModal={editOfficeModal}
                         deleteOfficeModal={deleteOfficeModal}
-                        onAssignNow={focusOfficeRow}
                     />
                 </div>
 
-                <div
-                    ref={sectionRef}
-                    className="mt-5 space-y-5 rounded-xl p-4 border-2 shadow-lg"
-                >
+                <div className="mt-5 space-y-5 rounded-xl p-4 border-2 shadow-lg">
                     <DivisionHeadList
-                        division_heads={division_heads}
                         divisions={divisions}
+                        divisionHeadRows={divisionHeadRows}
+                        divisionHeadLimit={divisionHeadLimit}
                         assignDivisionHeadModal={assignDivisionHeadModal}
                         deleteDivisionHeadModal={deleteDivisionHeadModal}
                     />
                 </div>
-                <div
-                    ref={sectionRef}
-                    className="mt-5 space-y-5 rounded-xl p-4 border-2 shadow-lg"
-                >
+                <div className="mt-5 space-y-5 rounded-xl p-4 border-2 shadow-lg">
                     <DepartmentHeadList
-                        office_heads={office_heads}
-                        filteredOfficeHeads={filtered_office_heads}
-                        divisions={divisions}
                         offices={offices}
+                        officeHeadLimit={officeHeadLimit}
+                        officeHeadRows={officeHeadRows}
                         assignOfficeHeadModal={assignOfficeHeadModal}
                         deleteOfficeHeadModal={deleteOfficeHeadModal}
-                        highlightedOfficeId={highlightedOfficeId}
-                        highlightRequestKey={highlightRequestKey}
                         officeSearch={office_search}
                     />
                 </div>
@@ -90,4 +85,3 @@ const DepartmentManagement = ({
 };
 
 export default DepartmentManagement;
-

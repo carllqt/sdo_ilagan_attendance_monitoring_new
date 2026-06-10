@@ -21,7 +21,7 @@ class SlipMonitoringController extends Controller
         $props = [
             'selectedType' => $selectedType,
             'filters' => $filters,
-            'dashboardCounts' => [
+            'dashboardCounts' => fn () => [
                 'locatorSlipsToday' => LocatorSlip::whereDate('travel_datetime', $today)->count(),
                 'travelOrdersThisMonth' => TravelOrder::whereYear('inclusive_dates', $today->year)
                     ->whereMonth('inclusive_dates', $today->month)
@@ -34,21 +34,21 @@ class SlipMonitoringController extends Controller
         ];
 
         if ($selectedType === 'locator-slip') {
-            $props['locator_slips'] = $this->queryForType($selectedType, $filters)
+            $props['locator_slips'] = fn () => $this->queryForType($selectedType, $filters)
                 ->latest()
                 ->paginate(10)
                 ->withQueryString();
         }
 
         if ($selectedType === 'travel-order') {
-            $props['travel_orders'] = $this->queryForType($selectedType, $filters)
+            $props['travel_orders'] = fn () => $this->queryForType($selectedType, $filters)
                 ->latest()
                 ->paginate(10)
                 ->withQueryString();
         }
 
         if ($selectedType === 'application-leave') {
-            $props['leave_applications'] = $this->queryForType($selectedType, $filters)
+            $props['leave_applications'] = fn () => $this->queryForType($selectedType, $filters)
                 ->orderByDesc('id')
                 ->paginate(10)
                 ->withQueryString();

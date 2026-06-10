@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 
 class EmployeeListFilter
 {
+    public const LIMITS = [10, 25, 50, 100];
+
     public function __construct(
         public readonly int $stationId,
         public readonly string $search,
@@ -37,7 +39,7 @@ class EmployeeListFilter
     {
         $limit = (int) $request->query('limit', 10);
 
-        return in_array($limit, [10, 25, 50, 100], true) ? $limit : 10;
+        return in_array($limit, self::LIMITS, true) ? $limit : 10;
     }
 
     public function withOfficeId(int|string $officeId): self

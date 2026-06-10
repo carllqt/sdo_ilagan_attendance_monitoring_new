@@ -43,6 +43,14 @@ export default function Index({
             route("slip-monitoring.index"),
             { type },
             {
+                only: [
+                    "selectedType",
+                    "filters",
+                    "dashboardCounts",
+                    "locator_slips",
+                    "travel_orders",
+                    "leave_applications",
+                ],
                 preserveScroll: true,
                 replace: true,
             },

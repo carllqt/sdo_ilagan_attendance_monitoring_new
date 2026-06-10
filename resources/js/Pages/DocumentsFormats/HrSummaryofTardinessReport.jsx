@@ -2,9 +2,13 @@ import React from "react";
 
 const HrSummaryofTardinessReport = React.forwardRef(
     ({ groupedByEmployee, monthRangeLabel }, ref) => {
-        // Group records by department
-        const departments = Array.from(
-            new Set(groupedByEmployee.map((record) => record.dept))
+        // Group records by office
+        const offices = Array.from(
+            new Set(
+                groupedByEmployee.map(
+                    (record) => record.office || record.dept
+                )
+            )
         );
 
         return (
@@ -73,24 +77,25 @@ const HrSummaryofTardinessReport = React.forwardRef(
                             </tr>
                         </thead>
 
-                        {departments.map((dept, deptIndex) => {
-                            const deptEmployees = groupedByEmployee.filter(
-                                (r) => r.dept === dept
+                        {offices.map((office, officeIndex) => {
+                            const officeEmployees = groupedByEmployee.filter(
+                                (record) =>
+                                    (record.office || record.dept) === office
                             );
                             return (
-                                <tbody key={deptIndex} className="department">
-                                    {/* Department row */}
+                                <tbody key={officeIndex} className="office">
+                                    {/* Office row */}
                                     <tr className="bg-gray-100 font-bold">
                                         <td
                                             colSpan={7}
                                             className="border border-black text-center py-3"
                                         >
-                                            {dept}
+                                            {office}
                                         </td>
                                     </tr>
 
                                     {/* Employee rows */}
-                                    {deptEmployees.map((emp, index) => (
+                                    {officeEmployees.map((emp, index) => (
                                         <tr key={index}>
                                             <td className="border border-black px-2 py-2 text-center">
                                                 {index + 1}
@@ -99,7 +104,8 @@ const HrSummaryofTardinessReport = React.forwardRef(
                                                 {emp.name}
                                             </td>
                                             <td className="border border-black px-2 py-2 text-center">
-                                                {monthRangeLabel}
+                                                {emp.month_label ||
+                                                    monthRangeLabel}
                                             </td>
                                             <td className="border border-black px-2 py-2 text-center">
                                                 {emp.total_tardy.toFixed(2)}

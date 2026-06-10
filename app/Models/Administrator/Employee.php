@@ -3,13 +3,13 @@
 namespace App\Models\Administrator;
 
 use App\Models\Biometric;
+use App\Models\HumanResource\HrTardinessConvertion;
 use App\Models\HumanResource\SickLeave;
-use App\Models\HumanResource\TardyConvertion;
 use App\Models\HumanResource\VacationLeave;
 use App\Models\User;
 use Database\Factories\EmployeeFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
@@ -87,9 +87,14 @@ class Employee extends Model
         return $schedule?->workType?->name;
     }
 
-    public function tardyConvertion()
+    public function tardinessConvertion()
     {
-        return $this->hasMany(TardyConvertion::class, 'employee_id');
+        return $this->hasMany(HrTardinessConvertion::class, 'employee_id');
+    }
+
+    public function tardinessRecords()
+    {
+        return $this->hasMany(TardinessRecord::class, 'employee_id');
     }
 
     public function biometric()

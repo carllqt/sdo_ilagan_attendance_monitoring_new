@@ -106,8 +106,8 @@ const DepartmentPrintDialog = ({
                         </DialogHeader>
                     </div>
 
-                    <div className="grid gap-4 px-5 pb-5 pt-4 lg:grid-cols-[0.85fr_1.15fr]">
-                        <div className="space-y-3">
+                    <div className="grid min-w-0 gap-4 px-5 pb-5 pt-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                        <div className="min-w-0 space-y-3">
                             <DepartmentPicker
                                 departmentSearch={departmentSearch}
                                 departments={departments}
@@ -118,7 +118,7 @@ const DepartmentPrintDialog = ({
                             />
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="min-w-0 space-y-3">
                             <SignatoriesSummary
                                 isLoading={isLoadingSignatories}
                                 officeHeadSignatory={officeHeadSignatory}

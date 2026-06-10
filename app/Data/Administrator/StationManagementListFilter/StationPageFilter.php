@@ -19,21 +19,25 @@ class StationPageFilter
 
     public static function fromRequest(Request $request): self
     {
-        $stationLimit = (int) $request->query('station_limit', 5);
-        $adminLimit = (int) $request->query('admin_limit', 10);
-
         return new self(
             search: trim((string) $request->query('search', '')),
             stationPage: max((int) $request->query('station_page', 1), 1),
             adminPage: max((int) $request->query('admin_page', 1), 1),
-            stationLimit: in_array($stationLimit, self::STATION_LIMITS, true) ? $stationLimit : 5,
-            adminLimit: in_array($adminLimit, self::ADMIN_LIMITS, true) ? $adminLimit : 10,
+            stationLimit: self::limitFromRequest($request, 'station_limit', self::STATION_LIMITS, 5),
+            adminLimit: self::limitFromRequest($request, 'admin_limit', self::ADMIN_LIMITS, 10),
         );
+    }
+
+    public static function limitFromRequest(Request $request, string $key, array $limits, int $default): int
+    {
+        $limit = (int) $request->query($key, $default);
+
+        return in_array($limit, $limits, true) ? $limit : $default;
     }
 
     public function hasInvalidLimits(Request $request): bool
     {
-        return (string) $request->query('station_limit') !== (string) $this->stationLimit ||
-            (string) $request->query('admin_limit') !== (string) $this->adminLimit;
+        return ($request->has('station_limit') && (string) $request->query('station_limit') !== (string) $this->stationLimit) ||
+            ($request->has('admin_limit') && (string) $request->query('admin_limit') !== (string) $this->adminLimit);
     }
 }

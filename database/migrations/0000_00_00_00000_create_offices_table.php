@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('offices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('division_id')->constrained('divisions')->cascadeOnDelete();
+            $table->foreignId('division_id')->nullable()->constrained('divisions')->nullOnDelete();
             $table->string('name');
             $table->timestamps();
 

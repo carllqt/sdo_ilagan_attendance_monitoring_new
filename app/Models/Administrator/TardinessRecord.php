@@ -2,9 +2,9 @@
 
 namespace App\Models\Administrator;
 
+use App\Models\HumanResource\HrTardinessConvertion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\HumanResource\TardyConvertion;
 
 class TardinessRecord extends Model
 {
@@ -18,7 +18,7 @@ class TardinessRecord extends Model
         'pm_tardy',
         'undertime',
         'total_tardy',
-        'converted_tardy'
+        'converted_tardy',
     ];
 
     public function employee()
@@ -31,13 +31,13 @@ class TardinessRecord extends Model
         return $this->belongsTo(Attendance::class);
     }
 
-    public function tardyConvertions()
+    public function tardinessConvertions()
     {
         return $this->belongsToMany(
-            TardyConvertion::class,
-            'converted_tardy_records',
-            'tardiness_record_id',  
-            'tardy_convertion_id' 
+            HrTardinessConvertion::class,
+            'hr_converted_tardiness_records',
+            'tardiness_record_id',
+            'hr_tardiness_convertions_id',
         )->withTimestamps();
     }
 }

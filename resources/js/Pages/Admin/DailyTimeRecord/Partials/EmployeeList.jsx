@@ -8,14 +8,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
     Building2,
     AlertTriangle,
     Clock3,
@@ -25,6 +17,7 @@ import {
     Search,
 } from "lucide-react";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
+import PaginationMain from "@/Components/PaginationMain";
 import FloatingInput from "@/components/floating-input";
 import {
     CustomDropdownCheckbox,
@@ -32,11 +25,13 @@ import {
 } from "@/components/dropdown-menu-main";
 import { Button } from "@/Components/ui/button";
 import { SuggestionSkeletonList } from "@/Components/Skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
     HoverCard,
     HoverCardContent,
     HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { getEmployeeName } from "@/lib/utils";
 import useEmployeeListControls, {
     formatWorkSchedule,
     monthOptions,
@@ -47,6 +42,7 @@ const EmployeeList = ({
     search,
     setSearch,
     offices,
+    years,
     selectedOffice,
     setSelectedOffice,
     selectedMonth,
@@ -55,12 +51,17 @@ const EmployeeList = ({
     setSelectedYear,
     pagination,
     applyFilters,
+    isLoading = false,
     onPreviewEmployee,
     onPrintEmployee,
     onPrintDepartment,
     onRecomputeEmployee,
 }) => {
     const displayedEmployees = employees;
+    const skeletonRows = Math.max(
+        5,
+        Math.min(Number(pagination?.per_page || 10), 10),
+    );
     const {
         currentPage,
         handlePageChange,
@@ -86,6 +87,7 @@ const EmployeeList = ({
         selectedOffice,
         selectedYear,
         setSearch,
+        years,
     });
 
     return (
@@ -101,7 +103,7 @@ const EmployeeList = ({
                         </p>
                     </div>
 
-                    <div className="grid w-full grid-cols-1 items-center gap-4 xl:ml-auto xl:w-auto xl:grid-cols-[340px_132px_135px_112px_180px]">
+                    <div className="grid w-full grid-cols-1 items-center gap-4 xl:ml-auto xl:w-auto xl:grid-cols-[340px_112px_112px_150px_180px]">
                         <div ref={searchBoxRef} className="relative">
                             <FloatingInput
                                 label="Search Employee"
@@ -173,24 +175,6 @@ const EmployeeList = ({
                             ) : null}
                         </div>
 
-                        <CustomDropdownCheckboxObject
-                            label="Select Office"
-                            items={officeItems}
-                            selected={selectedOffice}
-                            buttonLabel={officeButtonLabel}
-                            onChange={(value) => {
-                                const nextOffice =
-                                    value === "all" ? "all" : Number(value);
-
-                                setSelectedOffice(nextOffice);
-                                applyFilters({
-                                    officeValue: nextOffice,
-                                });
-                            }}
-                            buttonVariant="outline"
-                            className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                        />
-
                         <CustomDropdownCheckbox
                             label="Select Month"
                             items={monthOptions.map((item) => item.label)}
@@ -224,6 +208,23 @@ const EmployeeList = ({
                             }}
                             buttonVariant="outline"
                             className="h-10 border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-none"
+                        />
+                        <CustomDropdownCheckboxObject
+                            label="Select Office"
+                            items={officeItems}
+                            selected={selectedOffice}
+                            buttonLabel={officeButtonLabel}
+                            onChange={(value) => {
+                                const nextOffice =
+                                    value === "all" ? "all" : Number(value);
+
+                                setSelectedOffice(nextOffice);
+                                applyFilters({
+                                    officeValue: nextOffice,
+                                });
+                            }}
+                            buttonVariant="outline"
+                            className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                         />
 
                         <Button
@@ -263,12 +264,63 @@ const EmployeeList = ({
                     </TableHeader>
 
                     <TableBody>
-                        {displayedEmployees.length > 0 ? (
+                        {isLoading ? (
+                            Array.from({ length: skeletonRows }).map(
+                                (_, index) => (
+                                    <TableRow
+                                        key={`dtr-employee-skeleton-${index}`}
+                                        className="h-[64px]"
+                                    >
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1">
+                                                    <Skeleton className="h-4 w-52 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-40 max-w-full" />
+                                        </TableCell>
+
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-44 max-w-full" />
+                                                    <Skeleton className="h-3 w-32 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-32 max-w-full" />
+                                                    <Skeleton className="h-3 w-28 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell className="p-3">
+                                            <div className="flex justify-center gap-2">
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ),
+                            )
+                        ) : displayedEmployees.length > 0 ? (
                             displayedEmployees.map((emp) => {
+                                const fullName = getEmployeeName(emp) || "-";
                                 const hasWorkType = Boolean(
                                     emp.work_type ||
-                                        emp.work_schedule?.work_type_id ||
-                                        emp.work_schedule?.work_type,
+                                    emp.work_schedule?.work_type_id ||
+                                    emp.work_schedule?.work_type,
                                 );
 
                                 return (
@@ -280,13 +332,13 @@ const EmployeeList = ({
                                             <div className="flex min-w-0 items-center gap-3">
                                                 <EmployeeAvatar
                                                     employee={emp}
-                                                    name={emp.full_name}
+                                                    name={fullName}
                                                     className="h-9 w-9"
                                                 />
 
                                                 <div className="min-w-0">
                                                     <div className="truncate font-medium">
-                                                        {emp.full_name || "-"}
+                                                        {fullName}
                                                     </div>
                                                 </div>
                                             </div>
@@ -395,7 +447,9 @@ const EmployeeList = ({
                                                     </>
                                                 ) : (
                                                     <HoverCard openDelay={150}>
-                                                        <HoverCardTrigger asChild>
+                                                        <HoverCardTrigger
+                                                            asChild
+                                                        >
                                                             <Button
                                                                 type="button"
                                                                 size="icon"
@@ -438,31 +492,15 @@ const EmployeeList = ({
                 </Table>
             </div>
 
-            {totalPages > 1 && (
-                <Pagination className="my-2 justify-end">
-                    <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                    />
-                    <PaginationContent>
-                        {pageNumbers.map((page) => (
-                            <PaginationItem key={page}>
-                                <PaginationLink
-                                    isActive={currentPage === page}
-                                    onClick={() => handlePageChange(page)}
-                                >
-                                    {page}
-                                </PaginationLink>
-                            </PaginationItem>
-                        ))}
-                    </PaginationContent>
-                    <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                    />
-                </Pagination>
-            )}
+            <PaginationMain
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+                pageNumbers={pageNumbers}
+                pagination={pagination}
+                totalPages={totalPages}
+            />
         </div>
     );
 };
 
 export default EmployeeList;
-

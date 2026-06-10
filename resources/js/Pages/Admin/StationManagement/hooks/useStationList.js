@@ -6,6 +6,7 @@ import { getStationPagination } from "../utils";
 const useStationList = ({ stations, stationLimit }) => {
     const [chartReady, setChartReady] = useState(false);
     const [stationRowsData, setStationRowsData] = useState(stations);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         setStationRowsData(stations);
@@ -30,6 +31,8 @@ const useStationList = ({ stations, stationLimit }) => {
         const params = new URLSearchParams(window.location.search);
         params.set("station_page", page);
         params.set("station_limit", stationLimit);
+
+        setIsLoading(true);
 
         axios
             .get(route("stations.list"), {
@@ -56,6 +59,9 @@ const useStationList = ({ stations, stationLimit }) => {
             })
             .catch((error) => {
                 console.error("Failed to load station rows:", error);
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
     };
 
@@ -119,6 +125,7 @@ const useStationList = ({ stations, stationLimit }) => {
         closeStationModal,
         endIndex,
         handlePageChange,
+        isLoading,
         openAddStationModal,
         openStationModal,
         paginatedStations,

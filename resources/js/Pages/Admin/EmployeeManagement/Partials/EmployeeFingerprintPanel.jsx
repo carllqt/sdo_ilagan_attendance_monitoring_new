@@ -60,6 +60,7 @@ const fingerprintStatusVisual = ({
 
 const EmployeeFingerprintPanel = ({
     employees = [],
+    isSchoolAdmin = false,
     selectedEmployee,
     setSelectedEmployee,
     selectedEmployeeRecord: selectedEmployeeRecordProp = null,
@@ -86,7 +87,7 @@ const EmployeeFingerprintPanel = ({
         searchValue,
         selectedAvailableFingers,
         selectedEmployeeRecord,
-        selectedOfficeName,
+        selectedLocationName,
         setSearchValue,
         setShowSuggestions,
         showSuggestions,
@@ -95,6 +96,7 @@ const EmployeeFingerprintPanel = ({
     } = useEmployeeFingerprintPanelUi({
         availableFingers,
         employees,
+        isSchoolAdmin,
         scanFeedbackKey,
         scanMessage,
         scanStatus,
@@ -117,6 +119,10 @@ const EmployeeFingerprintPanel = ({
         status: testStatus,
         idleRing: "ring-slate-200",
     });
+    const getEmployeeLocationName = (employee) =>
+        isSchoolAdmin
+            ? employee?.station?.name || "-"
+            : employee?.meta || employee?.office?.name || "-";
 
     return (
         <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg">
@@ -197,10 +203,9 @@ const EmployeeFingerprintPanel = ({
                                                                     emp.label}
                                                             </div>
                                                             <div className="truncate text-xs text-slate-500">
-                                                                {emp.meta ||
-                                                                    emp.office
-                                                                        ?.name ||
-                                                                    "No Office"}
+                                                                {getEmployeeLocationName(
+                                                                    emp,
+                                                                )}
                                                             </div>
                                                             <div className="mt-1 text-xs font-medium text-blue-600">
                                                                 Available
@@ -263,7 +268,7 @@ const EmployeeFingerprintPanel = ({
                                     : "Select Employee"}
                             </p>
                             <p className="line-clamp-2 text-sm leading-5 text-slate-500">
-                                {selectedOfficeName}
+                                {selectedLocationName}
                             </p>
                         </div>
                     </div>

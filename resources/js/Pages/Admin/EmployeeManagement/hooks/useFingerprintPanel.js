@@ -9,6 +9,7 @@ import { getEmployeeName } from "@/lib/utils";
 const useFingerprintPanel = ({
     filteredEmployees,
     fingerprintServiceUrl,
+    isSchoolAdmin = false,
     selectedFingerprintEmployeeProp,
     testFingerprintModal,
 }) => {
@@ -201,11 +202,14 @@ const useFingerprintPanel = ({
                 if (!data || Object.keys(data).length === 0) return;
 
                 if (data.success && data.employee) {
-                    const { position, office } = data.employee;
+                    const { office, position, station } = data.employee;
+                    const locationName = isSchoolAdmin
+                        ? station?.name || "No station"
+                        : office?.name || "-";
 
                     setTestStatus("success");
                     setTestMessage(
-                        `Match: ${getEmployeeName(data.employee)} (${office?.name || "No office"} - ${position})`,
+                        `Match: ${getEmployeeName(data.employee)} (${locationName} - ${position})`,
                     );
 
                     setTimeout(() => {

@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { Head } from "@inertiajs/react";
+import React from "react";
+import { Head, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { UserCog } from "lucide-react";
 
@@ -9,13 +9,9 @@ import EmployeeEditDialog from "./Partials/EmployeeEditDialog";
 import FingerprintRegistrationPanel from "./Partials/EmployeeFingerprintPanel";
 import useEmployeeEditModal from "./hooks/useEmployeeEditModal";
 import useEmployeeFilters from "./hooks/useEmployeeFilters";
+import useEmployeeManagementData from "./hooks/useEmployeeManagementData";
 import useFingerprintPanel from "./hooks/useFingerprintPanel";
-import {
-    defaultFingerprintServiceUrl,
-    extractEmployeeRows,
-    statusOptions,
-} from "./utils";
-import { sortAlphabetically, sortEmployeesAlphabetically } from "@/lib/utils";
+import { defaultFingerprintServiceUrl, statusOptions } from "./utils";
 
 const EmployeeManagement = ({
     filteredEmployeesList,
@@ -32,21 +28,15 @@ const EmployeeManagement = ({
     testFingerprintModal = false,
     fingerprintServiceUrl = defaultFingerprintServiceUrl,
 }) => {
-    const filteredEmployees = useMemo(
-        () =>
-            sortEmployeesAlphabetically(
-                extractEmployeeRows(filteredEmployeesList),
-            ),
-        [filteredEmployeesList],
-    );
-    const sortedOffices = useMemo(
-        () => sortAlphabetically(offices, "name"),
-        [offices],
-    );
-    const sortedStations = useMemo(
-        () => sortAlphabetically(stations || [], "name"),
-        [stations],
-    );
+    const authUser = usePage().props.auth?.user;
+    const userRoles = authUser?.roles || [];
+    const isSchoolAdmin = userRoles.includes("school_admin");
+    const { filteredEmployees, sortedOffices, sortedStations } =
+        useEmployeeManagementData({
+            filteredEmployeesList,
+            offices,
+            stations,
+        });
     const { closeEditEmployeeModal, editForm, handleEdit, setEditForm } =
         useEmployeeEditModal(editEmployeeModal);
 
@@ -73,12 +63,14 @@ const EmployeeManagement = ({
     } = useFingerprintPanel({
         filteredEmployees,
         fingerprintServiceUrl,
+        isSchoolAdmin,
         selectedFingerprintEmployeeProp,
         testFingerprintModal,
     });
 
     const {
         applyEmployeeFilters,
+        employeesLoading,
         searchInput,
         selectedOffice,
         setSearchInput,
@@ -94,6 +86,7 @@ const EmployeeManagement = ({
         selectedEmployee,
         selectedFingerprintEmployee,
         status,
+        isSchoolAdmin,
     });
 
     return (
@@ -115,6 +108,7 @@ const EmployeeManagement = ({
                     />
                     <FingerprintRegistrationPanel
                         employees={filteredEmployees}
+                        isSchoolAdmin={isSchoolAdmin}
                         selectedEmployee={selectedEmployee}
                         setSelectedEmployee={setSelectedEmployee}
                         selectedEmployeeRecord={selectedFingerprintEmployee}
@@ -141,6 +135,7 @@ const EmployeeManagement = ({
                 <EmployeeList
                     filteredEmployees={filteredEmployees}
                     pagination={filteredEmployeesList}
+                    isLoading={employeesLoading}
                     isRegistered={isRegistered}
                     handleEdit={handleEdit}
                     searchInput={searchInput}
@@ -149,6 +144,7 @@ const EmployeeManagement = ({
                         applyEmployeeFilters({ searchValue: value });
                     }}
                     offices={sortedOffices}
+                    isSchoolAdmin={isSchoolAdmin}
                     selectedOffice={selectedOffice}
                     setSelectedOffice={setSelectedOffice}
                     statusOptions={statusOptions}

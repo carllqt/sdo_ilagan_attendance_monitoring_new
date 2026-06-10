@@ -10,8 +10,8 @@ use App\Http\Controllers\Administrator\{
     StationManagementController
 };
 use App\Http\Controllers\HumanResource\{
-    TardyConvertionController,
-    ConvertedTardyRecordsController,
+    TardinessConvertionController,
+    ConvertedTardinessRecordManagementController,
     VacationLeaveController,
     SickLeaveController,
 };
@@ -31,9 +31,6 @@ use App\Http\Controllers\TravelOrderController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return Inertia::render('LandingPage');
-})->name('landing');
 
 Route::get('/landing', fn () => Inertia::render('LandingPage'))->name('landing');
 
@@ -90,16 +87,19 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
             Route::delete('/work-schedules/{workSchedule}', 'destroyWorkSchedule')->name('dailytimerecord.workschedules.destroy');
         });
 
-    // Admin Tardy Records
-    Route::get('/tardysummary', [TardinessSummaryManagementController::class, 'index'])->name('tardysummary');
+    // Admin Tardiness Records
+    Route::get('/tardinesssummary/suggestions', [TardinessSummaryManagementController::class, 'suggestions'])->name('tardinesssummary.suggestions');
+    Route::get('/tardinesssummary', [TardinessSummaryManagementController::class, 'index'])->name('tardinesssummary');
 
-    // HR Tardy Records
-    Route::get('/tardyarchieve', [ConvertedTardyRecordsController::class, 'index'])->name('tardyarchieve');
-    Route::get('/tardyarchieve/{batch}', [ConvertedTardyRecordsController::class, 'show'])->name('batch-record');
+    // HR Tardiness Records
+    Route::get('/converted-tardiness-record-management', [ConvertedTardinessRecordManagementController::class, 'index'])->name('converted-tardiness-record');
+    Route::get('/converted-tardiness-record-management/{batch}', [ConvertedTardinessRecordManagementController::class, 'show'])->name('converted-tardiness-record.batch');
 
-    // HR Tardy Conversion
-    Route::get('/tardyconvertion', [TardyConvertionController::class, 'index'])->name('tardyconvertion');
-    Route::post('/tardy-convertions', [TardyConvertionController::class, 'store'])->name('tardy-convertions');
+    // HR Tardiness Conversion
+    Route::get('/tardinessconvertion/suggestions', [TardinessConvertionController::class, 'suggestions'])->name('tardinessconvertion.suggestions');
+    Route::get('/tardinessconvertion', [TardinessConvertionController::class, 'index'])->name('tardinessconvertion');
+    Route::post('/tardiness-convertions', [TardinessConvertionController::class, 'store'])->name('tardiness-convertions');
+    Route::put('/tardiness-convertions/{type}/{id}', [TardinessConvertionController::class, 'update'])->where('type', 'hours|minutes')->whereNumber('id')->name('tardiness-convertions.update');
 
     //Employee Managements
     Route::get('/employeemanagement/suggestions', [EmployeeManagementController::class, 'suggestions'])->name('employees.suggestions');
@@ -107,9 +107,27 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::post('/employeestore', [EmployeeManagementController::class, 'store'])->name('employees.store');
     Route::put('/employeeedit/{id}', [EmployeeManagementController::class, 'update'])->name('employees.update');
 
+
+
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])->name('locator-slips');
+        Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])->name('locator-slips.store');
+    });
+
+
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/slip-monitoring', [SlipMonitoringController::class, 'index'])->name('slip-monitoring.index');
+});
+
+Route::middleware(['role:sdo_admin'])->group(function () {
     // Department Management
     Route::get('/departmentmanagement', [DepartmentManagementController::class, 'index'])->name('departmentmanagement');
     Route::get('/departmentmanagement/employees', [DepartmentManagementController::class, 'employeeCandidates'])->name('department.employees');
+    Route::get('/departmentmanagement/office-heads', [DepartmentManagementController::class, 'officeHeadRows'])->name('department.office-heads');
+    Route::get('/departmentmanagement/office-heads/suggestions', [DepartmentManagementController::class, 'officeHeadSuggestions'])->name('department.office-heads.suggestions');
     Route::post('/departmentmanagement/depheadstore', [DepartmentManagementController::class, 'storeHead'])->name('departmenthead.storeHead');
     Route::post('/departmentmanagement/divisionheadstore', [DepartmentManagementController::class, 'storeDivisionHead'])->name('divisionhead.storeDivisionHead');
     Route::post('/departmentmanagement/addDepartment', [DepartmentManagementController::class, 'storeDepartment'])->name('division.storeDivision');
@@ -135,21 +153,6 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::delete('/station-assignments/{stationAssignment}', [StationManagementController::class, 'destroyStationAssignment'])->name('stationassignments.destroy');
     Route::put('/stations/{station}', [StationManagementController::class, 'updateStation'])->name('stations.update');
     Route::delete('/stations/{station}', [StationManagementController::class, 'destroyStation'])->name('stations.destroy');
-
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])->name('locator-slips');
-        Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])->name('locator-slips.store');
-    });
-
-
-    // Profile
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    Route::resource('position', PositionController::class);
-
-    Route::get('/slip-monitoring', [SlipMonitoringController::class, 'index'])->name('slip-monitoring.index');
 });
 
 

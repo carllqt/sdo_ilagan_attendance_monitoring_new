@@ -6,6 +6,7 @@ import { clampAvailableFingers } from "../utils";
 const useEmployeeFingerprintPanelUi = ({
     availableFingers,
     employees,
+    isSchoolAdmin = false,
     scanFeedbackKey,
     scanMessage,
     scanStatus,
@@ -42,8 +43,9 @@ const useEmployeeFingerprintPanelUi = ({
                 clampAvailableFingers(emp.available_fingers) > 0,
         ) ||
         null;
-    const selectedOfficeName =
-        selectedEmployeeRecord?.office?.name || "Department";
+    const selectedLocationName = isSchoolAdmin
+        ? selectedEmployeeRecord?.station?.name || "School"
+        : selectedEmployeeRecord?.office?.name || "Section / Unit";
     const selectedAvailableFingers = clampAvailableFingers(
         selectedEmployeeRecord?.available_fingers ??
             availableFingers(selectedEmployee),
@@ -141,7 +143,7 @@ const useEmployeeFingerprintPanelUi = ({
         searchValue,
         selectedAvailableFingers,
         selectedEmployeeRecord,
-        selectedOfficeName,
+        selectedLocationName,
         setSearchValue,
         setShowSuggestions,
         showSuggestions,
@@ -151,4 +153,3 @@ const useEmployeeFingerprintPanelUi = ({
 };
 
 export default useEmployeeFingerprintPanelUi;
-

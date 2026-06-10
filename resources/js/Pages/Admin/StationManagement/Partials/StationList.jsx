@@ -7,19 +7,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Building2, AlertTriangle, SquarePen, Trash2 } from "lucide-react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
+import PaginationMain from "@/Components/PaginationMain";
+import { Skeleton } from "@/components/ui/skeleton";
 import EditStationModal from "./EditStationModal";
 import AddStationModal from "./AddStationModal";
 import useStationList from "../hooks/useStationList";
@@ -42,6 +36,7 @@ const StationList = ({
         closeStationModal,
         endIndex,
         handlePageChange,
+        isLoading,
         openAddStationModal,
         openStationModal,
         paginatedStations,
@@ -50,6 +45,7 @@ const StationList = ({
         totalEntries,
         totalPages,
     } = useStationList({ stations, stationLimit });
+    const skeletonRows = Math.max(5, Math.min(Number(stationLimit || 5), 10));
 
     const assignedCount = stationStats.assigned || 0;
     const missingCount = stationStats.missing || 0;
@@ -89,7 +85,7 @@ const StationList = ({
 
     return (
         <div className="flex gap-5">
-            <div className="w-[60%] rounded-xl p-4 border-2 shadow-lg">
+            <div className="flex min-h-[483px] w-[60%] flex-col rounded-xl p-4 border-2 shadow-lg">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <h2 className="text-lg font-bold">Station List</h2>
@@ -123,7 +119,32 @@ const StationList = ({
                         </TableHeader>
 
                         <TableBody>
-                            {paginatedStations.length > 0 ? (
+                            {isLoading ? (
+                                Array.from({ length: skeletonRows }).map(
+                                    (_, index) => (
+                                        <TableRow
+                                            key={`station-list-skeleton-${index}`}
+                                            className="h-[56px]"
+                                        >
+                                            <TableCell className="p-3">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                    <Skeleton className="h-4 w-48 max-w-full" />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-3">
+                                                <Skeleton className="h-4 w-20" />
+                                            </TableCell>
+                                            <TableCell className="p-3">
+                                                <div className="flex justify-center gap-5">
+                                                    <Skeleton className="h-8 w-8 rounded-full" />
+                                                    <Skeleton className="h-8 w-8 rounded-full" />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ),
+                                )
+                            ) : paginatedStations.length > 0 ? (
                                 paginatedStations.map(({ station }) => {
                                     const isSdoAssignment =
                                         station.source === "sdo";
@@ -199,52 +220,17 @@ const StationList = ({
                     </Table>
                 </div>
 
-                <div className="flex items-center mt-4">
-                    <div className="text-sm text-gray-500">
-                        Showing {startIndex} to {endIndex} of {totalEntries}
-                    </div>
-
-                    <div className="ml-auto">
-                        {totalPages > 1 && (
-                            <Pagination>
-                                <PaginationPrevious
-                                    onClick={() =>
-                                        handlePageChange(activePage - 1)
-                                    }
-                                />
-
-                                <PaginationContent>
-                                    {paginationItems.map((item, index) => (
-                                        <PaginationItem key={index}>
-                                            {item === "..." ? (
-                                                <span className="px-2 text-gray-400">
-                                                    ...
-                                                </span>
-                                            ) : (
-                                                <PaginationLink
-                                                    isActive={
-                                                        activePage === item
-                                                    }
-                                                    onClick={() =>
-                                                        handlePageChange(item)
-                                                    }
-                                                >
-                                                    {item}
-                                                </PaginationLink>
-                                            )}
-                                        </PaginationItem>
-                                    ))}
-                                </PaginationContent>
-
-                                <PaginationNext
-                                    onClick={() =>
-                                        handlePageChange(activePage + 1)
-                                    }
-                                />
-                            </Pagination>
-                        )}
-                    </div>
-                </div>
+                <PaginationMain
+                    className="mt-auto pt-4"
+                    currentPage={activePage}
+                    from={startIndex}
+                    onPageChange={handlePageChange}
+                    pageNumbers={paginationItems}
+                    showEntryLabel={false}
+                    to={endIndex}
+                    total={totalEntries}
+                    totalPages={totalPages}
+                />
             </div>
 
             <EditStationModal
@@ -353,8 +339,8 @@ const StationList = ({
                             </div>
 
                             <p className="text-xs text-gray-600 pt-1">
-                                {assignedCount} of {stationStats.total || 0} stations
-                                covered
+                                {assignedCount} of {stationStats.total || 0}{" "}
+                                stations covered
                             </p>
                         </div>
                     </div>
@@ -446,4 +432,3 @@ const StationList = ({
 };
 
 export default StationList;
-

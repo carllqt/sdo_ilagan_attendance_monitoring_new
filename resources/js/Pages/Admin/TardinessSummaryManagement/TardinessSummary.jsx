@@ -1,149 +1,148 @@
-import React, { useState, useMemo, useRef } from "react";
-import { Head, router } from "@inertiajs/react";
+import React from "react";
+import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import html2pdf from "html2pdf.js";
 
-import TardyTable from "./Partials/TardyTable";
+import EmployeeList from "./Partials/EmployeeList";
+import StationVerificationList from "./Partials/StationVerificationList";
 import SummaryofTardinessReport from "../../DocumentsFormats/AdminSummaryofTardinessReport";
-import { sortAlphabetically, sortWithPinnedFirst } from "@/lib/utils";
+import useTardinessSummaryManagement from "./hooks/useTardinessSummaryManagement";
+import { monthList } from "./utils";
+import { ChartColumn } from "lucide-react";
 
-const TardySummary = ({
+const TardinessSummary = ({
     summary,
-    departments: departmentOptions = [],
+    printSummary = [],
+    stationVerification,
+    verificationStationId,
+    verificationStations = [],
+    offices: officeOptions = [],
     years: yearOptions = [],
+    office = "All Offices",
     search = "",
-    department = "All Departments",
     year,
 }) => {
-    const pdfRef = useRef();
-    const monthList = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ];
-
-    const currentYear = new Date().getFullYear().toString();
-    const [searchInput, setSearchInput] = useState(search);
-    const [selectedDepartment, setSelectedDepartment] = useState(department);
-    const [selectedYear, setSelectedYear] = useState(
-        year || currentYear,
-    );
-
-    const departments = useMemo(
-        () =>
-            sortWithPinnedFirst(
-                ["All Departments", ...new Set(departmentOptions)],
-                ["All Departments"],
-            ),
-        [departmentOptions],
-    );
-
-    const years = useMemo(
-        () =>
-            yearOptions.length
-                ? yearOptions.map(String)
-                : [currentYear],
-        [currentYear, yearOptions],
-    );
-
-    const filteredSummary = useMemo(
-        () => sortAlphabetically(summary, "employee.full_name"),
-        [summary],
-    );
-
-    const applyFilters = ({
-        searchValue = searchInput,
-        departmentValue = selectedDepartment,
-        yearValue = selectedYear,
-    } = {}) => {
-        const query = {
-            year: yearValue,
-        };
-
-        if (searchValue && searchValue.trim()) {
-            query.search = searchValue.trim();
-        }
-
-        if (
-            departmentValue &&
-            departmentValue !== "All Departments"
-        ) {
-            query.department = departmentValue;
-        }
-
-        router.get(route("tardysummary"), query, {
-            only: [
-                "summary",
-                "departments",
-                "years",
-                "search",
-                "department",
-                "year",
-            ],
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    const handleDownloadPDF = () => {
-        const element = pdfRef.current;
-        html2pdf()
-            .set({
-                margin: 0.5,
-                filename: `Tardiness_Summary_${selectedYear}.pdf`,
-                image: { type: "jpeg", quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: {
-                    unit: "in",
-                    format: "letter",
-                    orientation: "portrait",
-                },
-            })
-            .from(element)
-            .save();
-    };
+    const {
+        applyFilters,
+        applySearch,
+        filteredSummary,
+        handleDownloadPDF,
+        handleSummaryPageChange,
+        handleSuggestionSelect,
+        handleVerificationPageChange,
+        handleVerificationStationChange,
+        isSchoolAdmin,
+        offices,
+        pdfRef,
+        searchBoxRef,
+        searchInput,
+        selectedMonth,
+        selectedOffice,
+        selectedYear,
+        setSearchInput,
+        setSelectedMonth,
+        setSelectedOffice,
+        setSelectedYear,
+        setShowSuggestions,
+        showSuggestions,
+        stationEmployees,
+        summaryPagination,
+        suggestionMatches,
+        suggestionsLoading,
+        summaryLoading,
+        verificationLoading,
+        verificationPagination,
+        years,
+    } = useTardinessSummaryManagement({
+        office,
+        officeOptions,
+        printSummary,
+        search,
+        stationVerification,
+        summary,
+        verificationStationId,
+        verificationStations,
+        year,
+        yearOptions,
+    });
 
     return (
-        <AuthenticatedLayout header="Summary of Tardiness">
+        <AuthenticatedLayout
+            header={
+                <div className="flex items-center gap-5">
+                    <ChartColumn className="w-5 h-5 text-blue-600" />
+                    <span>Tardiness Summary</span>
+                </div>
+            }
+        >
             <Head title="Summary of Tardiness" />
             <main>
                 <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-lg">
-                    <TardyTable
+                    <EmployeeList
                         filteredSummary={filteredSummary}
                         monthList={monthList}
                         selectedYear={selectedYear}
                         setSelectedYear={setSelectedYear}
+                        selectedMonth={selectedMonth}
+                        setSelectedMonth={setSelectedMonth}
+                        searchBoxRef={searchBoxRef}
+                        searchInput={searchInput}
+                        setSearchInput={setSearchInput}
+                        applySearch={applySearch}
+                        selectSuggestion={handleSuggestionSelect}
+                        setShowSuggestions={setShowSuggestions}
+                        showSuggestions={showSuggestions}
+                        suggestionMatches={suggestionMatches}
+                        suggestionsLoading={suggestionsLoading}
+                        isLoading={summaryLoading}
                         years={years}
-                        departments={departments}
-                        selectedDepartment={selectedDepartment}
-                        setSelectedDepartment={setSelectedDepartment}
-                        search={searchInput}
-                        setSearch={setSearchInput}
+                        offices={offices}
+                        selectedOffice={selectedOffice}
+                        setSelectedOffice={setSelectedOffice}
                         applyFilters={applyFilters}
                         onDownloadPDF={handleDownloadPDF}
+                        currentPage={summaryPagination.currentPage}
+                        handlePageChange={handleSummaryPageChange}
+                        pageNumbers={summaryPagination.pageNumbers}
+                        paginationFrom={summaryPagination.paginationFrom}
+                        paginationTo={summaryPagination.paginationTo}
+                        totalPages={summaryPagination.totalPages}
+                        totalRecords={summaryPagination.totalRecords}
                     />
-
-                    <div style={{ display: "none" }}>
-                        <SummaryofTardinessReport
-                            ref={pdfRef}
-                            summary={filteredSummary}
+                </div>
+                {!isSchoolAdmin && (
+                    <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-lg mt-5">
+                        <StationVerificationList
+                            currentPage={verificationPagination.currentPage}
+                            employees={stationEmployees}
+                            handlePageChange={handleVerificationPageChange}
+                            isLoading={verificationLoading}
+                            monthList={monthList}
+                            onStationChange={handleVerificationStationChange}
+                            pageNumbers={verificationPagination.pageNumbers}
+                            paginationFrom={
+                                verificationPagination.paginationFrom
+                            }
+                            paginationTo={verificationPagination.paginationTo}
+                            selectedStationId={verificationStationId}
                             selectedYear={selectedYear}
+                            stations={verificationStations}
+                            totalRecords={verificationPagination.totalRecords}
+                            totalPages={verificationPagination.totalPages}
                         />
                     </div>
+                )}
+
+                <div style={{ display: "none" }}>
+                    <SummaryofTardinessReport
+                        ref={pdfRef}
+                        summary={printSummary}
+                        selectedMonth={selectedMonth}
+                        selectedYear={selectedYear}
+                    />
                 </div>
             </main>
         </AuthenticatedLayout>
     );
 };
 
-export default TardySummary;
+export default TardinessSummary;
