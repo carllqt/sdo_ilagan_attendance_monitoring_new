@@ -13,9 +13,7 @@ export const getDefaultFirstMonth = (monthList = [], currentMonth) =>
     monthList[0] || currentMonth;
 
 export const getDefaultSecondMonth = (monthList = [], currentMonth) =>
-    (monthList.includes(currentMonth)
-        ? currentMonth
-        : monthList[monthList.length - 1]) || currentMonth;
+    monthList[monthList.length - 1] || currentMonth;
 
 export const getMonthRangeLabel = (startMonth, endMonth) => {
     const start = dayjs(startMonth, "MMMM YYYY");
@@ -55,12 +53,18 @@ export const buildTardinessConvertionQuery = ({
     startMonthValue,
 }) => {
     const query = {
-        start_month: startMonthValue,
-        end_month: endMonthValue,
         office: officeValue,
         limit: limitValue,
     };
     const cleanSearch = String(searchValue || "").trim();
+
+    if (startMonthValue) {
+        query.start_month = startMonthValue;
+    }
+
+    if (endMonthValue) {
+        query.end_month = endMonthValue;
+    }
 
     if (cleanSearch) {
         query.search = cleanSearch;

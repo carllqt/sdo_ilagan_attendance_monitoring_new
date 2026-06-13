@@ -13,6 +13,7 @@ import {
 } from "../utils";
 
 const useTardinessConvertionFilters = ({
+    filteredSummaryPayload = [],
     monthList = [],
     office = "all",
     records = {},
@@ -66,8 +67,11 @@ const useTardinessConvertionFilters = ({
     );
 
     const summaryPayload = useMemo(
-        () => buildSummaryPayload(groupedByEmployee),
-        [groupedByEmployee],
+        () =>
+            filteredSummaryPayload.length > 0
+                ? filteredSummaryPayload
+                : buildSummaryPayload(groupedByEmployee),
+        [filteredSummaryPayload, groupedByEmployee],
     );
 
     const applyFilters = ({
@@ -91,6 +95,8 @@ const useTardinessConvertionFilters = ({
             {
                 only: [
                     "records",
+                    "summaryPayload",
+                    "printRecords",
                     "monthList",
                     "office",
                     "search",
@@ -108,7 +114,11 @@ const useTardinessConvertionFilters = ({
 
     const handleOfficeChange = (value) => {
         setSelectedOffice(value);
-        applyFilters({ officeValue: value });
+        applyFilters({
+            officeValue: value,
+            startMonthValue: null,
+            endMonthValue: null,
+        });
     };
 
     const handleFirstMonthChange = (value) => {

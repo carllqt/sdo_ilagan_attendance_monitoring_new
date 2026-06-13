@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Data\HumanResource;
+namespace App\Data\HumanResource\TardinessConvertion;
 
 use Illuminate\Http\Request;
 
@@ -21,11 +21,19 @@ class TardinessConvertionFilter
     public static function fromRequest(Request $request): self
     {
         $limit = (int) $request->query('limit', 10);
+        $officeId = $request->query('office', 'all') ?: 'all';
+
+        if (
+            is_string($officeId) &&
+            in_array(strtolower(trim($officeId)), ['all', 'all offices'], true)
+        ) {
+            $officeId = 'all';
+        }
 
         return new self(
             startMonth: self::cleanMonth($request->query('start_month')),
             endMonth: self::cleanMonth($request->query('end_month')),
-            officeId: $request->query('office', 'all') ?: 'all',
+            officeId: $officeId,
             limit: in_array($limit, self::LIMITS, true) ? $limit : 10,
             page: max((int) $request->query('page', 1), 1),
             search: trim((string) $request->query('search', '')),
@@ -44,6 +52,19 @@ class TardinessConvertionFilter
         return new self(
             startMonth: $this->startMonth ?: $startMonth,
             endMonth: $this->endMonth ?: $endMonth,
+            officeId: $this->officeId,
+            limit: $this->limit,
+            page: $this->page,
+            search: $this->search,
+            employeeId: $this->employeeId,
+        );
+    }
+
+    public function withMonthRange(string $startMonth, string $endMonth): self
+    {
+        return new self(
+            startMonth: $startMonth,
+            endMonth: $endMonth,
             officeId: $this->officeId,
             limit: $this->limit,
             page: $this->page,

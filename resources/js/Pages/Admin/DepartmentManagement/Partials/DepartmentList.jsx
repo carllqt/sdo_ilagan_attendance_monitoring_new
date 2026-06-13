@@ -80,7 +80,7 @@ const DepartmentList = ({
             <div className="flex min-h-[400px] flex-col rounded-xl p-4 border-2 shadow-lg">
                 <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                        <h2 className="text-lg font-bold">Section / Unit</h2>
+                        <h2 className="text-l font-bold">Section / Unit</h2>
                         <p className="text-sm text-gray-500">
                             Manage offices under each division
                         </p>
@@ -418,7 +418,7 @@ const DepartmentList = ({
                 <div className="flex min-h-[370px] flex-col rounded-xl p-4 border-2 shadow-lg">
                     <div className="mb-4 flex items-center justify-between gap-3">
                         <div>
-                            <h2 className="text-lg font-bold">Division List</h2>
+                            <h2 className="text-l font-bold">Division List</h2>
                             <p className="text-sm text-gray-500">
                                 Manage division records
                             </p>

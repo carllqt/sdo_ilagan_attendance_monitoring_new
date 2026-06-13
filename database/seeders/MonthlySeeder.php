@@ -16,8 +16,8 @@ class MonthlySeeder extends Seeder
         $employees = Employee::all();
 
         $year = now()->year;
-        $start = Carbon::create($year, 7, 1); // July 1
-        $end = Carbon::create($year, 8, 31);  // August 31
+        $start = Carbon::create($year, 6, 1); // June 1
+        $end = Carbon::create($year, 12, 31);  // December 31
 
         foreach ($employees as $employee) {
 

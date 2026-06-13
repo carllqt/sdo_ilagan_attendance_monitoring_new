@@ -9,6 +9,8 @@ import useTardinessConvertionManagement from "./hooks/useTardinessConvertionMana
 
 const TardinessConvertion = ({
     records = {},
+    summaryPayload: filteredSummaryPayload = [],
+    printRecords = [],
     monthList = [],
     offices: officeOptions = [],
     office = "all",
@@ -45,6 +47,7 @@ const TardinessConvertion = ({
         suggestionsLoading,
         summaryPayload,
     } = useTardinessConvertionManagement({
+        filteredSummaryPayload,
         monthList,
         office,
         officeOptions,
@@ -64,7 +67,7 @@ const TardinessConvertion = ({
             }
         >
             <Head title="Tardiness Summary / Convertion Management" />
-            <main>
+            <main className="space-y-5">
                 <ConvertionTable
                     conversionHours={conversionHours}
                     conversionMinutes={conversionMinutes}
@@ -102,7 +105,7 @@ const TardinessConvertion = ({
                 <div style={{ display: "none" }}>
                     <HrSummaryofTardinessReport
                         ref={pdfRef}
-                        groupedByEmployee={groupedByEmployee}
+                        groupedByEmployee={printRecords}
                         monthRangeLabel={monthRangeLabel}
                     />
                 </div>

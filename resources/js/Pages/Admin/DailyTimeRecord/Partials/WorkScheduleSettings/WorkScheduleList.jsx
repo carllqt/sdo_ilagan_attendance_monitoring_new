@@ -33,7 +33,7 @@ const WorkScheduleList = ({
         <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-lg">
             <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-lg font-bold">
+                    <h2 className="text-l font-bold">
                         Work Schedule Settings
                     </h2>
                     <p className="text-sm text-gray-500">

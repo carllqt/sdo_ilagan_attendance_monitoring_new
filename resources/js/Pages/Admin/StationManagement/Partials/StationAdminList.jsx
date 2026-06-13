@@ -67,7 +67,7 @@ const StationAdminList = ({
         <div className="rounded-xl">
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                    <h2 className="text-lg font-bold">
+                    <h2 className="text-l font-bold">
                         Station Administrator List
                     </h2>
                     <p className="text-sm text-gray-500">

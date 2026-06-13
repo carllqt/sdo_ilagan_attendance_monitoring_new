@@ -13,15 +13,14 @@ class TardinessSummaryManagementRepository
 {
     public function offices(TardinessSummaryFilter $filter)
     {
-        $officeIds = Employee::query()
-            ->join('tardiness_records', 'employees.id', '=', 'tardiness_records.employee_id')
-            ->when($filter->isSchoolAdmin, fn ($query) => $this->scopeSchool($query, $filter))
-            ->distinct()
-            ->pluck('employees.office_id');
-
         return Office::with('division:id,code,name')
             ->select('id', 'division_id', 'name')
-            ->whereIn('id', $officeIds)
+            ->when($filter->isSchoolAdmin, function ($query) use ($filter) {
+                $query->whereHas('employees', function ($employeeQuery) use ($filter) {
+                    $employeeQuery->where('active_status', 1);
+                    $this->scopeSchool($employeeQuery, $filter);
+                });
+            })
             ->orderBy('name')
             ->get();
     }

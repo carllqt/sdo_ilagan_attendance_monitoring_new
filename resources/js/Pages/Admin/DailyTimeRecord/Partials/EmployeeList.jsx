@@ -95,7 +95,7 @@ const EmployeeList = ({
             <div className="rounded-xl">
                 <div className="mb-4 flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                        <h2 className="text-lg font-bold text-slate-900">
+                        <h2 className="text-l font-bold text-slate-900">
                             Employee Records
                         </h2>
                         <p className="text-sm text-gray-500">

@@ -45,7 +45,7 @@ const DivisionHeadList = ({
         <div className="rounded-xl">
             <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-lg font-bold">Division Head</h2>
+                    <h2 className="text-l font-bold">Division Head</h2>
                     <p className="text-sm text-gray-500">
                         Manage division head assignments
                     </p>

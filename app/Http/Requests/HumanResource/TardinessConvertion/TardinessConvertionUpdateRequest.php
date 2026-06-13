@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\HumanResource;
+namespace App\Http\Requests\HumanResource\TardinessConvertion;
 
 use Illuminate\Foundation\Http\FormRequest;
 

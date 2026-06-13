@@ -79,7 +79,6 @@ const EmployeeList = ({
         <div className="rounded-2xl p-4 mt-4 border border-blue-100 shadow-lg">
             <div className="rounded-xl">
                 <div className="flex items-center justify-between mb-4 gap-4">
-                    {/* LEFT SIDE */}
                     <div className="min-w-0">
                         <h2 className="text-l font-bold">Employee List</h2>
                         <p className="text-sm text-gray-500">

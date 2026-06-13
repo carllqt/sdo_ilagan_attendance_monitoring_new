@@ -132,7 +132,7 @@ const EmployeeFingerprintPanel = ({
                         <Fingerprint className="h-6 w-6" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold">
+                        <h2 className="text-l font-bold">
                             Employee Fingerprint Registration
                         </h2>
                         <p className="text-sm text-blue-100">
@@ -255,7 +255,7 @@ const EmployeeFingerprintPanel = ({
                                 <img
                                     src={`/storage/${selectedEmployeeRecord.profile_img}`}
                                     alt={selectedEmployeeRecord.full_name}
-                                    className="h-full w-full object-cover"
+                                    className="h-full w-full object-cover object-top"
                                 />
                             ) : (
                                 <User className="h-12 w-12" />
@@ -377,4 +377,3 @@ const EmployeeFingerprintPanel = ({
 };
 
 export default EmployeeFingerprintPanel;
-

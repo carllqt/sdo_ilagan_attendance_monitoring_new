@@ -61,7 +61,7 @@ const DepartmentHeadList = ({
         <div className="rounded-xl">
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                    <h2 className="text-lg font-bold">Section / Unit Head</h2>
+                    <h2 className="text-l font-bold">Section / Unit Head</h2>
                     <p className="text-sm text-gray-500">
                         Manage section / unit head assignments
                     </p>

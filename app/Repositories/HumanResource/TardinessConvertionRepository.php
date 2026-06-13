@@ -2,7 +2,7 @@
 
 namespace App\Repositories\HumanResource;
 
-use App\Data\HumanResource\TardinessConvertionFilter;
+use App\Data\HumanResource\TardinessConvertion\TardinessConvertionFilter;
 use App\Models\Administrator\Office;
 use App\Models\Administrator\TardinessRecord;
 use App\Models\HumanResource\ConvertionHours;
@@ -18,6 +18,25 @@ class TardinessConvertionRepository
         string $startDate,
         string $endDate,
     ): LengthAwarePaginator {
+        return $this->filteredSummaryRowsQuery($filter, $startDate, $endDate)
+            ->paginate($filter->limit, ['*'], 'page', $filter->page)
+            ->withQueryString();
+    }
+
+    public function allSummaryRows(
+        TardinessConvertionFilter $filter,
+        string $startDate,
+        string $endDate,
+    ): Collection {
+        return $this->filteredSummaryRowsQuery($filter, $startDate, $endDate)
+            ->get();
+    }
+
+    private function filteredSummaryRowsQuery(
+        TardinessConvertionFilter $filter,
+        string $startDate,
+        string $endDate,
+    ) {
         return $this->summaryQuery($startDate, $endDate)
             ->when($filter->officeId !== 'all', function ($query) use ($filter) {
                 $query->where('employees.office_id', $filter->officeId);
@@ -58,9 +77,7 @@ class TardinessConvertionRepository
             ->orderBy('employees.first_name')
             ->orderBy('employees.middle_name')
             ->orderBy('employees.last_name')
-            ->orderBy('employees.id')
-            ->paginate($filter->limit, ['*'], 'page', $filter->page)
-            ->withQueryString();
+            ->orderBy('employees.id');
     }
 
     public function employeeIdForSearch(
@@ -119,9 +136,15 @@ class TardinessConvertionRepository
             ->get();
     }
 
-    public function monthList(): Collection
+    public function monthList(TardinessConvertionFilter $filter): Collection
     {
-        return TardinessRecord::whereDoesntHave('tardinessConvertions')
+        return TardinessRecord::query()
+            ->whereDoesntHave('tardinessConvertions')
+            ->when($filter->officeId !== 'all', function ($query) use ($filter) {
+                $query->whereHas('employee', function ($employeeQuery) use ($filter) {
+                    $employeeQuery->where('office_id', $filter->officeId);
+                });
+            })
             ->selectRaw('YEAR(date) as year, MONTH(date) as month')
             ->distinct()
             ->orderBy('year')
@@ -131,21 +154,7 @@ class TardinessConvertionRepository
 
     public function officeOptions(): Collection
     {
-        $officeIds = DB::table('offices')
-            ->join('employees', 'employees.office_id', '=', 'offices.id')
-            ->join('tardiness_records', 'tardiness_records.employee_id', '=', 'employees.id')
-            ->leftJoin(
-                'hr_converted_tardiness_records',
-                'hr_converted_tardiness_records.tardiness_record_id',
-                '=',
-                'tardiness_records.id',
-            )
-            ->whereNull('hr_converted_tardiness_records.tardiness_record_id')
-            ->distinct()
-            ->pluck('offices.id');
-
         return Office::with('division:id,code,name')
-            ->whereIn('id', $officeIds)
             ->orderBy('name')
             ->get();
     }

@@ -2,7 +2,7 @@
 
 namespace App\Repositories\HumanResource;
 
-use App\Data\HumanResource\ConvertedTardinessRecordFilter;
+use App\Data\HumanResource\ConvertedTardinessRecordManagement\ConvertedTardinessRecordFilter;
 use App\Models\Administrator\Employee;
 use App\Models\HumanResource\HrTardinessBatch;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -17,7 +17,7 @@ class ConvertedTardinessRecordRepository
                 'office:id,name,division_id',
                 'office.division:id,code,name',
                 'tardinessConvertion' => fn ($query) => $query
-                    ->with('batch:id,batch_code,start_month,end_month')
+                    ->with('batch:id,start_month,end_month')
                     ->whereHas('batch')
                     ->orderBy('batch_id'),
             ])
@@ -41,5 +41,24 @@ class ConvertedTardinessRecordRepository
         return $batch->tardinessConvertions()
             ->with('employee', 'tardinessRecords')
             ->get();
+    }
+
+    public function batchHistory(ConvertedTardinessRecordFilter $filter): LengthAwarePaginator
+    {
+        return HrTardinessBatch::query()
+            ->with([
+                'tardinessConvertions' => fn ($query) => $query
+                    ->with('employee.office:id,name,division_id')
+                    ->orderBy('employee_id'),
+            ])
+            ->withCount('tardinessConvertions')
+            ->latest()
+            ->paginate(
+                $filter->batchHistoryLimit,
+                ['*'],
+                'batch_page',
+                $filter->batchHistoryPage,
+            )
+            ->withQueryString();
     }
 }

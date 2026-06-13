@@ -4,8 +4,8 @@ namespace App\Http\Controllers\HumanResource;
 
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\HumanResource\TardinessConvertionStoreRequest;
-use App\Http\Requests\HumanResource\TardinessConvertionUpdateRequest;
+use App\Http\Requests\HumanResource\TardinessConvertion\TardinessConvertionStoreRequest;
+use App\Http\Requests\HumanResource\TardinessConvertion\TardinessConvertionUpdateRequest;
 use App\Services\HumanResource\TardinessConvertionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;

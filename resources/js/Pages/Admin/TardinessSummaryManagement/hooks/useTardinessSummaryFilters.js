@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { buildTardinessSummaryQuery } from "../utils";
+import {
+    allOfficesLabel,
+    buildTardinessSummaryQuery,
+    isAllOfficeValue,
+} from "../utils";
 
 const useTardinessSummaryFilters = ({
     currentPage,
@@ -29,9 +33,11 @@ const useTardinessSummaryFilters = ({
         verificationStationValue = resolveVerificationStationName(),
         yearValue = selectedYear,
     } = {}) => {
-        const matchedOffice = offices.find(
-            (item) => Number(item.id) === Number(officeValue),
-        );
+        const matchedOffice = isAllOfficeValue(officeValue)
+            ? { name: allOfficesLabel }
+            : offices.find(
+                  (item) => String(item.id) === String(officeValue),
+              );
 
         return buildTardinessSummaryQuery({
             isSchoolAdmin,

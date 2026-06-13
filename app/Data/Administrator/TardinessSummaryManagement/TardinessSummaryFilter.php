@@ -28,8 +28,14 @@ class TardinessSummaryFilter
         $year = (int) $request->query('year', now()->year);
         $search = trim((string) $request->query('search', ''));
 
+        $office = trim((string) $request->query('office', self::ALL_OFFICES)) ?: self::ALL_OFFICES;
+
+        if (strtolower($office) === 'all') {
+            $office = self::ALL_OFFICES;
+        }
+
         return new self(
-            office: trim((string) $request->query('office', self::ALL_OFFICES)) ?: self::ALL_OFFICES,
+            office: $office,
             search: $search,
             year: $year >= 2000 && $year <= 2100 ? $year : now()->year,
             limit: self::limitFromRequest($request),

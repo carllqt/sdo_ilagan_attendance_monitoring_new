@@ -88,7 +88,7 @@ const StationList = ({
             <div className="flex min-h-[483px] w-[60%] flex-col rounded-xl p-4 border-2 shadow-lg">
                 <div className="flex justify-between items-center mb-4">
                     <div>
-                        <h2 className="text-lg font-bold">Station List</h2>
+                        <h2 className="text-l font-bold">Station List</h2>
                         <p className="text-sm text-gray-500">
                             Manage all stations
                         </p>

@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('hr_tardiness_batches', function (Blueprint $table) {
-            $table->id();
-            $table->string('batch_code')->unique(); 
+            $table->unsignedInteger('id')->primary();
             $table->date('start_month');
             $table->date('end_month');
             $table->timestamps();

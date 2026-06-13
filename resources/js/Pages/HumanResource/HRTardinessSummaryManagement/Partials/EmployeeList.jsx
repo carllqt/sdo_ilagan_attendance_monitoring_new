@@ -19,7 +19,7 @@ import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import FloatingInput from "@/components/floating-input";
 import { SuggestionSkeletonList } from "@/Components/Skeletons";
-import { Search } from "lucide-react";
+import { CalendarDays, Search } from "lucide-react";
 
 const EmployeeList = ({
     groupedByEmployee = [],
@@ -55,12 +55,16 @@ const EmployeeList = ({
         5,
         Math.min(Number(pagination?.per_page || 10), 10),
     );
+    const convertCount =
+        Number(pagination?.total || 0) ||
+        summaryPayload.length ||
+        groupedByEmployee.length;
 
     return (
-        <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-lg">
+        <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
             <div className="mb-4 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                    <h2 className="text-lg font-bold text-slate-900">
+                    <h2 className="text-l font-bold text-slate-900">
                         Employee List
                     </h2>
                     <p className="text-sm text-gray-500">
@@ -164,12 +168,15 @@ const EmployeeList = ({
                         trigger={
                             <Button
                                 variant="green"
-                                className="h-10 w-full"
-                                disabled={
-                                    isLoading || groupedByEmployee.length === 0
-                                }
+                                className="relative h-10 w-full bg-emerald-600 shadow-sm hover:bg-emerald-700"
+                                disabled={isLoading || convertCount === 0}
                             >
-                                Save All Summaries
+                                Convert & Save
+                                {convertCount > 0 ? (
+                                    <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-blue-600 px-1.5 text-xs font-bold leading-none text-white shadow">
+                                        {convertCount}
+                                    </span>
+                                ) : null}
                             </Button>
                         }
                         title="Confirm Summary Save"
@@ -182,7 +189,7 @@ const EmployeeList = ({
                         itemName={monthRangeLabel || "Selected month range"}
                         confirmText="Save Summaries"
                         processingText="Saving..."
-                        note="All listed tardiness summaries will be saved immediately after password confirmation."
+                        note={`${convertCount} filtered tardiness summaries will be saved immediately after password confirmation.`}
                         onSuccess={onSaveSuccess}
                         onError={() => {}}
                     />
@@ -275,23 +282,36 @@ const EmployeeList = ({
                                             </div>
                                         </TableCell>
 
-                                        <TableCell className="truncate p-3 text-gray-700">
-                                            {record.month_label ||
-                                                monthRangeLabel ||
-                                                "-"}
+                                        <TableCell className="p-3 text-gray-700">
+                                            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                                <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate">
+                                                    {record.month_label ||
+                                                        monthRangeLabel ||
+                                                        "-"}
+                                                </span>
+                                            </div>
                                         </TableCell>
                                         <TableCell className="p-3 text-center text-gray-700">
-                                            {Number(record.total_tardy || 0).toFixed(2)}
+                                            {Number(
+                                                record.total_tardy || 0,
+                                            ).toFixed(2)}
                                         </TableCell>
                                         <TableCell className="p-3 text-center text-gray-700">
-                                            {Number(record.equi_hours || 0).toFixed(3)}
+                                            {Number(
+                                                record.equi_hours || 0,
+                                            ).toFixed(3)}
                                         </TableCell>
                                         <TableCell className="p-3 text-center text-gray-700">
-                                            {Number(record.equi_mins || 0).toFixed(3)}
+                                            {Number(
+                                                record.equi_mins || 0,
+                                            ).toFixed(3)}
                                         </TableCell>
                                         <TableCell className="p-3 text-center">
                                             <span className="font-medium text-gray-900">
-                                                {Number(record.total_equi || 0).toFixed(3)}
+                                                {Number(
+                                                    record.total_equi || 0,
+                                                ).toFixed(3)}
                                             </span>
                                         </TableCell>
                                     </TableRow>

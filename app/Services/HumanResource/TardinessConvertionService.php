@@ -2,7 +2,7 @@
 
 namespace App\Services\HumanResource;
 
-use App\Data\HumanResource\TardinessConvertionFilter;
+use App\Data\HumanResource\TardinessConvertion\TardinessConvertionFilter;
 use App\Models\Administrator\Office;
 use App\Models\HumanResource\ConvertionHours;
 use App\Models\HumanResource\ConvertionMinutes;
@@ -23,12 +23,11 @@ class TardinessConvertionService
     public function pageData(Request $request): array
     {
         $filter = TardinessConvertionFilter::fromRequest($request);
-        $monthList = $this->monthList();
+        $monthList = $this->monthList($filter);
         $defaultStartMonth = $monthList->first() ?: now()->format('F Y');
-        $defaultEndMonth = $monthList->contains(now()->format('F Y'))
-            ? now()->format('F Y')
-            : ($monthList->last() ?: now()->format('F Y'));
+        $defaultEndMonth = $monthList->last() ?: now()->format('F Y');
         $filter = $filter->withDefaults($defaultStartMonth, $defaultEndMonth);
+        $filter = $this->normalizeMonthRange($filter, $monthList, $defaultStartMonth, $defaultEndMonth);
         $filter = $filter->withEmployeeId($this->repository->employeeIdForSearch(
             filter: $filter,
             startDate: $this->monthStart($filter->startMonth)->toDateString(),
@@ -41,9 +40,21 @@ class TardinessConvertionService
             conversionHours: $conversionHours,
             conversionMinutes: $conversionMinutes,
         );
+        $summaryPayload = $this->summaryPayload(
+            filter: $filter,
+            conversionHours: $conversionHours,
+            conversionMinutes: $conversionMinutes,
+        );
+        $printRecords = $this->allEmployeeSummaries(
+            filter: $filter,
+            conversionHours: $conversionHours,
+            conversionMinutes: $conversionMinutes,
+        );
 
         return [
             'records' => $summaries,
+            'summaryPayload' => $summaryPayload,
+            'printRecords' => $printRecords,
             'monthList' => $monthList,
             'offices' => $this->officeOptions(),
             'office' => $filter->officeId,
@@ -59,12 +70,16 @@ class TardinessConvertionService
     public function suggestions(Request $request): array
     {
         $filter = TardinessConvertionFilter::fromRequest($request);
-        $monthList = $this->monthList();
+        $monthList = $this->monthList($filter);
         $filter = $filter->withDefaults(
             $monthList->first() ?: now()->format('F Y'),
-            $monthList->contains(now()->format('F Y'))
-                ? now()->format('F Y')
-                : ($monthList->last() ?: now()->format('F Y')),
+            $monthList->last() ?: now()->format('F Y'),
+        );
+        $filter = $this->normalizeMonthRange(
+            $filter,
+            $monthList,
+            $monthList->first() ?: now()->format('F Y'),
+            $monthList->last() ?: now()->format('F Y'),
         );
         [$startDate, $endDate] = $this->dateRange($filter);
 
@@ -138,6 +153,57 @@ class TardinessConvertionService
             ));
     }
 
+    private function allEmployeeSummaries(
+        TardinessConvertionFilter $filter,
+        Collection $conversionHours,
+        Collection $conversionMinutes,
+    ): Collection {
+        [$startDate, $endDate] = $this->dateRange($filter);
+
+        return $this->repository
+            ->allSummaryRows($filter, $startDate, $endDate)
+            ->map(fn ($row) => $this->employeeSummaryPayload(
+                row: $row,
+                conversionHours: $conversionHours,
+                conversionMinutes: $conversionMinutes,
+                filter: $filter,
+            ))
+            ->values();
+    }
+
+    private function summaryPayload(
+        TardinessConvertionFilter $filter,
+        Collection $conversionHours,
+        Collection $conversionMinutes,
+    ): Collection {
+        [$startDate, $endDate] = $this->dateRange($filter);
+
+        return $this->repository
+            ->allSummaryRows($filter, $startDate, $endDate)
+            ->map(fn ($row) => $this->summaryStorePayload(
+                $this->employeeSummaryPayload(
+                    row: $row,
+                    conversionHours: $conversionHours,
+                    conversionMinutes: $conversionMinutes,
+                    filter: $filter,
+                ),
+            ))
+            ->values();
+    }
+
+    private function summaryStorePayload(array $summary): array
+    {
+        return [
+            'employee_id' => $summary['employee_id'],
+            'start_month' => $summary['start_month'],
+            'end_month' => $summary['end_month'],
+            'total_tardy' => round((float) $summary['total_tardy'], 2),
+            'total_hours' => round((float) $summary['equi_hours'], 3),
+            'total_minutes' => round((float) $summary['equi_mins'], 3),
+            'total_equivalent' => round((float) $summary['total_equi'], 3),
+        ];
+    }
+
     private function employeeSummaryPayload(
         object $row,
         Collection $conversionHours,
@@ -196,11 +262,35 @@ class TardinessConvertionService
         );
     }
 
-    private function monthList(): Collection
+    private function monthList(TardinessConvertionFilter $filter): Collection
     {
         return $this->repository
-            ->monthList()
+            ->monthList($filter)
             ->map(fn ($record) => Carbon::create((int) $record->year, (int) $record->month, 1)->format('F Y'));
+    }
+
+    private function normalizeMonthRange(
+        TardinessConvertionFilter $filter,
+        Collection $monthList,
+        string $defaultStartMonth,
+        string $defaultEndMonth,
+    ): TardinessConvertionFilter {
+        if ($monthList->isEmpty()) {
+            return $filter->withMonthRange($defaultStartMonth, $defaultEndMonth);
+        }
+
+        $startMonth = $monthList->contains($filter->startMonth)
+            ? $filter->startMonth
+            : $defaultStartMonth;
+        $endMonth = $monthList->contains($filter->endMonth)
+            ? $filter->endMonth
+            : $defaultEndMonth;
+
+        if ($this->monthStart($endMonth)->lessThan($this->monthStart($startMonth))) {
+            $endMonth = $startMonth;
+        }
+
+        return $filter->withMonthRange($startMonth, $endMonth);
     }
 
     private function officeOptions(): Collection
@@ -253,8 +343,15 @@ class TardinessConvertionService
 
     private function createBatch(array $summary): HrTardinessBatch
     {
+        $startMonth = Carbon::parse($summary['start_month']);
+        $yearPrefix = $startMonth->format('y');
+        $sequence = HrTardinessBatch::whereBetween(
+            'id',
+            [(int) "{$yearPrefix}00", (int) "{$yearPrefix}99"],
+        )->count() + 1;
+
         return HrTardinessBatch::create([
-            'batch_code' => 'BATCH-'.now()->format('YmdHis'),
+            'id' => (int) sprintf('%s%02d', $yearPrefix, $sequence),
             'start_month' => $summary['start_month'],
             'end_month' => $summary['end_month'],
         ]);

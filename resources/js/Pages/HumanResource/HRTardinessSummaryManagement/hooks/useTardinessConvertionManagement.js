@@ -10,6 +10,7 @@ import {
 } from "../utils";
 
 const useTardinessConvertionManagement = ({
+    filteredSummaryPayload = [],
     monthList,
     office,
     officeOptions,
@@ -26,6 +27,7 @@ const useTardinessConvertionManagement = ({
         [officeOptions],
     );
     const filters = useTardinessConvertionFilters({
+        filteredSummaryPayload,
         monthList,
         office,
         records,

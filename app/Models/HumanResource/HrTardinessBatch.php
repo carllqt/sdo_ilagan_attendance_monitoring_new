@@ -10,9 +10,11 @@ class HrTardinessBatch extends Model
     use HasFactory;
 
     protected $table = 'hr_tardiness_batches';
+    public $incrementing = false;
+    protected $keyType = 'int';
 
     protected $fillable = [
-        'batch_code',
+        'id',
         'start_month',
         'end_month',
     ];

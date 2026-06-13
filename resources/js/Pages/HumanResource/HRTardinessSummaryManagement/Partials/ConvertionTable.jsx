@@ -71,14 +71,20 @@ const ConvertionTable = ({
         valueLabel,
         emptyMessage,
         pageIndex = 0,
-        className = "",
+        tone = "blue",
     }) => (
-        <div
-            className={`overflow-hidden rounded-lg border border-slate-200 ${className}`}
-        >
-            <div className="flex items-center justify-between gap-3 border-b bg-slate-50 px-4 py-3">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b bg-white px-4 py-3">
                 <div className="flex items-center gap-2">
-                    {icon}
+                    <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
+                            tone === "green"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-blue-200 bg-blue-50 text-blue-700"
+                        }`}
+                    >
+                        {icon}
+                    </div>
                     <span className="text-sm font-semibold text-slate-800">
                         {title}
                     </span>
@@ -100,7 +106,13 @@ const ConvertionTable = ({
             <div className="overflow-x-auto">
                 <Table className="w-full min-w-[320px] table-fixed">
                     <TableHeader>
-                        <TableRow className="bg-blue-900 hover:bg-blue-800">
+                        <TableRow
+                            className={
+                                tone === "green"
+                                    ? "bg-emerald-600 hover:bg-emerald-600"
+                                    : "bg-blue-700 hover:bg-blue-700"
+                            }
+                        >
                             <TableHead className="w-1/2 text-center text-white">
                                 {valueLabel}
                             </TableHead>
@@ -126,10 +138,10 @@ const ConvertionTable = ({
     );
 
     return (
-        <div className="mb-4 rounded-2xl border border-blue-100 bg-white p-4 shadow-lg">
+        <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
             <div className="mb-4 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                    <h2 className="text-lg font-bold text-slate-900">
+                    <h2 className="text-l font-bold text-slate-900">
                         Convertion Table
                     </h2>
                     <p className="text-sm text-gray-500">
@@ -141,21 +153,23 @@ const ConvertionTable = ({
             <div className="grid gap-4 lg:grid-cols-2">
                 {renderConversionTable({
                     title: "Hours",
-                    icon: <Clock3 className="h-4 w-4 text-blue-700" />,
+                    icon: <Clock3 className="h-4 w-4" />,
                     table: hourTable,
                     valueKey: "hours",
                     valueLabel: "Hours",
                     emptyMessage: "No conversion hours found.",
                     pageIndex: hoursPage,
+                    tone: "blue",
                 })}
                 {renderConversionTable({
                     title: "Minutes",
-                    icon: <Timer className="h-4 w-4 text-blue-700" />,
+                    icon: <Timer className="h-4 w-4" />,
                     table: minuteTable,
                     valueKey: "minutes",
                     valueLabel: "Minutes",
                     emptyMessage: "No conversion minutes found.",
                     pageIndex: minutesPage,
+                    tone: "green",
                 })}
             </div>
 

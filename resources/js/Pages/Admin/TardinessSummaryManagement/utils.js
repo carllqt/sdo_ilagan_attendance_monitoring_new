@@ -20,6 +20,11 @@ export const wholeYearLabel = "Whole Year";
 
 export const getCurrentYear = () => new Date().getFullYear().toString();
 
+export const isAllOfficeValue = (value) =>
+    !value ||
+    String(value).toLowerCase() === "all" ||
+    value === allOfficesLabel;
+
 export const extractSummaryRows = (summary) =>
     Array.isArray(summary?.data) ? summary.data : [];
 
@@ -66,9 +71,9 @@ export const buildTardinessSummaryQuery = ({
         query.verification_station = verificationStationValue;
     }
 
-    if (officeValue && officeValue !== allOfficesLabel) {
-        query.office = officeValue;
-    }
+    query.office = isAllOfficeValue(officeValue)
+        ? allOfficesLabel
+        : officeValue;
 
     if (cleanSearch) {
         query.search = cleanSearch;

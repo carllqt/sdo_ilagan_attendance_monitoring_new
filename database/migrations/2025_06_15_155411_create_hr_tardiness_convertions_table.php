@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('hr_tardiness_convertions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('batch_id')->constrained('hr_tardiness_batches')->onDelete('cascade');
+            $table->unsignedInteger('batch_id');
+            $table->foreign('batch_id')->references('id')->on('hr_tardiness_batches')->onDelete('cascade');
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade'); 
             $table->decimal('total_tardy', 5, 2)->default(0);
             $table->decimal('total_hours', 5, 3)->default(0);

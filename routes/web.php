@@ -32,9 +32,7 @@ use App\Http\Controllers\TravelOrderController;
 */
 
 
-Route::get('/landing', fn () => Inertia::render('LandingPage'))->name('landing');
-
-Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
+Route::get('/', fn () => Inertia::render('LandingPage'))->name('landing');
 
 Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'index'])->name('attendance-monitoring');
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');

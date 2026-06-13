@@ -34,6 +34,7 @@ class EmployeeSeeder extends Seeder
         $officeIds = Office::query()->pluck('id', 'name');
         $defaultStationId = Station::query()->orderBy('id')->value('id');
         $defaultWorkScheduleId = WorkSchedule::query()->orderBy('id')->value('id');
+        $profileImages = $this->profileImages();
 
         foreach ($rows as $index => $row) {
             if ($index === 0) {
@@ -80,6 +81,7 @@ class EmployeeSeeder extends Seeder
                     'office_id' => $officeId,
                     'work_schedule_id' => $defaultWorkScheduleId,
                     'unit' => $unit !== '' ? $unit : null,
+                    'profile_img' => $this->profileImageFor($profileImages, $lastName, $firstName),
                     'active_status' => true,
                 ],
             );
@@ -104,5 +106,56 @@ class EmployeeSeeder extends Seeder
     private function cell(array $row, array $headers, string $key): string
     {
         return trim((string) ($row[$headers[$key] ?? -1] ?? ''));
+    }
+
+    private function profileImages(): array
+    {
+        $directory = storage_path('app/public/employee-profile-images');
+
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        $images = [];
+        $extensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+        foreach (scandir($directory) ?: [] as $file) {
+            $path = $directory . DIRECTORY_SEPARATOR . $file;
+            $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+            if (! is_file($path) || ! in_array($extension, $extensions, true)) {
+                continue;
+            }
+
+            $name = pathinfo($file, PATHINFO_FILENAME);
+            $images[$this->normalizeName($name)] = 'employee-profile-images/' . $file;
+        }
+
+        return $images;
+    }
+
+    private function profileImageFor(array $profileImages, string $lastName, string $firstName): ?string
+    {
+        $firstInitial = mb_substr($firstName, 0, 1);
+        $candidates = [
+            "{$lastName}, {$firstName}",
+            "{$lastName}, {$firstInitial}",
+            $lastName,
+        ];
+
+        foreach ($candidates as $candidate) {
+            $key = $this->normalizeName($candidate);
+
+            if (isset($profileImages[$key])) {
+                return $profileImages[$key];
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeName(string $name): string
+    {
+        return mb_strtolower(preg_replace('/\s+/', ' ', trim($name)));
     }
 }

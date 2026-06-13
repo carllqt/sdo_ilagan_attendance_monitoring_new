@@ -2,7 +2,7 @@
 
 namespace App\Services\HumanResource;
 
-use App\Data\HumanResource\ConvertedTardinessRecordFilter;
+use App\Data\HumanResource\ConvertedTardinessRecordManagement\ConvertedTardinessRecordFilter;
 use App\Models\Administrator\Employee;
 use App\Models\HumanResource\HrTardinessBatch;
 use App\Models\HumanResource\HrTardinessConvertion;
@@ -24,6 +24,9 @@ class ConvertedTardinessRecordService
             'records' => $this->repository
                 ->paginatedRecords($filter)
                 ->through(fn (Employee $employee) => $this->employeeRecordPayload($employee)),
+            'batchHistory' => $this->repository
+                ->batchHistory($filter)
+                ->through(fn (HrTardinessBatch $batch) => $this->batchHistoryPayload($batch)),
             'limit' => $filter->limit,
         ];
     }
@@ -36,7 +39,6 @@ class ConvertedTardinessRecordService
         return [
             'batch' => [
                 'id' => $batch->id,
-                'batch_code' => $batch->batch_code,
                 'month_range' => $this->monthRangeLabel($start, $end),
             ],
             'records' => $this->repository->batchRecords($batch),
@@ -51,7 +53,6 @@ class ConvertedTardinessRecordService
         return [
             'id' => $record->id,
             'batch_id' => $record->batch_id,
-            'batch_code' => $record->batch->batch_code,
             'employee_id' => $record->employee_id,
             'employee' => $this->employeePayload($record->employee),
             'month' => $this->monthRangeLabel($start, $end),
@@ -87,7 +88,7 @@ class ConvertedTardinessRecordService
 
             $months[$month]['total_tardy'] += (float) $record['total_tardy'];
             $months[$month]['batches'][] = [
-                'batch_code' => $record['batch_code'],
+                'batch_id' => $record['batch_id'],
                 'month' => $record['month'],
             ];
         }
@@ -101,8 +102,46 @@ class ConvertedTardinessRecordService
         ];
     }
 
+    private function batchHistoryPayload(HrTardinessBatch $batch): array
+    {
+        $start = Carbon::parse($batch->start_month)->startOfMonth();
+        $end = Carbon::parse($batch->end_month)->startOfMonth();
+
+        return [
+            'id' => $batch->id,
+            'converted_at' => optional($batch->created_at)->toIso8601String(),
+            'month_range' => $this->monthRangeLabel($start, $end),
+            'employee_count' => $batch->tardiness_convertions_count
+                ?? $batch->tardinessConvertions->count(),
+            'employees' => $batch->tardinessConvertions
+                ->map(fn (HrTardinessConvertion $record) => [
+                    'id' => $record->id,
+                    'employee_id' => $record->employee_id,
+                    'employee' => $this->employeePayload($record->employee),
+                    'total_tardy' => $record->total_tardy,
+                    'total_hours' => $record->total_hours,
+                    'total_minutes' => $record->total_minutes,
+                    'total_equivalent' => $record->total_equivalent,
+                ])
+                ->values(),
+        ];
+    }
+
     private function employeePayload($employee): array
     {
+        if (! $employee) {
+            return [
+                'id' => null,
+                'first_name' => null,
+                'middle_name' => null,
+                'last_name' => null,
+                'full_name' => 'Unknown Employee',
+                'profile_img' => null,
+                'position' => null,
+                'office' => null,
+            ];
+        }
+
         return [
             'id' => $employee->id,
             'first_name' => $employee->first_name,
