@@ -15,7 +15,6 @@ import {
 import {
     Table,
     TableBody,
-    TableCell,
     TableHead,
     TableHeader,
     TableRow,
@@ -178,8 +177,7 @@ const BatchConvertedHistory = ({ batches = {}, records = {} }) => {
                         Batch Converted History
                     </h2>
                     <p className="text-sm text-gray-500">
-                        Converted batch history with date, time, and month
-                        range
+                        Converted batch history with date, time, and month range
                     </p>
                 </div>
             </div>
@@ -220,9 +218,7 @@ const BatchConvertedHistory = ({ batches = {}, records = {} }) => {
                                     <TableCell>
                                         <div className="inline-flex items-center gap-2 text-slate-700">
                                             <CalendarClock className="h-4 w-4 text-blue-600" />
-                                            {formatDateTime(
-                                                batch.converted_at,
-                                            )}
+                                            {formatDateTime(batch.converted_at)}
                                         </div>
                                     </TableCell>
                                     <TableCell>
