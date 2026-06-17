@@ -1,8 +1,8 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { sortByNumber } from "../utils";
 
-const useConvertionTableRows = ({
+const useConversionTableRows = ({
     conversionHours = [],
     conversionMinutes = [],
 }) => {
@@ -23,4 +23,4 @@ const useConvertionTableRows = ({
     };
 };
 
-export default useConvertionTableRows;
+export default useConversionTableRows;

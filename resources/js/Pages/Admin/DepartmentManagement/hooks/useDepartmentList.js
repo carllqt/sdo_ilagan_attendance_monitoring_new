@@ -108,7 +108,7 @@ const useDepartmentList = ({
         query.set("limit", officeLimit);
         query.delete("organization_search");
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             only: ["officeList", "officeLimit"],
             preserveState: true,
             preserveScroll: true,
@@ -132,7 +132,7 @@ const useDepartmentList = ({
         query.set("division_page", page);
         query.set("division_limit", divisionLimit);
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             only: ["divisionList", "divisionPage", "divisionLimit"],
             preserveState: true,
             preserveScroll: true,
@@ -157,7 +157,7 @@ const useDepartmentList = ({
             }
         });
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -168,7 +168,7 @@ const useDepartmentList = ({
         const query = new URLSearchParams(window.location.search);
         closeDepartmentModalParams(query);
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,

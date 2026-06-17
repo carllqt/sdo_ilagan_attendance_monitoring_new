@@ -2,7 +2,7 @@
 
 namespace App\Models\Administrator;
 
-use App\Models\HumanResource\HrTardinessConvertion;
+use App\Models\HumanResource\HrTardinessConversion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -31,10 +31,10 @@ class TardinessRecord extends Model
         return $this->belongsTo(Attendance::class);
     }
 
-    public function tardinessConvertions()
+    public function tardinessConversions()
     {
         return $this->belongsToMany(
-            HrTardinessConvertion::class,
+            HrTardinessConversion::class,
             'hr_converted_tardiness_records',
             'tardiness_record_id',
             'hr_tardiness_convertions_id',

@@ -142,7 +142,7 @@ class AttendanceManagementController extends Controller
         $attendance->load(['am', 'pm', 'employee']);
         $this->computeTardiness(collect([$attendance]));
 
-        return redirect()->route('attendancemanagement')
+        return redirect()->route('attendance-management')
             ->with('success', 'Attendance updated and tardiness recalculated!');
     }
 
@@ -166,7 +166,7 @@ class AttendanceManagementController extends Controller
         $attendance->load(['am', 'pm', 'employee']);
         $this->computeTardiness(collect([$attendance]));
 
-        return redirect()->route('attendancemanagement')
+        return redirect()->route('attendance-management')
             ->with('success', 'Attendance created and tardiness calculated!');
     }
 

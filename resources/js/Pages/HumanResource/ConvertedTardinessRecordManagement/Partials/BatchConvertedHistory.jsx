@@ -1,155 +1,24 @@
 import React from "react";
 import { router } from "@inertiajs/react";
 import { CalendarClock, CalendarDays, Eye, Hash, Users } from "lucide-react";
-import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import PaginationMain from "@/Components/PaginationMain";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import {
     Table,
+    TableCell,
     TableBody,
     TableHead,
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { getEmployeeName } from "@/lib/utils";
+import { formatDateTime } from "../utils";
+import BatchDetailsDialog from "./BatchDetailsDialog";
 
-const formatDateTime = (value) => {
-    if (!value) {
-        return "-";
-    }
-
-    return new Intl.DateTimeFormat("en-PH", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-    }).format(new Date(value));
-};
-
-const formatNumber = (value) => {
-    if (value === null || value === undefined || value === "") {
-        return "-";
-    }
-
-    const numberValue = Number(value);
-
-    return Number.isNaN(numberValue) ? value : numberValue.toFixed(2);
-};
-
-const BatchDetailsDialog = ({ batch }) => (
-    <Dialog>
-        <DialogTrigger asChild>
-            <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-blue-200 bg-white px-2.5 text-blue-700 hover:bg-blue-50"
-            >
-                <Eye className="h-4 w-4" />
-                View details
-            </Button>
-        </DialogTrigger>
-
-        <DialogContent className="max-w-5xl">
-            <DialogHeader>
-                <DialogTitle>Batch {batch.id}</DialogTitle>
-                <DialogDescription>
-                    {batch.month_range} converted on{" "}
-                    {formatDateTime(batch.converted_at)}
-                </DialogDescription>
-            </DialogHeader>
-
-            <div className="max-h-[65vh] overflow-auto rounded-lg border">
-                <Table className="min-w-[900px]">
-                    <TableHeader>
-                        <TableRow className="bg-blue-900 hover:bg-blue-800">
-                            <TableHead className="w-[34%] text-white">
-                                Employee
-                            </TableHead>
-                            <TableHead className="text-center text-white">
-                                Total Tardiness
-                            </TableHead>
-                            <TableHead className="text-center text-white">
-                                Equiv Day in Hours
-                            </TableHead>
-                            <TableHead className="text-center text-white">
-                                Equiv Day in Minutes
-                            </TableHead>
-                            <TableHead className="text-center text-white">
-                                Total
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {batch.employees?.length > 0 ? (
-                            batch.employees.map((record) => {
-                                const employee = record.employee || {};
-                                const employeeName =
-                                    getEmployeeName(employee) || "-";
-
-                                return (
-                                    <TableRow key={record.id}>
-                                        <TableCell>
-                                            <div className="flex min-w-0 gap-3">
-                                                <EmployeeAvatar
-                                                    employee={employee}
-                                                    name={employeeName}
-                                                />
-
-                                                <div className="min-w-0">
-                                                    <span className="block max-w-[260px] truncate font-medium text-gray-800">
-                                                        {employeeName}
-                                                    </span>
-                                                    <span className="block max-w-[260px] truncate text-xs text-gray-500">
-                                                        {employee.office
-                                                            ?.name || "-"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center font-medium">
-                                            {formatNumber(record.total_tardy)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {formatNumber(record.total_hours)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {formatNumber(record.total_minutes)}
-                                        </TableCell>
-                                        <TableCell className="text-center font-semibold">
-                                            {formatNumber(
-                                                record.total_equivalent,
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan="5"
-                                    className="p-5 text-center text-gray-500"
-                                >
-                                    No employees found on this batch
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-        </DialogContent>
-    </Dialog>
-);
-
-const BatchConvertedHistory = ({ batches = {}, records = {} }) => {
+const BatchConvertedHistory = ({
+    batches = {},
+    records = {},
+    selectedBatch = null,
+}) => {
     const batchItems = batches?.data || [];
 
     const handlePageChange = (page) => {
@@ -157,11 +26,46 @@ const BatchConvertedHistory = ({ batches = {}, records = {} }) => {
 
         query.set("batch_page", page);
         query.set("batch_limit", batches?.per_page || 5);
+        query.delete("batch_id");
 
         router.get(
             route("converted-tardiness-record"),
             Object.fromEntries(query),
             {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
+
+    const openBatchDetails = (batchId) => {
+        const query = new URLSearchParams(window.location.search);
+
+        query.set("batch_id", batchId);
+
+        router.get(
+            route("converted-tardiness-record"),
+            Object.fromEntries(query),
+            {
+                only: ["selectedBatch"],
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
+
+    const closeBatchDetails = () => {
+        const query = new URLSearchParams(window.location.search);
+
+        query.delete("batch_id");
+
+        router.get(
+            route("converted-tardiness-record"),
+            Object.fromEntries(query),
+            {
+                only: ["selectedBatch"],
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
@@ -236,7 +140,17 @@ const BatchConvertedHistory = ({ batches = {}, records = {} }) => {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <BatchDetailsDialog batch={batch} />
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 border-blue-200 bg-white px-2.5 text-blue-700 hover:bg-blue-50"
+                                            onClick={() =>
+                                                openBatchDetails(batch.id)
+                                            }
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                            View details
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -262,6 +176,11 @@ const BatchConvertedHistory = ({ batches = {}, records = {} }) => {
                     totalPages={batches?.last_page || 1}
                 />
             ) : null}
+
+            <BatchDetailsDialog
+                batch={selectedBatch}
+                onClose={closeBatchDetails}
+            />
         </div>
     );
 };

@@ -67,17 +67,14 @@ class DailyTimeRecordController extends Controller
     {
         $validated = $request->validated();
 
-        $undoToken = $this->dailyTimeRecords->recomputeEmployeeDateRange(
+        $recompute = $this->dailyTimeRecords->recomputeEmployeeDateRange(
             (int) $employeeId,
             $this->stationId(),
             $validated['from'],
             $validated['to'],
         );
 
-        return back()->with('recomputeUndo', [
-            'token' => $undoToken,
-            'employee_id' => (int) $employeeId,
-        ]);
+        return back()->with('recomputeUndo', $recompute);
     }
 
     public function undoRecompute(UndoRecomputeDtrRequest $request, $employeeId)
@@ -163,7 +160,7 @@ class DailyTimeRecordController extends Controller
             $query['work_schedule_id'],
         );
 
-        return redirect()->route('dailytimerecord', $query);
+        return redirect()->route('daily-time-record', $query);
     }
 
     private function stationId(): int

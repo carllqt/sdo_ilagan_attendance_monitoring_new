@@ -49,6 +49,24 @@ export const formatTardiness = (value) => {
 
 export const batchLabel = (batch = {}) => String(batch.batch_id || "");
 
+export const getBatchPdfFilename = (batchId) =>
+    `HR_Tardiness_Summary_Batch_${batchId || ""}.pdf`;
+
+export const toBatchReportRecords = (batch, getEmployeeName) =>
+    (batch?.employees || []).map((record) => {
+        const employee = record.employee || {};
+
+        return {
+            name: getEmployeeName(employee) || "-",
+            office: employee.office?.name || "-",
+            month_label: batch?.month_range || "-",
+            total_tardy: Number(record.total_tardy || 0),
+            equi_hours: Number(record.total_hours || 0),
+            equi_mins: Number(record.total_minutes || 0),
+            total_equi: Number(record.total_equivalent || 0),
+        };
+    });
+
 export const normalizedMonthRange = (record) => {
     const start = Number(record.start_month) || 1;
     const end = Number(record.end_month) || start;

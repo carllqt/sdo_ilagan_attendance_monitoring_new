@@ -7,6 +7,10 @@ import ConvertedEmployeeList from "./Partials/ConvertedEmployeeList";
 const ConvertedTardinessRecordManagement = ({
     records = {},
     batchHistory = {},
+    selectedBatch = null,
+    search = "",
+    year,
+    years = [],
 }) => (
     <AuthenticatedLayout header="Converted Tardiness Record Management">
         <Head title="Converted Tardiness Record Management" />
@@ -16,10 +20,16 @@ const ConvertedTardinessRecordManagement = ({
                 <BatchConvertedHistory
                     batches={batchHistory}
                     records={records}
+                    selectedBatch={selectedBatch}
                 />
             </div>
             <div>
-                <ConvertedEmployeeList records={records} />
+                <ConvertedEmployeeList
+                    records={records}
+                    search={search}
+                    year={year}
+                    years={years}
+                />
             </div>
         </main>
     </AuthenticatedLayout>

@@ -12,7 +12,6 @@ class FixedTardinessService
     {
         foreach ($attendances as $attendance) {
             $times = $this->attendanceTimes($attendance);
-
             $amTardy = $this->tardyAfter($times['amIn'], self::DEFAULT_START_MINUTES);
             $pmTardy = $this->tardyAfter($times['pmIn'], self::PM_START_MINUTES);
             $amUndertime = $this->undertimeBefore(

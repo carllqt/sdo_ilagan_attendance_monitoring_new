@@ -55,7 +55,7 @@ const useWorkScheduleFormModal = ({
     const submitAdd = (event) => {
         event.preventDefault();
 
-        router.post(route("dailytimerecord.workschedules.store"), payload, {
+        router.post(route("daily-time-record.work-schedules.store"), payload, {
             onSuccess: onClose,
         });
     };

@@ -98,7 +98,7 @@ const useEmployeeListControls = ({
 
         const timeout = setTimeout(() => {
             axios
-                .get(route("dailytimerecord.suggestions"), {
+                .get(route("daily-time-record.suggestions"), {
                     params: { search: query },
                 })
                 .then((response) => {

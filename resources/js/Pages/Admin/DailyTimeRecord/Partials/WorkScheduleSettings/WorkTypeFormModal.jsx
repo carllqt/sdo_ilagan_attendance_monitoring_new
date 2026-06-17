@@ -91,7 +91,7 @@ const WorkTypeFormModal = ({ mode, open, onClose, workType }) => {
                     trigger={null}
                     title="Confirm Work Type Update"
                     description="Please confirm your password before updating this work type."
-                    action={workType?.id ? route("dailytimerecord.worktypes.update", workType.id) : ""}
+                    action={workType?.id ? route("daily-time-record.work-types.update", workType.id) : ""}
                     method="put"
                     data={payload}
                     danger={false}

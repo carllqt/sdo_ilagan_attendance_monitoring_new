@@ -37,7 +37,7 @@ const services = [
         title: "Travel Order",
         description:
             "Prepare, submit, and monitor official travel requests from one secure workspace.",
-        routeName: "travelorder",
+        routeName: "travel-order",
         icon: Plane,
         accent: "bg-blue-600 text-white",
     },

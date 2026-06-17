@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Data\HumanResource\TardinessConvertion;
+namespace App\Data\HumanResource\TardinessConversion;
 
 use Illuminate\Http\Request;
 
-class TardinessConvertionFilter
+class TardinessConversionFilter
 {
     public const LIMITS = [10, 25, 50, 100];
 

@@ -17,7 +17,7 @@ const useStationManagementFocus = ({ adminLimit }) => {
             params.set("admin_page", adminPage);
             params.set("admin_limit", adminLimit);
 
-            router.get(route("stationmanagement"), Object.fromEntries(params), {
+            router.get(route("station-management"), Object.fromEntries(params), {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,

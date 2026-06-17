@@ -22,7 +22,7 @@ const useDivisionHeadList = ({
         query.set("division_head_page", page);
         query.set("division_head_limit", divisionHeadLimit);
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             only: ["divisionHeadRows", "divisionHeadPage", "divisionHeadLimit"],
             preserveState: true,
             preserveScroll: true,
@@ -47,7 +47,7 @@ const useDivisionHeadList = ({
             }
         });
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -58,7 +58,7 @@ const useDivisionHeadList = ({
         const query = new URLSearchParams(window.location.search);
         closeDepartmentModalParams(query);
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,

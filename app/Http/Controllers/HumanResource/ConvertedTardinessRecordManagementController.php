@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\HumanResource;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\HumanResource\ConvertedTardinessRecordManagement\ConvertedTardinessRecordRequest;
 use App\Models\HumanResource\HrTardinessBatch;
 use App\Services\HumanResource\ConvertedTardinessRecordService;
 use Illuminate\Http\Request;
@@ -14,11 +15,18 @@ class ConvertedTardinessRecordManagementController extends Controller
         private readonly ConvertedTardinessRecordService $convertedTardinessRecords,
     ) {}
 
-    public function index(Request $request)
+    public function index(ConvertedTardinessRecordRequest $request)
     {
         return Inertia::render(
             'HumanResource/ConvertedTardinessRecordManagement/ConvertedTardinessRecordManagement',
             $this->convertedTardinessRecords->pageData($request),
+        );
+    }
+
+    public function suggestions(Request $request)
+    {
+        return response()->json(
+            $this->convertedTardinessRecords->suggestions($request),
         );
     }
 

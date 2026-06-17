@@ -181,7 +181,7 @@ const EmployeeList = ({
                         }
                         title="Confirm Summary Save"
                         description="Please confirm your password before saving all tardiness summaries."
-                        action={route("tardiness-convertions")}
+                        action={route("tardiness-conversion.store")}
                         method="post"
                         data={{ summaries: summaryPayload }}
                         danger={false}

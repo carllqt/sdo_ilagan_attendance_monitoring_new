@@ -45,7 +45,7 @@ const AddDivisionHeadForm = ({
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-w-md overflow-hidden rounded-2xl p-0">
+            <DialogContent className="w-[calc(100vw-2rem)] max-w-xl overflow-hidden rounded-2xl p-0 sm:max-w-lg md:max-w-xl">
                 <div className="bg-blue-700 px-5 py-4 text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-white">
@@ -69,13 +69,13 @@ const AddDivisionHeadForm = ({
                                 <Building2 className="h-5 w-5 text-blue-600" />
                             </div>
 
-                            <div className="flex gap-2 text-sm">
-                                <div className="min-w-0">
-                                    <div className="truncate font-semibold text-blue-700">
+                            <div className="min-w-0 flex-1 text-sm">
+                                <div className="min-w-0 max-w-full">
+                                    <div className="block max-w-full truncate font-semibold text-blue-700">
                                         {selectedDivision?.code}
                                     </div>
 
-                                    <p className="text-xs text-slate-500">
+                                    <p className="block max-w-full truncate text-xs text-slate-500">
                                         {selectedDivision?.name}
                                     </p>
                                 </div>
@@ -122,30 +122,30 @@ const AddDivisionHeadForm = ({
                                             onClick={() =>
                                                 setEmployeeId(emp.id)
                                             }
-                                            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${
+                                            className={`flex w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl px-3 py-2 text-left text-sm transition ${
                                                 isSelected
                                                     ? "bg-blue-100 text-blue-900"
                                                     : "hover:bg-blue-50"
                                             }`}
                                         >
-                                            <div className="flex min-w-0 items-center gap-3">
+                                            <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
                                                 <EmployeeAvatar
                                                     employee={emp}
                                                     name={fullName}
                                                 />
 
-                                                <div className="min-w-0">
-                                                    <div className="truncate font-medium text-slate-800">
+                                                <div className="min-w-0 w-0 flex-1 overflow-hidden">
+                                                    <div className="block max-w-full truncate font-medium text-slate-800">
                                                         {fullName || "-"}
                                                     </div>
-                                                    <div className="truncate text-xs text-slate-500">
+                                                    <div className="block max-w-full truncate text-xs text-slate-500">
                                                         {emp.position || "-"}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {isSelected ? (
-                                                <div className="ml-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600">
+                                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600">
                                                     <Check className="h-3 w-3 text-white" />
                                                 </div>
                                             ) : null}
@@ -169,16 +169,16 @@ const AddDivisionHeadForm = ({
                                     className="h-10 w-10"
                                 />
 
-                                <div className="min-w-0 flex-1">
-                                    <div className="truncate text-sm font-semibold text-slate-900">
+                                <div className="min-w-0 w-0 flex-1 overflow-hidden">
+                                    <div className="block max-w-full truncate text-sm font-semibold text-slate-900">
                                         {getEmployeeName(selectedEmployee)}
                                     </div>
-                                    <div className="truncate text-xs text-slate-500">
+                                    <div className="block max-w-full truncate text-xs text-slate-500">
                                         {selectedEmployee.position || "-"}
                                     </div>
                                 </div>
 
-                                <span className="rounded-full bg-blue-200 px-2 py-1 text-xs font-medium text-blue-700">
+                                <span className="shrink-0 rounded-full bg-blue-200 px-2 py-1 text-xs font-medium text-blue-700">
                                     Selected
                                 </span>
                             </div>

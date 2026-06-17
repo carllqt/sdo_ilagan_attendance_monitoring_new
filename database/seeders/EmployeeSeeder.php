@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Administrator\Employee;
 use App\Models\Administrator\Office;
 use App\Models\Administrator\Station;
-use App\Models\Administrator\WorkSchedule;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
@@ -33,7 +32,6 @@ class EmployeeSeeder extends Seeder
         $headers = $this->headers($rows[0] ?? []);
         $officeIds = Office::query()->pluck('id', 'name');
         $defaultStationId = Station::query()->orderBy('id')->value('id');
-        $defaultWorkScheduleId = WorkSchedule::query()->orderBy('id')->value('id');
         $profileImages = $this->profileImages();
 
         foreach ($rows as $index => $row) {
@@ -79,7 +77,7 @@ class EmployeeSeeder extends Seeder
                 [
                     'position' => $position,
                     'office_id' => $officeId,
-                    'work_schedule_id' => $defaultWorkScheduleId,
+                    'work_schedule_id' => 3,
                     'unit' => $unit !== '' ? $unit : null,
                     'profile_img' => $this->profileImageFor($profileImages, $lastName, $firstName),
                     'active_status' => true,

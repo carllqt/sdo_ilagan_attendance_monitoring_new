@@ -2,19 +2,19 @@
 
 namespace App\Repositories\HumanResource;
 
-use App\Data\HumanResource\TardinessConvertion\TardinessConvertionFilter;
+use App\Data\HumanResource\TardinessConversion\TardinessConversionFilter;
 use App\Models\Administrator\Office;
 use App\Models\Administrator\TardinessRecord;
-use App\Models\HumanResource\ConvertionHours;
-use App\Models\HumanResource\ConvertionMinutes;
+use App\Models\HumanResource\ConversionHours;
+use App\Models\HumanResource\ConversionMinutes;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-class TardinessConvertionRepository
+class TardinessConversionRepository
 {
     public function paginatedSummaryRows(
-        TardinessConvertionFilter $filter,
+        TardinessConversionFilter $filter,
         string $startDate,
         string $endDate,
     ): LengthAwarePaginator {
@@ -24,7 +24,7 @@ class TardinessConvertionRepository
     }
 
     public function allSummaryRows(
-        TardinessConvertionFilter $filter,
+        TardinessConversionFilter $filter,
         string $startDate,
         string $endDate,
     ): Collection {
@@ -33,7 +33,7 @@ class TardinessConvertionRepository
     }
 
     private function filteredSummaryRowsQuery(
-        TardinessConvertionFilter $filter,
+        TardinessConversionFilter $filter,
         string $startDate,
         string $endDate,
     ) {
@@ -81,7 +81,7 @@ class TardinessConvertionRepository
     }
 
     public function employeeIdForSearch(
-        TardinessConvertionFilter $filter,
+        TardinessConversionFilter $filter,
         string $startDate,
         string $endDate,
     ): ?int {
@@ -107,7 +107,7 @@ class TardinessConvertionRepository
     }
 
     public function suggestionEmployees(
-        TardinessConvertionFilter $filter,
+        TardinessConversionFilter $filter,
         string $startDate,
         string $endDate,
     ): Collection {
@@ -136,10 +136,10 @@ class TardinessConvertionRepository
             ->get();
     }
 
-    public function monthList(TardinessConvertionFilter $filter): Collection
+    public function monthList(TardinessConversionFilter $filter): Collection
     {
         return TardinessRecord::query()
-            ->whereDoesntHave('tardinessConvertions')
+            ->whereDoesntHave('tardinessConversions')
             ->when($filter->officeId !== 'all', function ($query) use ($filter) {
                 $query->whereHas('employee', function ($employeeQuery) use ($filter) {
                     $employeeQuery->where('office_id', $filter->officeId);
@@ -163,7 +163,7 @@ class TardinessConvertionRepository
     {
         return TardinessRecord::where('employee_id', $summary['employee_id'])
             ->whereBetween('date', [$summary['start_month'], $summary['end_month']])
-            ->whereDoesntHave('tardinessConvertions')
+            ->whereDoesntHave('tardinessConversions')
             ->pluck('id');
     }
 
@@ -240,7 +240,7 @@ class TardinessConvertionRepository
 
     private function conversionModel(string $type): string
     {
-        return $type === 'hours' ? ConvertionHours::class : ConvertionMinutes::class;
+        return $type === 'hours' ? ConversionHours::class : ConversionMinutes::class;
     }
 
     private function conversionValueKey(string $type): string

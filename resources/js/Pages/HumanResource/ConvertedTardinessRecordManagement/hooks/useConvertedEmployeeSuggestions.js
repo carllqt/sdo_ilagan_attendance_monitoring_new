@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
-const useTardinessSummarySuggestions = ({
-    offices,
-    selectedOffice,
-    selectedYear,
-    searchInput,
-}) => {
+const useConvertedEmployeeSuggestions = ({ searchInput, selectedYear }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestionMatches, setSuggestionMatches] = useState([]);
     const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -25,9 +20,7 @@ const useTardinessSummarySuggestions = ({
 
         document.addEventListener("mousedown", handleClickOutside);
 
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     useEffect(() => {
@@ -50,37 +43,29 @@ const useTardinessSummarySuggestions = ({
         suggestionRequestRef.current = requestId;
 
         const timeout = setTimeout(() => {
-            const matchedOffice = offices.find(
-                (item) => Number(item.id) === Number(selectedOffice),
-            );
-
             axios
-                .get(route("tardiness-summary.suggestions"), {
+                .get(route("converted-tardiness-record.suggestions"), {
                     params: {
-                        office: matchedOffice?.name,
                         search: query,
                         year: selectedYear,
                     },
                 })
                 .then((response) => {
                     if (suggestionRequestRef.current !== requestId) return;
-
                     setSuggestionMatches(response.data || []);
                 })
                 .catch(() => {
                     if (suggestionRequestRef.current !== requestId) return;
-
                     setSuggestionMatches([]);
                 })
                 .finally(() => {
                     if (suggestionRequestRef.current !== requestId) return;
-
                     setSuggestionsLoading(false);
                 });
         }, 250);
 
         return () => clearTimeout(timeout);
-    }, [offices, searchInput, selectedOffice, selectedYear, showSuggestions]);
+    }, [searchInput, selectedYear, showSuggestions]);
 
     return {
         searchBoxRef,
@@ -91,4 +76,4 @@ const useTardinessSummarySuggestions = ({
     };
 };
 
-export default useTardinessSummarySuggestions;
+export default useConvertedEmployeeSuggestions;

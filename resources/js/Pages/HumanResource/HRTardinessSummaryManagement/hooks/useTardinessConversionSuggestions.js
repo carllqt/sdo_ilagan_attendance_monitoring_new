@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
-const useTardinessConvertionSuggestions = ({
+const useTardinessConversionSuggestions = ({
     searchInput,
     selectedFirstMonth,
     selectedSecondMonth,
@@ -49,7 +49,7 @@ const useTardinessConvertionSuggestions = ({
 
         const timeout = setTimeout(() => {
             axios
-                .get(route("tardinessconvertion.suggestions"), {
+                .get(route("tardiness-conversion.suggestions"), {
                     params: {
                         search: query,
                         start_month: selectedFirstMonth,
@@ -83,4 +83,4 @@ const useTardinessConvertionSuggestions = ({
     };
 };
 
-export default useTardinessConvertionSuggestions;
+export default useTardinessConversionSuggestions;

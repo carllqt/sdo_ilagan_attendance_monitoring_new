@@ -72,7 +72,7 @@ const useFingerprintPanel = ({
         params.delete("fingerprint_employee_id");
         params.delete("fingerprint_registration");
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             preserveState: false,
             preserveScroll: true,
             replace: true,
@@ -253,7 +253,7 @@ const useFingerprintPanel = ({
             formatFingerprintRegistrationParam(employee),
         );
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             preserveState: false,
             preserveScroll: true,
             replace: true,
@@ -277,7 +277,7 @@ const useFingerprintPanel = ({
             params.delete("modal");
         }
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             only: ["testFingerprintModal"],
             preserveState: true,
             preserveScroll: true,

@@ -19,7 +19,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-const ConvertionTableDialog = ({
+const ConversionTableDialog = ({
     title,
     items = [],
     valueKey,
@@ -28,7 +28,11 @@ const ConvertionTableDialog = ({
     disabled = false,
     splitAt = null,
     onOpenEdit,
+    tone = "blue",
+    icon = null,
 }) => {
+    const isGreen = tone === "green";
+
     const renderRows = (rows) =>
         rows.length > 0 ? (
             rows.map((item) => (
@@ -43,9 +47,13 @@ const ConvertionTableDialog = ({
                         <Button
                             type="button"
                             size="sm"
-                            className="mx-auto flex h-7 min-w-[68px] items-center justify-center gap-1 border border-blue-600 bg-white px-2 text-xs text-blue-600 hover:bg-blue-600 hover:text-white"
+                            className={`mx-auto flex h-7 min-w-[68px] items-center justify-center gap-1 border bg-white px-2 text-xs ${
+                                isGreen
+                                    ? "border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white"
+                                    : "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                            }`}
                             onClick={() => onOpenEdit?.(item, valueKey)}
-                            title={`Edit ${title} Convertion`}
+                            title={`Edit ${title} Conversion`}
                         >
                             <SquarePen className="h-3.5 w-3.5" />
                             Edit
@@ -69,7 +77,13 @@ const ConvertionTableDialog = ({
             <div className="overflow-x-auto">
                 <Table className="w-full min-w-[260px] table-fixed">
                     <TableHeader>
-                        <TableRow className="bg-blue-900 hover:bg-blue-800">
+                        <TableRow
+                            className={
+                                isGreen
+                                    ? "bg-teal-900 hover:bg-teal-900"
+                                    : "bg-blue-900 hover:bg-blue-800"
+                            }
+                        >
                             <TableHead className="w-[40%] text-center text-white">
                                 {valueLabel}
                             </TableHead>
@@ -97,33 +111,53 @@ const ConvertionTableDialog = ({
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-8 border-blue-200 px-3 text-xs text-blue-700 hover:bg-blue-50"
+                    className={`h-8 px-3 text-xs ${
+                        isGreen
+                            ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                            : "border-blue-200 text-blue-700 hover:bg-blue-50"
+                    }`}
                     disabled={disabled}
                 >
                     See more
                 </Button>
             </DialogTrigger>
             <DialogContent
-                className={`max-h-[88vh] ${dialogWidthClass} overflow-y-auto`}
+                className={`max-h-[88vh] ${dialogWidthClass} overflow-hidden rounded-2xl p-0`}
             >
-                <DialogHeader>
-                    <DialogTitle>{title} Convertion Table</DialogTitle>
-                    <DialogDescription>
-                        Complete {title.toLowerCase()} equivalent day values.
-                    </DialogDescription>
-                </DialogHeader>
+                <div
+                    className={`px-5 py-4 text-white ${
+                        isGreen ? "bg-emerald-600" : "bg-blue-700"
+                    }`}
+                >
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-white">
+                            {icon}
+                            {title} Conversion Table
+                        </DialogTitle>
+                        <DialogDescription
+                            className={
+                                isGreen ? "text-emerald-50" : "text-blue-100"
+                            }
+                        >
+                            Complete {title.toLowerCase()} equivalent day
+                            values.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
 
-                {splitAt ? (
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        {renderTable(leftItems)}
-                        {renderTable(rightItems)}
-                    </div>
-                ) : (
-                    renderTable(items)
-                )}
+                <div className="max-h-[calc(88vh-5.5rem)] overflow-y-auto px-5 pb-5 pt-1">
+                    {splitAt ? (
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            {renderTable(leftItems)}
+                            {renderTable(rightItems)}
+                        </div>
+                    ) : (
+                        renderTable(items)
+                    )}
+                </div>
             </DialogContent>
         </Dialog>
     );
 };
 
-export default ConvertionTableDialog;
+export default ConversionTableDialog;

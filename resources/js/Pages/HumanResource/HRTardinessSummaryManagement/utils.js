@@ -4,8 +4,8 @@ import { sortAlphabetically } from "@/lib/utils";
 
 dayjs.extend(isSameOrAfter);
 
-export const VISIBLE_CONVERTION_ROWS = 5;
-export const CONVERTION_SLIDE_INTERVAL_MS = 5000;
+export const VISIBLE_CONVERSION_ROWS = 5;
+export const CONVERSION_SLIDE_INTERVAL_MS = 5000;
 
 export const getCurrentMonthLabel = () => dayjs().format("MMMM YYYY");
 
@@ -44,7 +44,7 @@ export const getNextEndMonth = (currentEndMonth, nextStartMonth) =>
         ? currentEndMonth
         : nextStartMonth;
 
-export const buildTardinessConvertionQuery = ({
+export const buildTardinessConversionQuery = ({
     endMonthValue,
     limitValue,
     officeValue,
@@ -102,7 +102,7 @@ export const buildSummaryPayload = (records = []) =>
         total_equivalent: Number(record.total_equi.toFixed(3)),
     }));
 
-export const getTardinessConvertionFilename = (monthRangeLabel) =>
+export const getTardinessConversionFilename = (monthRangeLabel) =>
     `HR_Tardiness_Summary_${monthRangeLabel}.pdf`;
 
 export const sortByNumber = (items = [], key) =>
@@ -110,19 +110,18 @@ export const sortByNumber = (items = [], key) =>
         (first, second) => Number(first[key]) - Number(second[key]),
     );
 
-export const getConvertionPageCount = (items = []) =>
-    Math.ceil(items.length / VISIBLE_CONVERTION_ROWS);
+export const getConversionPageCount = (items = []) =>
+    Math.ceil(items.length / VISIBLE_CONVERSION_ROWS);
 
-export const getVisibleConvertionRows = (items = [], pageIndex = 0) => {
-    const startRow = pageIndex * VISIBLE_CONVERTION_ROWS;
-
-    return items.slice(startRow, startRow + VISIBLE_CONVERTION_ROWS);
+export const getVisibleConversionRows = (items = [], pageIndex = 0) => {
+    const startRow = pageIndex * VISIBLE_CONVERSION_ROWS;
+    return items.slice(startRow, startRow + VISIBLE_CONVERSION_ROWS);
 };
 
-export const hasHiddenConvertionRows = (items = []) =>
-    items.length > VISIBLE_CONVERTION_ROWS;
+export const hasHiddenConversionRows = (items = []) =>
+    items.length > VISIBLE_CONVERSION_ROWS;
 
-export const clearEditConvertionModalParams = (query) => {
+export const clearEditConversionModalParams = (query) => {
     query.delete("modal");
     query.delete("conversion_type");
     query.delete("conversion_id");

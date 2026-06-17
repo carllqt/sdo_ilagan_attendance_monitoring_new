@@ -3,11 +3,11 @@ import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Calculator } from "lucide-react";
 import HrSummaryofTardinessReport from "@/Pages/DocumentsFormats/HrSummaryofTardinessReport";
-import ConvertionTable from "./Partials/ConvertionTable";
+import ConversionTable from "./Partials/ConversionTable";
 import EmployeeList from "./Partials/EmployeeList";
-import useTardinessConvertionManagement from "./hooks/useTardinessConvertionManagement";
+import useTardinessConversionManagement from "./hooks/useTardinessConversionManagement";
 
-const TardinessConvertion = ({
+const TardinessConversion = ({
     records = {},
     summaryPayload: filteredSummaryPayload = [],
     printRecords = [],
@@ -19,7 +19,7 @@ const TardinessConvertion = ({
     selectedSecondMonth,
     conversionHours = [],
     conversionMinutes = [],
-    editConvertionModal = null,
+    editConversionModal = null,
 }) => {
     const {
         applySearch,
@@ -46,7 +46,7 @@ const TardinessConvertion = ({
         suggestionMatches,
         suggestionsLoading,
         summaryPayload,
-    } = useTardinessConvertionManagement({
+    } = useTardinessConversionManagement({
         filteredSummaryPayload,
         monthList,
         office,
@@ -62,16 +62,16 @@ const TardinessConvertion = ({
             header={
                 <div className="flex items-center gap-5">
                     <Calculator className="w-5 h-5 text-blue-600" />
-                    <span>Tardiness Summary / Convertion Management</span>
+                    <span>Tardiness Summary / Conversion Management</span>
                 </div>
             }
         >
-            <Head title="Tardiness Summary / Convertion Management" />
+            <Head title="Tardiness Summary / Conversion Management" />
             <main className="space-y-5">
-                <ConvertionTable
+                <ConversionTable
                     conversionHours={conversionHours}
                     conversionMinutes={conversionMinutes}
-                    editConvertionModal={editConvertionModal}
+                    editConversionModal={editConversionModal}
                 />
 
                 <EmployeeList
@@ -114,4 +114,4 @@ const TardinessConvertion = ({
     );
 };
 
-export default TardinessConvertion;
+export default TardinessConversion;

@@ -9,6 +9,7 @@ use App\Models\Administrator\WorkType;
 use App\Repositories\Administrator\DailyTimeRecordRepository;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DailyTimeRecordService
@@ -130,32 +131,12 @@ class DailyTimeRecordService
         int $stationId,
         string $from,
         string $to,
-    ): string {
+    ): array {
         if (! $this->repository->employeeForStation($employeeId, $stationId)) {
             abort(404, 'Employee not found.');
         }
 
         $undoToken = (string) Str::uuid();
-        $previousRecords = $this->repository
-            ->tardinessRecordsForEmployeeDateRange($employeeId, $from, $to)
-            ->map(fn ($record) => $record->getAttributes())
-            ->all();
-
-        session()->put(self::RECOMPUTE_UNDO_SESSION_KEY . ".{$undoToken}", [
-            'employee_id' => $employeeId,
-            'station_id' => $stationId,
-            'from' => $from,
-            'to' => $to,
-            'records' => $previousRecords,
-            'expires_at' => now()->addSeconds(8)->toIso8601String(),
-        ]);
-
-        $this->repository->deleteTardinessRecordsForEmployeeDateRange(
-            $employeeId,
-            $from,
-            $to,
-        );
-
         $attendances = $this->repository->employeeAttendancesForDateRange(
             $employeeId,
             $stationId,
@@ -164,27 +145,101 @@ class DailyTimeRecordService
         );
 
         if ($attendances->isEmpty()) {
-            return $undoToken;
+            return [
+                'token' => null,
+                'employee_id' => $employeeId,
+                'from' => $from,
+                'to' => $to,
+                'attendance_count' => 0,
+                'record_count' => 0,
+            ];
         }
 
-        $workType = $attendances
-            ->first()
-            ?->employee
-            ?->workSchedule
-            ?->workType
-            ?->name;
+        $workTypeGroups = $attendances->toBase()->groupBy(
+            fn ($attendance) => $attendance
+                ?->employee
+                ?->workSchedule
+                ?->workType
+                ?->name ?? 'Missing',
+        );
+        $supportedWorkTypes = collect(['Fixed', 'Work From Home', 'Full']);
+        $unsupportedWorkTypes = $workTypeGroups
+            ->keys()
+            ->diff($supportedWorkTypes)
+            ->values();
+        $computableAttendances = $workTypeGroups->only([
+            'Fixed',
+            'Work From Home',
+            'Full',
+        ]);
 
-        if (in_array($workType, ['Fixed', 'Work From Home'], true)) {
-            $this->fixedService->computeForAttendances($attendances);
-
-            return $undoToken;
+        if ($unsupportedWorkTypes->isNotEmpty()) {
+            abort(
+                422,
+                'Employee has unsupported work schedule data for the selected dates: '
+                    . $unsupportedWorkTypes->join(', '),
+            );
         }
 
-        if ($workType === 'Full') {
-            $this->fullService->computeForAttendances($attendances);
-        }
+        $result = DB::transaction(function () use (
+            $employeeId,
+            $from,
+            $to,
+            $attendances,
+            $computableAttendances,
+        ) {
+            $previousRecords = $this->repository
+                ->tardinessRecordsForEmployeeDateRange($employeeId, $from, $to)
+                ->map(fn ($record) => $record->getAttributes())
+                ->all();
 
-        return $undoToken;
+            $this->repository->deleteTardinessRecordsForEmployeeDateRange(
+                $employeeId,
+                $from,
+                $to,
+            );
+
+            $fixedAttendances = $computableAttendances
+                ->only(['Fixed', 'Work From Home'])
+                ->flatMap(fn ($group) => $group->values())
+                ->values();
+
+            if ($fixedAttendances->isNotEmpty()) {
+                $this->fixedService->computeForAttendances($fixedAttendances);
+            }
+
+            $fullAttendances = $computableAttendances->get('Full', collect());
+
+            if ($fullAttendances->isNotEmpty()) {
+                $this->fullService->computeForAttendances($fullAttendances);
+            }
+
+            return [
+                'attendance_count' => $attendances->count(),
+                'previous_records' => $previousRecords,
+                'record_count' => $this->repository
+                    ->tardinessRecordsForEmployeeDateRange($employeeId, $from, $to)
+                    ->count(),
+            ];
+        });
+
+        session()->put(self::RECOMPUTE_UNDO_SESSION_KEY . ".{$undoToken}", [
+            'employee_id' => $employeeId,
+            'station_id' => $stationId,
+            'from' => $from,
+            'to' => $to,
+            'records' => $result['previous_records'],
+            'expires_at' => now()->addSeconds(8)->toIso8601String(),
+        ]);
+
+        return [
+            'token' => $undoToken,
+            'employee_id' => $employeeId,
+            'from' => $from,
+            'to' => $to,
+            'attendance_count' => $result['attendance_count'],
+            'record_count' => $result['record_count'],
+        ];
     }
 
     public function undoRecomputeEmployeeDateRange(int $employeeId, int $stationId, string $token): void

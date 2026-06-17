@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePage } from "@inertiajs/react";
 
 import useTardinessSummaryFilters from "./useTardinessSummaryFilters";
@@ -10,7 +10,6 @@ import { wholeYearLabel } from "../utils";
 const useTardinessSummaryManagement = ({
     office,
     officeOptions,
-    printSummary,
     search,
     stationVerification,
     summary,
@@ -20,7 +19,6 @@ const useTardinessSummaryManagement = ({
     yearOptions,
 }) => {
     const [selectedMonth, setSelectedMonth] = useState(wholeYearLabel);
-    const [pendingPdfDownload, setPendingPdfDownload] = useState(false);
     const authUser = usePage().props.auth?.user;
     const isSchoolAdmin = (authUser?.roles || []).includes("school_admin");
 
@@ -54,6 +52,17 @@ const useTardinessSummaryManagement = ({
 
     const { downloadPDF, pdfRef } = useTardinessSummaryPdfExport();
 
+    const downloadAfterPrintSummaryRender = () => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                downloadPDF({
+                    selectedMonth,
+                    selectedYear: filters.selectedYear,
+                });
+            });
+        });
+    };
+
     const handleSummaryPageChange = (page) => {
         if (page < 1 || page > pageData.summaryPagination.totalPages) return;
 
@@ -84,25 +93,10 @@ const useTardinessSummaryManagement = ({
     };
 
     const handleDownloadPDF = () => {
-        setPendingPdfDownload(true);
-        filters.loadPrintSummary();
-    };
-
-    useEffect(() => {
-        if (!pendingPdfDownload) return;
-
-        downloadPDF({
-            selectedMonth,
-            selectedYear: filters.selectedYear,
+        filters.loadPrintSummary({
+            onSuccess: downloadAfterPrintSummaryRender,
         });
-        setPendingPdfDownload(false);
-    }, [
-        downloadPDF,
-        filters.selectedYear,
-        pendingPdfDownload,
-        printSummary,
-        selectedMonth,
-    ]);
+    };
 
     return {
         applyFilters: filters.applyFilters,

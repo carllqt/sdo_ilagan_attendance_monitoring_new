@@ -60,7 +60,7 @@ class TravelOrderController extends Controller
         ]);
 
         return redirect()
-            ->route('travelorder')
+            ->route('travel-order')
             ->with('success_message', 'Travel Order created successfully.')
             ->with('created_order', $travelOrder->load('employee.station')->toArray());
     }

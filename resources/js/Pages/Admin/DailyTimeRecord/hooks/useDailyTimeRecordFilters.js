@@ -59,7 +59,7 @@ const useDailyTimeRecordFilters = ({
             query.page = pageValue;
         }
 
-        router.get(route("dailytimerecord"), query, {
+        router.get(route("daily-time-record"), query, {
             only: ["time_record", "search", "office", "month", "year", "limit"],
             preserveState: true,
             preserveScroll: true,

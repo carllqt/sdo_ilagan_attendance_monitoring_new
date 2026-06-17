@@ -3,7 +3,7 @@
 namespace App\Models\Administrator;
 
 use App\Models\Biometric;
-use App\Models\HumanResource\HrTardinessConvertion;
+use App\Models\HumanResource\HrTardinessConversion;
 use App\Models\HumanResource\SickLeave;
 use App\Models\HumanResource\VacationLeave;
 use App\Models\User;
@@ -87,9 +87,9 @@ class Employee extends Model
         return $schedule?->workType?->name;
     }
 
-    public function tardinessConvertion()
+    public function tardinessConversion()
     {
-        return $this->hasMany(HrTardinessConvertion::class, 'employee_id');
+        return $this->hasMany(HrTardinessConversion::class, 'employee_id');
     }
 
     public function tardinessRecords()

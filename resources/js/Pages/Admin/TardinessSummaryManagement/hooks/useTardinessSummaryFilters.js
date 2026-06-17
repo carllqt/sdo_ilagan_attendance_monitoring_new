@@ -51,7 +51,7 @@ const useTardinessSummaryFilters = ({
     };
 
     const reloadTardinessSummary = (query, only, options = {}) => {
-        router.get(route("tardinesssummary"), query, {
+        router.get(route("tardiness-summary"), query, {
             only,
             preserveState: true,
             preserveScroll: true,

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Administrator\Employee;
 use App\Models\Administrator\TardinessRecord;
 
-class HrTardinessConvertion extends Model
+class HrTardinessConversion extends Model
 {
     use HasFactory;
 

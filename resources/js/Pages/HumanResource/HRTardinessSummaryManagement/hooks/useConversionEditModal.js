@@ -1,16 +1,16 @@
-﻿import { useEffect } from "react";
+import { useEffect } from "react";
 import { router, useForm } from "@inertiajs/react";
 
-import { clearEditConvertionModalParams } from "../utils";
+import { clearEditConversionModalParams } from "../utils";
 
-const useConvertionEditModal = (editConvertionModal = null) => {
+const useConversionEditModal = (editConversionModal = null) => {
     const { data, errors, processing, put, reset, setData, clearErrors } =
         useForm({
             equivalent_days: "",
         });
 
     useEffect(() => {
-        if (!editConvertionModal) {
+        if (!editConversionModal) {
             reset();
             clearErrors();
             return;
@@ -18,19 +18,19 @@ const useConvertionEditModal = (editConvertionModal = null) => {
 
         setData(
             "equivalent_days",
-            String(editConvertionModal.equivalent_days ?? ""),
+            String(editConversionModal.equivalent_days ?? ""),
         );
-    }, [clearErrors, editConvertionModal, reset, setData]);
+    }, [clearErrors, editConversionModal, reset, setData]);
 
     const openEditModal = (item, valueKey) => {
         const query = new URLSearchParams(window.location.search);
 
-        query.set("modal", "edit-convertion");
+        query.set("modal", "edit-conversion");
         query.set("conversion_type", valueKey);
         query.set("conversion_id", item.id);
 
-        router.get(route("tardinessconvertion"), Object.fromEntries(query), {
-            only: ["editConvertionModal"],
+        router.get(route("tardiness-conversion"), Object.fromEntries(query), {
+            only: ["editConversionModal"],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -38,15 +38,15 @@ const useConvertionEditModal = (editConvertionModal = null) => {
     };
 
     const closeEditModal = () => {
-        const query = clearEditConvertionModalParams(
+        const query = clearEditConversionModalParams(
             new URLSearchParams(window.location.search),
         );
 
-        router.get(route("tardinessconvertion"), Object.fromEntries(query), {
+        router.get(route("tardiness-conversion"), Object.fromEntries(query), {
             only: [
                 "conversionHours",
                 "conversionMinutes",
-                "editConvertionModal",
+                "editConversionModal",
             ],
             preserveState: true,
             preserveScroll: true,
@@ -54,10 +54,10 @@ const useConvertionEditModal = (editConvertionModal = null) => {
         });
     };
 
-    const handleUpdateConvertion = (event) => {
+    const handleUpdateConversion = (event) => {
         event.preventDefault();
 
-        if (!editConvertionModal) {
+        if (!editConversionModal) {
             return;
         }
 
@@ -66,9 +66,9 @@ const useConvertionEditModal = (editConvertionModal = null) => {
         );
 
         put(
-            route("tardiness-convertions.update", {
-                type: editConvertionModal.type,
-                id: editConvertionModal.id,
+            route("tardiness-conversions.update", {
+                type: editConversionModal.type,
+                id: editConversionModal.id,
                 ...query,
             }),
             {
@@ -82,11 +82,11 @@ const useConvertionEditModal = (editConvertionModal = null) => {
         closeEditModal,
         data,
         errors,
-        handleUpdateConvertion,
+        handleUpdateConversion,
         openEditModal,
         processing,
         setData,
     };
 };
 
-export default useConvertionEditModal;
+export default useConversionEditModal;

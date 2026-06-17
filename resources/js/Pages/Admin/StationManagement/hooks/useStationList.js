@@ -54,7 +54,7 @@ const useStationList = ({ stations, stationLimit }) => {
                 window.history.replaceState(
                     {},
                     "",
-                    `${route("stationmanagement")}?${nextParams.toString()}`,
+                    `${route("station-management")}?${nextParams.toString()}`,
                 );
             })
             .catch((error) => {
@@ -74,7 +74,7 @@ const useStationList = ({ stations, stationLimit }) => {
         params.delete("station_source");
         params.set("modal", "add-station");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -96,7 +96,7 @@ const useStationList = ({ stations, stationLimit }) => {
         );
         params.set("station_source", station.source || "station");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -112,7 +112,7 @@ const useStationList = ({ stations, stationLimit }) => {
         params.delete("station_role");
         params.delete("station_source");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,

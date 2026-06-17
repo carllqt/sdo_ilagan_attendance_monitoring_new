@@ -82,7 +82,7 @@ const useOfficeHeadRows = ({ officeHeadLimit, officeHeadRows, officeSearch }) =>
                 window.history.replaceState(
                     {},
                     "",
-                    `${route("departmentmanagement")}?${nextParams.toString()}`,
+                    `${route("department-management")}?${nextParams.toString()}`,
                 );
             })
             .catch((error) => {

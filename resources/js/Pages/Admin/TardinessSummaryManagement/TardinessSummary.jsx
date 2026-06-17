@@ -55,7 +55,6 @@ const TardinessSummary = ({
     } = useTardinessSummaryManagement({
         office,
         officeOptions,
-        printSummary,
         search,
         stationVerification,
         summary,

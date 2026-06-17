@@ -19,6 +19,10 @@ class FullTardinessService
                 $attendance->date,
                 $scheduleStart,
             );
+            $pmUndertimeEnd = $this->pmUndertimeEndMinutes(
+                $attendance->date,
+                $scheduleEnd,
+            );
 
             $amTardy = $this->tardyAfter($times['amIn'], $amTardyStart);
             $amUndertime = $this->undertimeBefore(
@@ -29,7 +33,7 @@ class FullTardinessService
             $pmUndertime = $this->calculatePmUndertime(
                 $times['amIn'],
                 $times['pmOut'],
-                $scheduleEnd,
+                $pmUndertimeEnd,
             );
 
             $this->saveTardinessRecord(
@@ -68,13 +72,21 @@ class FullTardinessService
 
     private function amTardyStartMinutes(string $date, int $scheduleStart): int
     {
-        if (
-            Carbon::parse($date)->isMonday()
-            && $scheduleStart === (8 * 60) + 30
-        ) {
+        if (Carbon::parse($date)->isMonday()) {
             return self::DEFAULT_START_MINUTES;
         }
 
         return $scheduleStart;
+    }
+
+    private function pmUndertimeEndMinutes(
+        string $date,
+        int $scheduleEnd,
+    ): int {
+        if (Carbon::parse($date)->isMonday()) {
+            return self::DEFAULT_END_MINUTES;
+        }
+
+        return $scheduleEnd;
     }
 }

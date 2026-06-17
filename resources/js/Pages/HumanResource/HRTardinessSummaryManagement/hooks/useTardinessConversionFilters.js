@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { router } from "@inertiajs/react";
 
 import {
-    buildTardinessConvertionQuery,
+    buildTardinessConversionQuery,
     buildSummaryPayload,
     getCurrentMonthLabel,
     getDefaultFirstMonth,
@@ -12,7 +12,7 @@ import {
     getSecondMonthList,
 } from "../utils";
 
-const useTardinessConvertionFilters = ({
+const useTardinessConversionFilters = ({
     filteredSummaryPayload = [],
     monthList = [],
     office = "all",
@@ -83,8 +83,8 @@ const useTardinessConvertionFilters = ({
         searchValue = searchInput,
     } = {}) => {
         router.get(
-            route("tardinessconvertion"),
-            buildTardinessConvertionQuery({
+            route("tardiness-conversion"),
+            buildTardinessConversionQuery({
                 endMonthValue,
                 limitValue,
                 officeValue,
@@ -162,4 +162,4 @@ const useTardinessConvertionFilters = ({
     };
 };
 
-export default useTardinessConvertionFilters;
+export default useTardinessConversionFilters;

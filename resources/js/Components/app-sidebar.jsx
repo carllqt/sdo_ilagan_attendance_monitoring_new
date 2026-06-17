@@ -129,19 +129,19 @@ export function AppSidebar({ active, user, ...props }) {
                                         <SidebarMenuSubButton
                                             asChild
                                             isActive={
-                                                active === "employeemanagement"
+                                                active === "employee-management"
                                             }
                                         >
                                             <Link
                                                 href={route(
-                                                    "employeemanagement",
+                                                    "employee-management",
                                                 )}
                                                 className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
                                             >
                                                 <UserCog
                                                     className={`h-4 w-4 ${
                                                         active ===
-                                                        "employeemanagement"
+                                                        "employee-management"
                                                             ? "!text-black"
                                                             : "!text-white"
                                                     }`}
@@ -157,19 +157,19 @@ export function AppSidebar({ active, user, ...props }) {
                                                 asChild
                                                 isActive={
                                                     active ===
-                                                    "departmentmanagement"
+                                                    "department-management"
                                                 }
                                             >
                                                 <Link
                                                     href={route(
-                                                        "departmentmanagement",
+                                                        "department-management",
                                                     )}
                                                     className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
                                                 >
                                                     <Building2
                                                         className={`h-4 w-4 ${
                                                             active ===
-                                                            "departmentmanagement"
+                                                            "department-management"
                                                                 ? "!text-black"
                                                                 : "!text-white"
                                                         }`}
@@ -186,19 +186,19 @@ export function AppSidebar({ active, user, ...props }) {
                                                 asChild
                                                 isActive={
                                                     active ===
-                                                    "stationmanagement"
+                                                    "station-management"
                                                 }
                                             >
                                                 <Link
                                                     href={route(
-                                                        "stationmanagement",
+                                                        "station-management",
                                                     )}
                                                     className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
                                                 >
                                                     <LandPlot
                                                         className={`h-4 w-4 ${
                                                             active ===
-                                                            "stationmanagement"
+                                                            "station-management"
                                                                 ? "!text-black"
                                                                 : "!text-white"
                                                         }`}
@@ -214,19 +214,19 @@ export function AppSidebar({ active, user, ...props }) {
                                             asChild
                                             isActive={
                                                 active ===
-                                                "attendancemanagement"
+                                                "attendance-management"
                                             }
                                         >
                                             <Link
                                                 href={route(
-                                                    "attendancemanagement",
+                                                    "attendance-management",
                                                 )}
                                                 className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
                                             >
                                                 <CalendarDays
                                                     className={`h-4 w-4 ${
                                                         active ===
-                                                        "attendancemanagement"
+                                                        "attendance-management"
                                                             ? "!text-black"
                                                             : "!text-white"
                                                     }`}
@@ -240,17 +240,17 @@ export function AppSidebar({ active, user, ...props }) {
                                         <SidebarMenuSubButton
                                             asChild
                                             isActive={url.startsWith(
-                                                "/dailytimerecord",
+                                                "/daily-time-record",
                                             )}
                                         >
                                             <Link
-                                                href={route("dailytimerecord")}
+                                                href={route("daily-time-record")}
                                                 className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100 h-8"
                                             >
                                                 <CalendarClock
                                                     className={`h-4 w-4 ${
                                                         url.startsWith(
-                                                            "/dailytimerecord",
+                                                            "/daily-time-record",
                                                         )
                                                             ? "!text-black"
                                                             : "!text-white"
@@ -265,17 +265,17 @@ export function AppSidebar({ active, user, ...props }) {
                                         <SidebarMenuSubButton
                                             asChild
                                             isActive={url.startsWith(
-                                                "/tardinesssummary",
+                                                "/tardiness-summary",
                                             )}
                                         >
                                             <Link
-                                                href={route("tardinesssummary")}
+                                                href={route("tardiness-summary")}
                                                 className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
                                             >
                                                 <ChartColumn
                                                     className={`h-4 w-4 ${
                                                         active ===
-                                                        "tardinesssummary"
+                                                        "tardiness-summary"
                                                             ? "!text-black"
                                                             : "!text-white"
                                                     }`}
@@ -319,25 +319,25 @@ export function AppSidebar({ active, user, ...props }) {
                                                     asChild
                                                     isActive={
                                                         active ===
-                                                        "tardinessconvertion"
+                                                        "tardiness-conversion"
                                                     }
                                                 >
                                                     <Link
                                                         href={route(
-                                                            "tardinessconvertion",
+                                                            "tardiness-conversion",
                                                         )}
                                                         className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100 h-8"
                                                     >
                                                         <ArrowLeftRight
                                                             className={`h-4 w-4 ${
                                                                 active ===
-                                                                "tardinessconvertion"
+                                                                "tardiness-conversion"
                                                                     ? "!text-black"
                                                                     : "!text-white"
                                                             }`}
                                                         />
                                                         Tardiness Summary /
-                                                        Convertion Management
+                                                        Conversion Management
                                                     </Link>
                                                 </SidebarMenuSubButton>
                                             </SidebarMenuSubItem>
@@ -413,25 +413,25 @@ export function AppSidebar({ active, user, ...props }) {
                                                 asChild
                                                 isActive={
                                                     active ===
-                                                    "tardinessconvertion"
+                                                    "tardiness-conversion"
                                                 }
                                             >
                                                 <Link
                                                     href={route(
-                                                        "tardinessconvertion",
+                                                        "tardiness-conversion",
                                                     )}
                                                     className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100 h-8"
                                                 >
                                                     <Calculator
                                                         className={`h-4 w-4 ${
                                                             active ===
-                                                            "tardinessconvertion"
+                                                            "tardiness-conversion"
                                                                 ? "!text-black"
                                                                 : "!text-white"
                                                         }`}
                                                     />
                                                     Tardiness Summary /
-                                                    Convertion Management
+                                                    Conversion Management
                                                 </Link>
                                             </SidebarMenuSubButton>
                                         </SidebarMenuSubItem>
@@ -451,7 +451,7 @@ export function AppSidebar({ active, user, ...props }) {
                                                     className="flex min-h-8 items-start gap-2 py-1 text-xs text-white hover:bg-blue-900 hover:text-blue-100 [&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:!text-clip"
                                                 >
                                                     <Archive
-                                                            className={`mt-0.5 h-4 w-4 ${
+                                                        className={`mt-0.5 h-4 w-4 ${
                                                             active ===
                                                                 "converted-tardiness-record" ||
                                                             active ===
@@ -461,7 +461,7 @@ export function AppSidebar({ active, user, ...props }) {
                                                         }`}
                                                     />
                                                     <span
-                                                            className={`min-w-0 flex-1 leading-4 ${
+                                                        className={`min-w-0 flex-1 leading-4 ${
                                                             active ===
                                                                 "converted-tardiness-record" ||
                                                             active ===

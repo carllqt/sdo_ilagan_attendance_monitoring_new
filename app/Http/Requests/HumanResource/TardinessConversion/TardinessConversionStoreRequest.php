@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\HumanResource\TardinessConvertion;
+namespace App\Http\Requests\HumanResource\TardinessConversion;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class TardinessConvertionStoreRequest extends FormRequest
+class TardinessConversionStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {

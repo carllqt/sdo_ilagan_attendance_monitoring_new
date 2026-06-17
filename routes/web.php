@@ -10,7 +10,7 @@ use App\Http\Controllers\Administrator\{
     StationManagementController
 };
 use App\Http\Controllers\HumanResource\{
-    TardinessConvertionController,
+    TardinessConversionController,
     ConvertedTardinessRecordManagementController,
     VacationLeaveController,
     SickLeaveController,
@@ -44,9 +44,9 @@ Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])
 Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])
     ->name('locator-slips.store');
 Route::get('/travel-order', [TravelOrderController::class, 'index'])
-    ->name('travelorder');
+    ->name('travel-order');
 Route::post('/employee/travel-order', [TravelOrderController::class, 'store'])
-    ->name('travelorder.store');
+    ->name('travel-order.store');
 Route::get('/employee/application-leave', [ApplicationForLeaveController::class, 'index'])
     ->name('application-leave');
 Route::post('/employee/application-leave', [ApplicationForLeaveController::class, 'store'])
@@ -61,47 +61,48 @@ Route::post('/employee/application-leave', [ApplicationForLeaveController::class
 Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(function () {
 
     //Attendance Management
-    Route::get('/attendancemanagement', [AttendanceManagementController::class, 'index'])->name('attendancemanagement');
-    Route::post('/attendancemanagement/{id}/update', [AttendanceManagementController::class, 'update'])->name('attendancemanagement.update');
-    Route::post('attendancemanagement/create', [AttendanceManagementController::class, 'store'])->name('attendancemanagement.create');
+    Route::get('/attendance-management', [AttendanceManagementController::class, 'index'])->name('attendance-management');
+    Route::post('/attendance-management/{id}/update', [AttendanceManagementController::class, 'update'])->name('attendance-management.update');
+    Route::post('/attendance-management/create', [AttendanceManagementController::class, 'store'])->name('attendance-management.create');
     Route::post('/attendance/leave', [EmployeeLeaveController::class, 'store'])->name('attendance.leave.store');
     Route::delete('/attendance/leave', [EmployeeLeaveController::class, 'destroy']);
 
     // Daily Time Records
     Route::controller(DailyTimeRecordController::class)
-        ->prefix('dailytimerecord')
+        ->prefix('daily-time-record')
         ->group(function () {
-            Route::get('/', 'index')->name('dailytimerecord');
-            Route::get('/suggestions', 'suggestions')->name('dailytimerecord.suggestions');
-            Route::get('/offices', 'offices')->name('dailytimerecord.offices');
-            Route::get('/employees/{employeeId}/details', 'details')->name('dailytimerecord.details');
-            Route::post('/employees/{employeeId}/recompute', 'recompute')->name('dailytimerecord.recompute');
-            Route::post('/employees/{employeeId}/recompute/undo', 'undoRecompute')->name('dailytimerecord.recompute.undo');
-            Route::post('/work-types', 'storeWorkType')->name('dailytimerecord.worktypes.store');
-            Route::put('/work-types/{workType}', 'updateWorkType')->name('dailytimerecord.worktypes.update');
-            Route::delete('/work-types/{workType}', 'destroyWorkType')->name('dailytimerecord.worktypes.destroy');
-            Route::post('/work-schedules', 'storeWorkSchedule')->name('dailytimerecord.workschedules.store');
-            Route::put('/work-schedules/{workSchedule}', 'updateWorkSchedule')->name('dailytimerecord.workschedules.update');
-            Route::delete('/work-schedules/{workSchedule}', 'destroyWorkSchedule')->name('dailytimerecord.workschedules.destroy');
+            Route::get('/', 'index')->name('daily-time-record');
+            Route::get('/suggestions', 'suggestions')->name('daily-time-record.suggestions');
+            Route::get('/offices', 'offices')->name('daily-time-record.offices');
+            Route::get('/employees/{employeeId}/details', 'details')->name('daily-time-record.details');
+            Route::post('/employees/{employeeId}/recompute', 'recompute')->name('daily-time-record.recompute');
+            Route::post('/employees/{employeeId}/recompute/undo', 'undoRecompute')->name('daily-time-record.recompute.undo');
+            Route::post('/work-types', 'storeWorkType')->name('daily-time-record.work-types.store');
+            Route::put('/work-types/{workType}', 'updateWorkType')->name('daily-time-record.work-types.update');
+            Route::delete('/work-types/{workType}', 'destroyWorkType')->name('daily-time-record.work-types.destroy');
+            Route::post('/work-schedules', 'storeWorkSchedule')->name('daily-time-record.work-schedules.store');
+            Route::put('/work-schedules/{workSchedule}', 'updateWorkSchedule')->name('daily-time-record.work-schedules.update');
+            Route::delete('/work-schedules/{workSchedule}', 'destroyWorkSchedule')->name('daily-time-record.work-schedules.destroy');
         });
 
     // Admin Tardiness Records
-    Route::get('/tardinesssummary/suggestions', [TardinessSummaryManagementController::class, 'suggestions'])->name('tardinesssummary.suggestions');
-    Route::get('/tardinesssummary', [TardinessSummaryManagementController::class, 'index'])->name('tardinesssummary');
+    Route::get('/tardiness-summary/suggestions', [TardinessSummaryManagementController::class, 'suggestions'])->name('tardiness-summary.suggestions');
+    Route::get('/tardiness-summary', [TardinessSummaryManagementController::class, 'index'])->name('tardiness-summary');
 
     // HR Tardiness Records
+    Route::get('/converted-tardiness-record-management/suggestions', [ConvertedTardinessRecordManagementController::class, 'suggestions'])->name('converted-tardiness-record.suggestions');
     Route::get('/converted-tardiness-record-management', [ConvertedTardinessRecordManagementController::class, 'index'])->name('converted-tardiness-record');
     Route::get('/converted-tardiness-record-management/{batch}', [ConvertedTardinessRecordManagementController::class, 'show'])->name('converted-tardiness-record.batch');
 
     // HR Tardiness Conversion
-    Route::get('/tardinessconvertion/suggestions', [TardinessConvertionController::class, 'suggestions'])->name('tardinessconvertion.suggestions');
-    Route::get('/tardinessconvertion', [TardinessConvertionController::class, 'index'])->name('tardinessconvertion');
-    Route::post('/tardiness-convertions', [TardinessConvertionController::class, 'store'])->name('tardiness-convertions');
-    Route::put('/tardiness-convertions/{type}/{id}', [TardinessConvertionController::class, 'update'])->where('type', 'hours|minutes')->whereNumber('id')->name('tardiness-convertions.update');
+    Route::get('/tardiness-conversion/suggestions', [TardinessConversionController::class, 'suggestions'])->name('tardiness-conversion.suggestions');
+    Route::get('/tardiness-conversion', [TardinessConversionController::class, 'index'])->name('tardiness-conversion');
+    Route::post('/tardiness-conversions/store', [TardinessConversionController::class, 'store'])->name('tardiness-conversion.store');
+    Route::put('/tardiness-conversions/{type}/{id}', [TardinessConversionController::class, 'update'])->where('type', 'hours|minutes')->whereNumber('id')->name('tardiness-conversions.update');
 
     //Employee Managements
-    Route::get('/employeemanagement/suggestions', [EmployeeManagementController::class, 'suggestions'])->name('employees.suggestions');
-    Route::get('/employeemanagement', [EmployeeManagementController::class, 'index'])->name('employeemanagement');
+    Route::get('/employee-management/suggestions', [EmployeeManagementController::class, 'suggestions'])->name('employees.suggestions');
+    Route::get('/employee-management', [EmployeeManagementController::class, 'index'])->name('employee-management');
     Route::post('/employeestore', [EmployeeManagementController::class, 'store'])->name('employees.store');
     Route::put('/employeeedit/{id}', [EmployeeManagementController::class, 'update'])->name('employees.update');
 
@@ -122,27 +123,27 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
 Route::middleware(['role:sdo_admin'])->group(function () {
     // Department Management
-    Route::get('/departmentmanagement', [DepartmentManagementController::class, 'index'])->name('departmentmanagement');
-    Route::get('/departmentmanagement/employees', [DepartmentManagementController::class, 'employeeCandidates'])->name('department.employees');
-    Route::get('/departmentmanagement/office-heads', [DepartmentManagementController::class, 'officeHeadRows'])->name('department.office-heads');
-    Route::get('/departmentmanagement/office-heads/suggestions', [DepartmentManagementController::class, 'officeHeadSuggestions'])->name('department.office-heads.suggestions');
-    Route::post('/departmentmanagement/depheadstore', [DepartmentManagementController::class, 'storeHead'])->name('departmenthead.storeHead');
-    Route::post('/departmentmanagement/divisionheadstore', [DepartmentManagementController::class, 'storeDivisionHead'])->name('divisionhead.storeDivisionHead');
-    Route::post('/departmentmanagement/addDepartment', [DepartmentManagementController::class, 'storeDepartment'])->name('division.storeDivision');
-    Route::put('/departmentmanagement/updateDepartment/{id}', [DepartmentManagementController::class, 'updateDepartment'])->name('department.updateDepartment');
-    Route::delete('/departmentmanagement/delete/{id}', [DepartmentManagementController::class, 'destroy'])->name('departmenthead.destroy');
-    Route::delete('/departmentmanagement/division/delete/{id}', [DepartmentManagementController::class, 'destroyDivisionHead'])->name('divisionhead.destroy');
-    Route::delete('/departmentmanagement/department/delete/{id}', [DepartmentManagementController::class, 'destroyDepartment'])->name('department.destroy');
-    Route::post('/departmentmanagement/addOffice', [DepartmentManagementController::class, 'storeOffice'])->name('office.storeOffice');
-    Route::put('/departmentmanagement/updateOffice/{id}', [DepartmentManagementController::class, 'updateOffice'])->name('office.updateOffice');
-    Route::delete('/departmentmanagement/office/delete/{id}', [DepartmentManagementController::class, 'destroyOffice'])->name('office.destroy');
-    Route::post('/departmentmanagement/suggest-names', [DepartmentManagementController::class, 'suggestDepartmentNames'])->name('departmentnames.suggest');
+    Route::get('/department-management', [DepartmentManagementController::class, 'index'])->name('department-management');
+    Route::get('/department-management/employees', [DepartmentManagementController::class, 'employeeCandidates'])->name('department.employees');
+    Route::get('/department-management/office-heads', [DepartmentManagementController::class, 'officeHeadRows'])->name('department.office-heads');
+    Route::get('/department-management/office-heads/suggestions', [DepartmentManagementController::class, 'officeHeadSuggestions'])->name('department.office-heads.suggestions');
+    Route::post('/department-management/office-heads', [DepartmentManagementController::class, 'storeHead'])->name('departmenthead.storeHead');
+    Route::post('/department-management/division-heads', [DepartmentManagementController::class, 'storeDivisionHead'])->name('divisionhead.storeDivisionHead');
+    Route::post('/department-management/divisions', [DepartmentManagementController::class, 'storeDepartment'])->name('division.storeDivision');
+    Route::put('/department-management/divisions/{id}', [DepartmentManagementController::class, 'updateDepartment'])->name('department.updateDepartment');
+    Route::delete('/department-management/office-heads/{id}', [DepartmentManagementController::class, 'destroy'])->name('departmenthead.destroy');
+    Route::delete('/department-management/division-heads/{id}', [DepartmentManagementController::class, 'destroyDivisionHead'])->name('divisionhead.destroy');
+    Route::delete('/department-management/divisions/{id}', [DepartmentManagementController::class, 'destroyDepartment'])->name('department.destroy');
+    Route::post('/department-management/offices', [DepartmentManagementController::class, 'storeOffice'])->name('office.storeOffice');
+    Route::put('/department-management/offices/{id}', [DepartmentManagementController::class, 'updateOffice'])->name('office.updateOffice');
+    Route::delete('/department-management/offices/{id}', [DepartmentManagementController::class, 'destroyOffice'])->name('office.destroy');
+    Route::post('/department-management/suggest-names', [DepartmentManagementController::class, 'suggestDepartmentNames'])->name('departmentnames.suggest');
 
     //Station Management
     Route::get('/stations/suggestions', [StationManagementController::class, 'suggestions'])->name('stations.suggestions');
     Route::get('/stations/admin/list', [StationManagementController::class, 'adminRows'])->name('stationadmin.list');
     Route::get('/stations/list', [StationManagementController::class, 'stationRows'])->name('stations.list');
-    Route::get('/stations', [StationManagementController::class, 'index'])->name('stationmanagement');
+    Route::get('/station-management', [StationManagementController::class, 'index'])->name('station-management');
     Route::post('/stations', [StationManagementController::class, 'storeStation'])->name('stations.store');
     Route::get('/stations/admin/employees', [StationManagementController::class, 'adminEmployeeCandidates'])->name('stationadmin.employees');
     Route::post('/stations/admin', [StationManagementController::class, 'store'])->name('stationadmin.store');

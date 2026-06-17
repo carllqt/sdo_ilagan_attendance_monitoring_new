@@ -64,7 +64,7 @@ const useDepartmentPrintData = ({
 
         const timeout = setTimeout(() => {
             axios
-                .get(route("dailytimerecord.offices"), {
+                .get(route("daily-time-record.offices"), {
                     params: {
                         search: currentSearch,
                         department: selectedDepartment,
@@ -128,7 +128,7 @@ const useDepartmentPrintData = ({
                     window.history.replaceState(
                         {},
                         "",
-                        `${route("dailytimerecord")}?${params.toString()}`,
+                        `${route("daily-time-record")}?${params.toString()}`,
                     );
                 })
                 .catch(() => {

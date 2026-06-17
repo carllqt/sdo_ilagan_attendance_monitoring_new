@@ -16,7 +16,7 @@ const useStationAdminModalActions = () => {
         );
         params.set("station_source", station.source || "station");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -32,7 +32,7 @@ const useStationAdminModalActions = () => {
         params.delete("station_role");
         params.delete("station_source");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -48,7 +48,7 @@ const useStationAdminModalActions = () => {
         params.set("modal", "remove-station-admin");
         params.set("admin_id", admin.id);
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -64,7 +64,7 @@ const useStationAdminModalActions = () => {
         params.delete("station_role");
         params.delete("station_source");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveScroll: true,
             preserveState: true,
             replace: true,

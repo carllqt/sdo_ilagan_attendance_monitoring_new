@@ -14,10 +14,10 @@ class HrConvertedTardinessRecord extends Model
         'tardiness_record_id',
     ];
 
-    public function tardinessConvertion()
+    public function tardinessConversion()
     {
         return $this->belongsTo(
-            HrTardinessConvertion::class,
+            HrTardinessConversion::class,
             'hr_tardiness_convertions_id',
         );
     }

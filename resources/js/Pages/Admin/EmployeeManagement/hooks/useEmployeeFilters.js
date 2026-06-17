@@ -74,7 +74,7 @@ const useEmployeeFilters = ({
                 ) || selectedEmployee;
         }
 
-        router.get(route("employeemanagement"), query, {
+        router.get(route("employee-management"), query, {
             only: [
                 "filteredEmployeesList",
                 "search",

@@ -5,10 +5,11 @@ namespace App\Services\HumanResource;
 use App\Data\HumanResource\ConvertedTardinessRecordManagement\ConvertedTardinessRecordFilter;
 use App\Models\Administrator\Employee;
 use App\Models\HumanResource\HrTardinessBatch;
-use App\Models\HumanResource\HrTardinessConvertion;
+use App\Models\HumanResource\HrTardinessConversion;
 use App\Repositories\HumanResource\ConvertedTardinessRecordRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Inertia\Inertia;
 
 class ConvertedTardinessRecordService
 {
@@ -19,16 +20,50 @@ class ConvertedTardinessRecordService
     public function pageData(Request $request): array
     {
         $filter = ConvertedTardinessRecordFilter::fromRequest($request);
+        $records = $this->repository->paginatedRecords($filter);
+        $monthlySummaries = $this->repository->monthlySummaries(
+            $records->getCollection()->pluck('id'),
+            $filter,
+        );
+
+        $records->setCollection(
+            $records
+                ->getCollection()
+                ->map(fn (Employee $employee) => $this->employeeRecordPayload(
+                    $employee,
+                    $monthlySummaries->get($employee->id, collect()),
+                )),
+        );
 
         return [
-            'records' => $this->repository
-                ->paginatedRecords($filter)
-                ->through(fn (Employee $employee) => $this->employeeRecordPayload($employee)),
+            'records' => $records,
             'batchHistory' => $this->repository
                 ->batchHistory($filter)
                 ->through(fn (HrTardinessBatch $batch) => $this->batchHistoryPayload($batch)),
+            'selectedBatch' => Inertia::optional(fn () => $this->selectedBatchPayload($request)),
             'limit' => $filter->limit,
+            'search' => $filter->search,
+            'year' => $filter->year,
+            'years' => fn () => $this->repository->availableYears(),
         ];
+    }
+
+    public function suggestions(Request $request): array
+    {
+        $filter = ConvertedTardinessRecordFilter::fromRequest($request);
+
+        return $this->repository
+            ->suggestionEmployees($filter)
+            ->map(fn (object $employee) => [
+                'id' => $employee->id,
+                'label' => $this->employeeName($employee),
+                'meta' => collect([$employee->office, $employee->position ?? null])
+                    ->filter()
+                    ->join(' - '),
+                'search' => $this->employeeName($employee),
+            ])
+            ->values()
+            ->all();
     }
 
     public function batchData(HrTardinessBatch $batch): array
@@ -45,61 +80,73 @@ class ConvertedTardinessRecordService
         ];
     }
 
-    private function recordPayload(HrTardinessConvertion $record): array
+    private function employeeRecordPayload(Employee $employee, $monthlySummaries): array
     {
-        $start = Carbon::parse($record->batch->start_month)->startOfMonth();
-        $end = Carbon::parse($record->batch->end_month)->startOfMonth();
-
-        return [
-            'id' => $record->id,
-            'batch_id' => $record->batch_id,
-            'employee_id' => $record->employee_id,
-            'employee' => $this->employeePayload($record->employee),
-            'month' => $this->monthRangeLabel($start, $end),
-            'start_month' => (int) $start->month,
-            'end_month' => (int) $end->month,
-            'total_tardy' => $record->total_tardy,
-            'total_hours' => $record->total_hours,
-            'total_minutes' => $record->total_minutes,
-            'total_equivalent' => $record->total_equivalent,
-        ];
-    }
-
-    private function employeeRecordPayload(Employee $employee): array
-    {
-        $records = $employee->tardinessConvertion
-            ->filter(fn (HrTardinessConvertion $record) => $record->batch)
-            ->map(fn (HrTardinessConvertion $record) => $this->recordPayload($record))
-            ->values();
-
         $months = collect(range(1, 12))
             ->mapWithKeys(fn (int $month) => [$month => [
                 'total_tardy' => 0,
                 'batches' => [],
             ]])
             ->all();
+        $records = collect();
 
-        foreach ($records as $record) {
-            $month = (int) $record['start_month'];
+        foreach ($monthlySummaries as $summary) {
+            $month = (int) $summary->start_month;
 
             if (! isset($months[$month])) {
                 continue;
             }
 
-            $months[$month]['total_tardy'] += (float) $record['total_tardy'];
-            $months[$month]['batches'][] = [
-                'batch_id' => $record['batch_id'],
-                'month' => $record['month'],
-            ];
+            $batchItems = $this->summaryBatchItems((string) $summary->batch_items);
+            $totalTardy = (float) $summary->total_tardy;
+            $endMonth = (int) $summary->end_month;
+
+            $months[$month]['total_tardy'] = $totalTardy;
+            $months[$month]['batches'] = $batchItems->map(fn (array $batch) => [
+                'batch_id' => $batch['batch_id'],
+                'month' => $batch['month'],
+            ])->values()->all();
+
+            $records->push([
+                'batch_id' => $batchItems->pluck('batch_id')->join(', '),
+                'month' => $batchItems->pluck('month')->join("\n"),
+                'start_month' => $month,
+                'end_month' => min(max($endMonth, $month), 12),
+                'total_tardy' => $totalTardy,
+                'batches' => $batchItems->values()->all(),
+            ]);
         }
 
         return [
             'id' => $employee->id,
             'employee_id' => $employee->id,
             'employee' => $this->employeePayload($employee),
-            'records' => $records,
+            'records' => $records->values(),
             'months' => $months,
+            'total_tardy' => $records->sum(fn (array $record) => (float) $record['total_tardy']),
         ];
+    }
+
+    private function summaryBatchItems(string $batchItems)
+    {
+        return collect(explode(';;', $batchItems))
+            ->filter()
+            ->map(function (string $item) {
+                [$batchId, $startMonth, $endMonth] = array_pad(
+                    explode('|', $item),
+                    3,
+                    null,
+                );
+                $start = Carbon::parse($startMonth)->startOfMonth();
+                $end = Carbon::parse($endMonth)->startOfMonth();
+
+                return [
+                    'batch_id' => $batchId,
+                    'month' => $this->monthRangeLabel($start, $end),
+                    'start_month' => (int) $start->month,
+                    'end_month' => (int) $end->month,
+                ];
+            });
     }
 
     private function batchHistoryPayload(HrTardinessBatch $batch): array
@@ -111,10 +158,35 @@ class ConvertedTardinessRecordService
             'id' => $batch->id,
             'converted_at' => optional($batch->created_at)->toIso8601String(),
             'month_range' => $this->monthRangeLabel($start, $end),
-            'employee_count' => $batch->tardiness_convertions_count
-                ?? $batch->tardinessConvertions->count(),
-            'employees' => $batch->tardinessConvertions
-                ->map(fn (HrTardinessConvertion $record) => [
+            'employee_count' => $batch->tardiness_conversions_count
+                ?? $batch->tardinessConversions->count(),
+        ];
+    }
+
+    private function selectedBatchPayload(Request $request): ?array
+    {
+        $batchId = (int) $request->query('batch_id', 0);
+
+        if ($batchId < 1) {
+            return null;
+        }
+
+        $batch = $this->repository->batchDetails($batchId);
+
+        return $batch ? $this->batchDetailsPayload($batch) : null;
+    }
+
+    private function batchDetailsPayload(HrTardinessBatch $batch): array
+    {
+        $start = Carbon::parse($batch->start_month)->startOfMonth();
+        $end = Carbon::parse($batch->end_month)->startOfMonth();
+
+        return [
+            'id' => $batch->id,
+            'converted_at' => optional($batch->created_at)->toIso8601String(),
+            'month_range' => $this->monthRangeLabel($start, $end),
+            'employees' => $batch->tardinessConversions
+                ->map(fn (HrTardinessConversion $record) => [
                     'id' => $record->id,
                     'employee_id' => $record->employee_id,
                     'employee' => $this->employeePayload($record->employee),

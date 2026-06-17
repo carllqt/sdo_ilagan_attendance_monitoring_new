@@ -1,6 +1,9 @@
 import React from "react";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import PaginationMain from "@/Components/PaginationMain";
+import FloatingInput from "@/components/floating-input";
+import { CustomDropdownCheckbox } from "@/components/dropdown-menu-main";
+import { SuggestionSkeletonList } from "@/Components/Skeletons";
 import {
     Table,
     TableBody,
@@ -11,7 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getEmployeeName } from "@/lib/utils";
+import { Search } from "lucide-react";
 import useConvertedEmployeeList from "../hooks/useConvertedEmployeeList";
+import useConvertedEmployeeSuggestions from "../hooks/useConvertedEmployeeSuggestions";
 import {
     batchLabel,
     formatTardiness,
@@ -99,14 +104,37 @@ const monthCells = (record) => {
     return cells;
 };
 
-const ConvertedEmployeeList = ({ records = {} }) => {
-    const { handlePageChange, isLoading, recordItems, skeletonRows } =
-        useConvertedEmployeeList({ records });
+const ConvertedEmployeeList = ({
+    records = {},
+    search = "",
+    year,
+    years = [],
+}) => {
+    const {
+        applySearch,
+        handlePageChange,
+        handleYearChange,
+        isLoading,
+        recordItems,
+        searchInput,
+        selectedYear,
+        selectSuggestion,
+        setSearchInput,
+        skeletonRows,
+        yearOptions,
+    } = useConvertedEmployeeList({ records, search, year, years });
+    const {
+        searchBoxRef,
+        setShowSuggestions,
+        showSuggestions,
+        suggestionMatches,
+        suggestionsLoading,
+    } = useConvertedEmployeeSuggestions({ searchInput, selectedYear });
 
     return (
         <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
             <div className="rounded-xl">
-                <div className="mb-4 flex items-center justify-between gap-4">
+                <div className="mb-4 flex items-start justify-between gap-4">
                     <div className="min-w-0">
                         <h2 className="text-l font-bold">
                             Converted Tardiness Records
@@ -115,14 +143,87 @@ const ConvertedEmployeeList = ({ records = {} }) => {
                             Employee converted tardiness records by month
                         </p>
                     </div>
+
+                    <div className="grid w-full grid-cols-1 items-center gap-3 md:w-auto md:grid-cols-[280px_120px]">
+                        <div ref={searchBoxRef} className="relative">
+                            <FloatingInput
+                                label="Search name"
+                                icon={Search}
+                                name="search"
+                                value={searchInput}
+                                onChange={(event) => {
+                                    setSearchInput(event.target.value);
+                                    setShowSuggestions(true);
+                                }}
+                                onFocus={() => setShowSuggestions(true)}
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                        event.preventDefault();
+                                        applySearch();
+                                        setShowSuggestions(false);
+                                    }
+                                }}
+                            />
+
+                            {showSuggestions && searchInput.trim() ? (
+                                <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+                                    <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        Results for "{searchInput.trim()}"
+                                    </div>
+                                    <div className="max-h-72 overflow-y-auto">
+                                        {suggestionsLoading ? (
+                                            <SuggestionSkeletonList count={2} />
+                                        ) : suggestionMatches.length > 0 ? (
+                                            suggestionMatches.map((employee) => (
+                                                <button
+                                                    key={employee.id}
+                                                    type="button"
+                                                    onMouseDown={() => {
+                                                        selectSuggestion(employee);
+                                                        setShowSuggestions(false);
+                                                    }}
+                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-medium text-slate-800">
+                                                            {employee.label}
+                                                        </div>
+                                                        <div className="truncate text-xs text-slate-500">
+                                                            {employee.meta}
+                                                        </div>
+                                                    </div>
+                                                    <span className="shrink-0 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                                                        Search
+                                                    </span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-4 text-sm text-slate-500">
+                                                No employee matches found.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+
+                        <CustomDropdownCheckbox
+                            label="Year"
+                            items={yearOptions}
+                            selected={String(selectedYear || "")}
+                            onChange={handleYearChange}
+                            buttonVariant="outline"
+                            className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                        />
+                    </div>
                 </div>
             </div>
 
             <div className="overflow-x-auto rounded-lg border">
-                <Table className="w-full min-w-[1320px] table-fixed">
+                <Table className="w-full min-w-[1420px] table-fixed">
                     <TableHeader>
                         <TableRow className="bg-blue-900 hover:bg-blue-800">
-                            <TableHead className="w-[24%] px-16 text-left text-white">
+                            <TableHead className="w-[23%] px-16 text-left text-white">
                                 Employee Name
                             </TableHead>
                             {months.map((month) => (
@@ -133,6 +234,9 @@ const ConvertedEmployeeList = ({ records = {} }) => {
                                     {month.slice(0, 3)}
                                 </TableHead>
                             ))}
+                            <TableHead className="w-[7%] text-center text-white">
+                                Total
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
 
@@ -165,6 +269,9 @@ const ConvertedEmployeeList = ({ records = {} }) => {
                                                 </div>
                                             </TableCell>
                                         ))}
+                                        <TableCell className="p-3">
+                                            <Skeleton className="mx-auto h-4 w-12" />
+                                        </TableCell>
                                     </TableRow>
                                 ),
                             )
@@ -198,13 +305,18 @@ const ConvertedEmployeeList = ({ records = {} }) => {
                                             </div>
                                         </TableCell>
                                         {monthCells(record)}
+                                        <TableCell className="bg-white p-3 text-center font-bold text-black transition group-hover:bg-blue-50">
+                                            {formatTardiness(
+                                                record.total_tardy,
+                                            )}
+                                        </TableCell>
                                     </TableRow>
                                 );
                             })
                         ) : (
                             <TableRow>
                                 <TableCell
-                                    colSpan="13"
+                                    colSpan="14"
                                     className="p-5 text-center text-gray-500"
                                 >
                                     No Converted Tardiness Records Found

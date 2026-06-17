@@ -109,7 +109,7 @@ const useStationAdminRows = ({
                 window.history.replaceState(
                     {},
                     "",
-                    `${route("stationmanagement")}?${nextParams.toString()}`,
+                    `${route("station-management")}?${nextParams.toString()}`,
                 );
             })
             .catch((error) => {

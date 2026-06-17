@@ -62,14 +62,10 @@ const EditAttendanceDialog = ({ attendance }) => {
             if (!attendance.pm?.pm_time_out && pmTimeOut)
                 payload.pm_time_out = pmTimeOut;
 
-            router.post(
-                `attendancemanagement/${attendance.id}/update`,
-                payload,
-                {
-                    onSuccess: () => toast.success("Attendance updated!"),
-                    onError: () => toast.error("Failed to update attendance"),
-                }
-            );
+            router.post(route("attendance-management.update", attendance.id), payload, {
+                onSuccess: () => toast.success("Attendance updated!"),
+                onError: () => toast.error("Failed to update attendance"),
+            });
         } else {
             payload.employee_id = attendance.employee_id;
             payload.date = attendance.date;
@@ -78,7 +74,7 @@ const EditAttendanceDialog = ({ attendance }) => {
             payload.pm_time_in = pmTimeIn;
             payload.pm_time_out = pmTimeOut;
 
-            router.post(`attendancemanagement/create`, payload, {
+            router.post(route("attendance-management.create"), payload, {
                 onSuccess: () => toast.success("Attendance created!"),
                 onError: () => toast.error("Failed to create attendance"),
             });

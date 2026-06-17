@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Clock3, Timer } from "lucide-react";
 
 import { Button } from "@/Components/ui/button";
@@ -20,25 +20,27 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import useConvertionTable from "../hooks/useConvertionTable";
-import ConvertionTableDialog from "./ConvertionTableDialog";
+import useConversionTable from "../hooks/useConversionTable";
+import ConversionTableDialog from "./ConversionTableDialog";
 
-const ConvertionTable = ({
+const ConversionTable = ({
     conversionHours = [],
     conversionMinutes = [],
-    editConvertionModal = null,
+    editConversionModal = null,
 }) => {
-    const {
-        editModal,
-        hourTable,
-        hoursPage,
-        minuteTable,
-        minutesPage,
-    } = useConvertionTable({
-        conversionHours,
-        conversionMinutes,
-        editConvertionModal,
-    });
+    const { editModal, hourTable, hoursPage, minuteTable, minutesPage } =
+        useConversionTable({
+            conversionHours,
+            conversionMinutes,
+            editConversionModal,
+        });
+    const editTone = editConversionModal?.type === "minutes" ? "green" : "blue";
+    const editIcon =
+        editTone === "green" ? (
+            <Timer className="h-5 w-5" />
+        ) : (
+            <Clock3 className="h-5 w-5" />
+        );
 
     const renderRows = (items, valueKey, emptyMessage) =>
         items.length > 0 ? (
@@ -91,7 +93,7 @@ const ConvertionTable = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <ConvertionTableDialog
+                    <ConversionTableDialog
                         title={title}
                         items={table.allItems}
                         valueKey={valueKey}
@@ -100,6 +102,8 @@ const ConvertionTable = ({
                         disabled={!table.hasMoreRows}
                         splitAt={valueKey === "minutes" ? 30 : null}
                         onOpenEdit={editModal.openEditModal}
+                        tone={tone}
+                        icon={icon}
                     />
                 </div>
             </div>
@@ -109,8 +113,8 @@ const ConvertionTable = ({
                         <TableRow
                             className={
                                 tone === "green"
-                                    ? "bg-emerald-600 hover:bg-emerald-600"
-                                    : "bg-blue-700 hover:bg-blue-700"
+                                    ? "bg-teal-900 hover:bg-teal-900"
+                                    : "bg-blue-900 hover:bg-blue-900"
                             }
                         >
                             <TableHead className="w-1/2 text-center text-white">
@@ -126,11 +130,7 @@ const ConvertionTable = ({
                         className="animate-in fade-in"
                         style={{ animationDuration: "2s" }}
                     >
-                        {renderRows(
-                            table.visibleItems,
-                            valueKey,
-                            emptyMessage,
-                        )}
+                        {renderRows(table.visibleItems, valueKey, emptyMessage)}
                     </TableBody>
                 </Table>
             </div>
@@ -142,10 +142,10 @@ const ConvertionTable = ({
             <div className="mb-4 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                     <h2 className="text-l font-bold text-slate-900">
-                        Convertion Table
+                        Conversion Table
                     </h2>
                     <p className="text-sm text-gray-500">
-                        Current equivalent day values
+                    Current equivalent day values
                     </p>
                 </div>
             </div>
@@ -174,28 +174,43 @@ const ConvertionTable = ({
             </div>
 
             <Dialog
-                open={!!editConvertionModal}
+                open={!!editConversionModal}
                 onOpenChange={(open) => !open && editModal.closeEditModal()}
             >
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>
-                            Edit {editConvertionModal?.title} Convertion
-                        </DialogTitle>
-                        <DialogDescription>
-                            Update the equivalent day value for this row.
-                        </DialogDescription>
-                    </DialogHeader>
+                <DialogContent className="max-w-md overflow-hidden rounded-2xl p-0">
+                    <div
+                        className={`px-5 py-4 text-white ${
+                            editTone === "green"
+                                ? "bg-emerald-600"
+                                : "bg-blue-700"
+                        }`}
+                    >
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-white">
+                                {editIcon}
+                                Edit {editConversionModal?.title} Conversion
+                            </DialogTitle>
+                            <DialogDescription
+                                className={
+                                    editTone === "green"
+                                        ? "text-emerald-50"
+                                        : "text-blue-100"
+                                }
+                            >
+                                Update the equivalent day value for this row.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
 
                     <form
-                        onSubmit={editModal.handleUpdateConvertion}
-                        className="space-y-4"
+                        onSubmit={editModal.handleUpdateConversion}
+                        className="space-y-4 px-5 pb-5 pt-4"
                     >
                         <label className="grid gap-2 text-sm font-medium text-slate-700">
-                            {editConvertionModal?.value_label || "Value"}
+                            {editConversionModal?.value_label || "Value"}
                             <Input
                                 type="number"
-                                value={editConvertionModal?.value ?? ""}
+                                value={editConversionModal?.value ?? ""}
                                 disabled
                                 className="bg-slate-50 font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-100 disabled:text-slate-900"
                             />
@@ -230,7 +245,11 @@ const ConvertionTable = ({
                             </Button>
                             <Button
                                 type="submit"
-                                className="bg-blue-600 hover:bg-blue-700"
+                                className={
+                                    editTone === "green"
+                                        ? "bg-emerald-600 hover:bg-emerald-700"
+                                        : "bg-blue-600 hover:bg-blue-700"
+                                }
                                 disabled={editModal.processing}
                             >
                                 {editModal.processing
@@ -245,4 +264,4 @@ const ConvertionTable = ({
     );
 };
 
-export default ConvertionTable;
+export default ConversionTable;

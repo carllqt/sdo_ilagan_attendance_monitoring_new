@@ -17,7 +17,7 @@ const useDepartmentModalActions = () => {
             }
         });
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -28,7 +28,7 @@ const useDepartmentModalActions = () => {
         const query = new URLSearchParams(window.location.search);
         closeDepartmentModalParams(query);
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,

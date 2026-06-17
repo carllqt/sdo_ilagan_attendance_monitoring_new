@@ -19,8 +19,8 @@ class HrTardinessBatch extends Model
         'end_month',
     ];
 
-    public function tardinessConvertions()
+    public function tardinessConversions()
     {
-        return $this->hasMany(HrTardinessConvertion::class, 'batch_id');
+        return $this->hasMany(HrTardinessConversion::class, 'batch_id');
     }
 }

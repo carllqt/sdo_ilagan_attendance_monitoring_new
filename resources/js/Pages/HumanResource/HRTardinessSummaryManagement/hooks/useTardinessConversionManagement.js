@@ -2,14 +2,14 @@ import { useMemo, useRef } from "react";
 import html2pdf from "html2pdf.js";
 
 import useToastResponse from "@/hooks/useToastResponse";
-import useTardinessConvertionFilters from "./useTardinessConvertionFilters";
-import useTardinessConvertionSuggestions from "./useTardinessConvertionSuggestions";
+import useTardinessConversionFilters from "./useTardinessConversionFilters";
+import useTardinessConversionSuggestions from "./useTardinessConversionSuggestions";
 import {
     getSortedOffices,
-    getTardinessConvertionFilename,
+    getTardinessConversionFilename,
 } from "../utils";
 
-const useTardinessConvertionManagement = ({
+const useTardinessConversionManagement = ({
     filteredSummaryPayload = [],
     monthList,
     office,
@@ -26,7 +26,7 @@ const useTardinessConvertionManagement = ({
         () => getSortedOffices(officeOptions),
         [officeOptions],
     );
-    const filters = useTardinessConvertionFilters({
+    const filters = useTardinessConversionFilters({
         filteredSummaryPayload,
         monthList,
         office,
@@ -35,7 +35,7 @@ const useTardinessConvertionManagement = ({
         selectedFirstMonth,
         selectedSecondMonth,
     });
-    const suggestions = useTardinessConvertionSuggestions({
+    const suggestions = useTardinessConversionSuggestions({
         searchInput: filters.searchInput,
         selectedFirstMonth: filters.selectedFirstMonth,
         selectedSecondMonth: filters.selectedSecondMonth,
@@ -56,7 +56,7 @@ const useTardinessConvertionManagement = ({
         html2pdf()
             .set({
                 margin: 0.5,
-                filename: getTardinessConvertionFilename(
+                filename: getTardinessConversionFilename(
                     filters.monthRangeLabel,
                 ),
                 image: { type: "jpeg", quality: 0.98 },
@@ -85,4 +85,4 @@ const useTardinessConvertionManagement = ({
     };
 };
 
-export default useTardinessConvertionManagement;
+export default useTardinessConversionManagement;
