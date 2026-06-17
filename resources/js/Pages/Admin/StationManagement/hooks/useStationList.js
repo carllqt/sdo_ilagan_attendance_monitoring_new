@@ -6,6 +6,7 @@ import { getStationPagination } from "../utils";
 const useStationList = ({ stations, stationLimit }) => {
     const [chartReady, setChartReady] = useState(false);
     const [stationRowsData, setStationRowsData] = useState(stations);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         setStationRowsData(stations);
@@ -31,6 +32,8 @@ const useStationList = ({ stations, stationLimit }) => {
         params.set("station_page", page);
         params.set("station_limit", stationLimit);
 
+        setIsLoading(true);
+
         axios
             .get(route("stations.list"), {
                 params: Object.fromEntries(params),
@@ -51,11 +54,14 @@ const useStationList = ({ stations, stationLimit }) => {
                 window.history.replaceState(
                     {},
                     "",
-                    `${route("stationmanagement")}?${nextParams.toString()}`,
+                    `${route("station-management")}?${nextParams.toString()}`,
                 );
             })
             .catch((error) => {
                 console.error("Failed to load station rows:", error);
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
     };
 
@@ -68,7 +74,7 @@ const useStationList = ({ stations, stationLimit }) => {
         params.delete("station_source");
         params.set("modal", "add-station");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -90,7 +96,7 @@ const useStationList = ({ stations, stationLimit }) => {
         );
         params.set("station_source", station.source || "station");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -106,7 +112,7 @@ const useStationList = ({ stations, stationLimit }) => {
         params.delete("station_role");
         params.delete("station_source");
 
-        router.get(route("stationmanagement"), Object.fromEntries(params), {
+        router.get(route("station-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -119,6 +125,7 @@ const useStationList = ({ stations, stationLimit }) => {
         closeStationModal,
         endIndex,
         handlePageChange,
+        isLoading,
         openAddStationModal,
         openStationModal,
         paginatedStations,

@@ -9,7 +9,7 @@ const EmployeeAvatar = ({ employee, name, className = "h-9 w-9" }) => (
             <img
                 src={`/storage/${employee.profile_img}`}
                 alt={name || "Employee"}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover object-top"
             />
         ) : (
             <>

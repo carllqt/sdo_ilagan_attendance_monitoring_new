@@ -1,6 +1,7 @@
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
 import TextInput from "@/Components/TextInput";
 import { Head, Link, useForm } from "@inertiajs/react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
@@ -109,6 +110,21 @@ const Login = ({ status, canResetPassword }) => {
                                         className="mt-2"
                                     />
                                 </div>
+
+                                <label
+                                    htmlFor="remember"
+                                    className="flex items-center gap-2 text-xs text-gray-600"
+                                >
+                                    <Checkbox
+                                        id="remember"
+                                        name="remember"
+                                        checked={data.remember}
+                                        onCheckedChange={(checked) =>
+                                            setData("remember", checked === true)
+                                        }
+                                    />
+                                    <span>Remember me</span>
+                                </label>
 
                                 {/* Button */}
                                 <Button

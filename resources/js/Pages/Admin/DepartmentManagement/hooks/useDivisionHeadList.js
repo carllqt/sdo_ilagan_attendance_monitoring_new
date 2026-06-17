@@ -1,83 +1,36 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
-import {
-    closeDepartmentModalParams,
-    HEAD_ITEMS_PER_PAGE,
-} from "../utils";
+import { closeDepartmentModalParams } from "../utils";
 import { getEmployeeName } from "@/lib/utils";
+import { useState } from "react";
 
 const useDivisionHeadList = ({
-    division_heads,
-    divisions,
-    highlightedDivisionId,
-    highlightRequestKey,
+    divisionHeadLimit,
+    divisionHeadRows,
 }) => {
-    const [currentPage, setCurrentPage] = useState(1);
-    const [animatedDivisionId, setAnimatedDivisionId] = useState(null);
-    const animationTimeoutRef = useRef(null);
-    const visibleDivisionRows = useMemo(
-        () =>
-            divisions.map((division) => {
-                const head =
-                    division_heads.find((item) => item.division_id === division.id) ||
-                    null;
-                return { division, head };
-            }),
-        [division_heads, divisions],
-    );
-    const highlightedDivisionIndex = useMemo(
-        () =>
-            visibleDivisionRows.findIndex(
-                (row) => row.division.id === highlightedDivisionId,
-            ),
-        [visibleDivisionRows, highlightedDivisionId],
-    );
-    const totalPages =
-        Math.ceil(visibleDivisionRows.length / HEAD_ITEMS_PER_PAGE) || 1;
-    const paginatedRows = visibleDivisionRows.slice(
-        (currentPage - 1) * HEAD_ITEMS_PER_PAGE,
-        currentPage * HEAD_ITEMS_PER_PAGE,
-    );
-    const startIndex =
-        visibleDivisionRows.length === 0
-            ? 0
-            : (currentPage - 1) * HEAD_ITEMS_PER_PAGE + 1;
-    const endIndex = Math.min(
-        currentPage * HEAD_ITEMS_PER_PAGE,
-        visibleDivisionRows.length,
-    );
+    const [isLoading, setIsLoading] = useState(false);
+    const paginatedRows = divisionHeadRows?.data || [];
+    const currentPage = divisionHeadRows?.current_page || 1;
+    const totalPages = divisionHeadRows?.last_page || 1;
+    const totalEntries = divisionHeadRows?.total || 0;
+    const startIndex = divisionHeadRows?.from || 0;
+    const endIndex = divisionHeadRows?.to || 0;
 
-    useEffect(() => {
-        if (highlightedDivisionId == null || highlightedDivisionIndex < 0) {
-            return;
-        }
+    const handlePageChange = (page) => {
+        if (page < 1 || page > totalPages) return;
 
-        setCurrentPage(
-            Math.floor(highlightedDivisionIndex / HEAD_ITEMS_PER_PAGE) + 1,
-        );
-        setAnimatedDivisionId(highlightedDivisionId);
+        const query = new URLSearchParams(window.location.search);
+        query.set("division_head_page", page);
+        query.set("division_head_limit", divisionHeadLimit);
 
-        if (animationTimeoutRef.current) {
-            clearTimeout(animationTimeoutRef.current);
-        }
-
-        animationTimeoutRef.current = setTimeout(() => {
-            setAnimatedDivisionId(null);
-        }, 2200);
-    }, [highlightedDivisionId, highlightedDivisionIndex, highlightRequestKey]);
-
-    useEffect(
-        () => () => {
-            if (animationTimeoutRef.current) {
-                clearTimeout(animationTimeoutRef.current);
-            }
-        },
-        [],
-    );
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [divisions]);
+        router.get(route("department-management"), Object.fromEntries(query), {
+            only: ["divisionHeadRows", "divisionHeadPage", "divisionHeadLimit"],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            onStart: () => setIsLoading(true),
+            onFinish: () => setIsLoading(false),
+        });
+    };
 
     const openDepartmentModal = (modal, params = {}) => {
         const query = new URLSearchParams(window.location.search);
@@ -94,7 +47,7 @@ const useDivisionHeadList = ({
             }
         });
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -105,7 +58,7 @@ const useDivisionHeadList = ({
         const query = new URLSearchParams(window.location.search);
         closeDepartmentModalParams(query);
 
-        router.get(route("departmentmanagement"), Object.fromEntries(query), {
+        router.get(route("department-management"), Object.fromEntries(query), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -113,17 +66,17 @@ const useDivisionHeadList = ({
     };
 
     return {
-        animatedDivisionId,
         closeDepartmentModal,
         currentPage,
         endIndex,
         getEmployeeName,
+        handlePageChange,
+        isLoading,
         openDepartmentModal,
         paginatedRows,
-        setCurrentPage,
         startIndex,
+        totalEntries,
         totalPages,
-        visibleDivisionRows,
     };
 };
 

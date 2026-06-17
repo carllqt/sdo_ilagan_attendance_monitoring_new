@@ -7,7 +7,6 @@ use App\Models\Administrator\Employee;
 use App\Models\Administrator\Office;
 use App\Models\Administrator\Station;
 use App\Models\Administrator\StationAdmin;
-use App\Models\Administrator\WorkSchedule;
 use App\Models\Division;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -20,7 +19,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            Convertion::class,
+            Conversion::class,
             StationSeeder::class,
             StationAssignmentSeeder::class,
             DivisionSeeder::class,
@@ -37,7 +36,6 @@ class DatabaseSeeder extends Seeder
         $divisions = Division::all();
         $offices = Office::all();
         $stations = Station::all();
-        $defaultWorkScheduleId = WorkSchedule::orderBy('id')->value('id');
 
         foreach ($stations as $station) {
             if ($station->id == 1) {
@@ -48,7 +46,7 @@ class DatabaseSeeder extends Seeder
                     'last_name' => fake()->lastName(),
                     'position' =>  'Administrative Officer IV',
                     'office_id' => $offices->where('name', 'Administrative Unit')->first()?->id,
-                    'work_schedule_id' => $defaultWorkScheduleId,
+                    'work_schedule_id' => 3,
                 ]);
 
                 $adminUser = User::create([

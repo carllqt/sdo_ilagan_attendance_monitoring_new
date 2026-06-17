@@ -37,6 +37,7 @@ class EmployeeManagementRepository
         return Employee::with([
             'roles',
             'office.division',
+            'station:id,name',
             'workSchedule.workType',
         ])
             ->withCount(['biometrics'])
@@ -71,7 +72,10 @@ class EmployeeManagementRepository
         string $search,
         bool $availableForFingerprint,
     ) {
-        return Employee::with('office.division:id,code,name')
+        return Employee::with([
+            'office.division:id,code,name',
+            'station:id,name',
+        ])
             ->select(
                 'id',
                 'first_name',
@@ -80,6 +84,7 @@ class EmployeeManagementRepository
                 'profile_img',
                 'position',
                 'office_id',
+                'station_id',
             )
             ->withCount(['biometrics'])
             ->where('station_id', $stationId)
@@ -130,7 +135,10 @@ class EmployeeManagementRepository
 
     public function fingerprintEmployee(int $stationId, int $employeeId): ?Employee
     {
-        return Employee::with('office.division:id,code,name')
+        return Employee::with([
+            'office.division:id,code,name',
+            'station:id,name',
+        ])
             ->select(
                 'id',
                 'first_name',
@@ -139,6 +147,7 @@ class EmployeeManagementRepository
                 'profile_img',
                 'position',
                 'office_id',
+                'station_id',
             )
             ->withCount(['biometrics'])
             ->where('station_id', $stationId)

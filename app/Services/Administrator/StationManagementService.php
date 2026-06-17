@@ -4,7 +4,6 @@ namespace App\Services\Administrator;
 
 use App\Data\Administrator\StationManagementListFilter\StationEmployeeCandidateFilter;
 use App\Data\Administrator\StationManagementListFilter\StationPageFilter;
-use App\Models\Administrator\Employee;
 use App\Models\Administrator\Station;
 use App\Models\Administrator\StationAssignment;
 use App\Repositories\Administrator\StationManagementRepository;
@@ -19,21 +18,21 @@ class StationManagementService
     public function pageData(Request $request, StationPageFilter $filter): array
     {
         return [
-            'stations' => $this->repository->stationRowsPage(
+            'stations' => fn () => $this->repository->stationRowsPage(
                 $filter->stationLimit,
                 $filter->stationPage,
             ),
-            'stationAdminRows' => $this->repository->adminRowsPage(
+            'stationAdminRows' => fn () => $this->repository->adminRowsPage(
                 $filter->search,
                 $filter->adminLimit,
                 $filter->adminPage,
             ),
-            'stationStats' => $this->stationStats($filter->adminLimit),
-            'addStationModal' => $request->query('modal') === 'add-station',
-            'assignStationModal' => $this->assignStationModal($request),
-            'editStationModal' => $this->stationActionModal($request, 'edit-station'),
-            'deleteStationModal' => $this->stationActionModal($request, 'delete-station'),
-            'removeStationAdminModal' => $this->removeStationAdminModal($request),
+            'stationStats' => fn () => $this->stationStats($filter->adminLimit),
+            'addStationModal' => fn () => $request->query('modal') === 'add-station',
+            'assignStationModal' => fn () => $this->assignStationModal($request),
+            'editStationModal' => fn () => $this->stationActionModal($request, 'edit-station'),
+            'deleteStationModal' => fn () => $this->stationActionModal($request, 'delete-station'),
+            'removeStationAdminModal' => fn () => $this->removeStationAdminModal($request),
             'search' => $filter->search,
             'stationPage' => $filter->stationPage,
             'adminPage' => $filter->adminPage,
@@ -203,22 +202,7 @@ class StationManagementService
 
         return [
             'id' => $admin->id,
-            'employee_name' => $this->formatEmployeeName($admin->employee),
+            'employee' => $admin->employee,
         ];
-    }
-
-    private function formatEmployeeName(?Employee $employee): string
-    {
-        if (! $employee) {
-            return 'Station Admin';
-        }
-
-        $name = preg_replace(
-            '/\s+/',
-            ' ',
-            trim("{$employee->first_name} {$employee->middle_name} {$employee->last_name}"),
-        );
-
-        return $name !== '' ? $name : 'Station Admin';
     }
 }

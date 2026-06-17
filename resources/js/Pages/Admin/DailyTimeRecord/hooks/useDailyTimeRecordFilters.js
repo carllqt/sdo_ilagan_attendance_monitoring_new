@@ -16,6 +16,7 @@ const useDailyTimeRecordFilters = ({
     const [selectedOffice, setSelectedOffice] = useState(office || "all");
     const [selectedMonth, setSelectedMonth] = useState(Number(currentMonth));
     const [selectedYear, setSelectedYear] = useState(String(currentYear));
+    const [recordsLoading, setRecordsLoading] = useState(false);
 
     useEffect(() => {
         setSearchInput(formatSearchDisplay(search));
@@ -58,16 +59,19 @@ const useDailyTimeRecordFilters = ({
             query.page = pageValue;
         }
 
-        router.get(route("dailytimerecord"), query, {
+        router.get(route("daily-time-record"), query, {
             only: ["time_record", "search", "office", "month", "year", "limit"],
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            onStart: () => setRecordsLoading(true),
+            onFinish: () => setRecordsLoading(false),
         });
     };
 
     return {
         applyFilters,
+        recordsLoading,
         searchInput,
         selectedMonth,
         selectedOffice,

@@ -7,33 +7,26 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import FloatingInput from "@/components/floating-input";
 import { Building2, CheckCircle2, XCircle, Trash2, Search } from "lucide-react";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
+import PaginationMain from "@/Components/PaginationMain";
 import AddOfficeHeadForm from "./AddOfficeHeadForm";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
+import { SuggestionSkeletonList } from "@/Components/Skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import useDepartmentHeadList from "../hooks/useDepartmentHeadList";
 
 const DepartmentHeadList = ({
-    office_heads = [],
     offices = [],
+    officeHeadLimit = 10,
+    officeHeadRows = {},
     officeSearch = "",
     assignOfficeHeadModal = null,
     deleteOfficeHeadModal = null,
-    highlightedOfficeId = null,
-    highlightRequestKey = 0,
 }) => {
     const {
-        animatedOfficeId,
         closeDepartmentModal,
         currentPage,
         endIndex,
@@ -41,29 +34,34 @@ const DepartmentHeadList = ({
         handlePageChange,
         handleSearch,
         isSearchFocused,
+        isLoading,
         openDepartmentModal,
         paginatedRows,
-        runSearch,
         searchInput,
+        runSearch,
         setIsSearchFocused,
         setSearchInput,
         startIndex,
         suggestions,
+        suggestionsLoading,
         totalEntries,
         totalPages,
     } = useDepartmentHeadList({
-        highlightedOfficeId,
-        highlightRequestKey,
-        office_heads,
+        officeHeadLimit,
+        officeHeadRows,
         officeSearch,
         offices,
     });
+    const skeletonRows = Math.max(
+        5,
+        Math.min(Number(officeHeadLimit || 10), 10),
+    );
 
     return (
         <div className="rounded-xl">
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                    <h2 className="text-lg font-bold">Section / Unit Head</h2>
+                    <h2 className="text-l font-bold">Section / Unit Head</h2>
                     <p className="text-sm text-gray-500">
                         Manage section / unit head assignments
                     </p>
@@ -95,40 +93,54 @@ const DepartmentHeadList = ({
                             }}
                         />
 
-                        {isSearchFocused &&
-                            searchInput.trim() &&
-                            suggestions.length > 0 && (
+                        {isSearchFocused && searchInput.trim() && (
                                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         Offices
                                     </div>
 
                                     <div className="max-h-72 overflow-y-auto">
-                                        {suggestions.map((item) => (
-                                            <button
-                                                key={`${item.officeId}-${item.officeName}-${item.value}`}
-                                                type="button"
-                                                className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
-                                                onClick={() => {
-                                                    setSearchInput(item.value);
-                                                    runSearch(item.value);
-                                                    setIsSearchFocused(false);
-                                                }}
-                                            >
-                                                <div className="min-w-0">
-                                                    <div className="truncate font-medium text-slate-800">
-                                                        {item.officeName}
+                                        {suggestionsLoading ? (
+                                            <SuggestionSkeletonList count={3} />
+                                        ) : suggestions.length > 0 ? (
+                                            suggestions.map((item) => (
+                                                <button
+                                                    key={`${item.officeId}-${item.officeName}-${item.value}`}
+                                                    type="button"
+                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                    onMouseDown={(event) => {
+                                                        event.preventDefault();
+                                                        setSearchInput(
+                                                            item.value,
+                                                        );
+                                                        runSearch(
+                                                            item.value,
+                                                            item.officeId,
+                                                        );
+                                                        setIsSearchFocused(
+                                                            false,
+                                                        );
+                                                    }}
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-medium text-slate-800">
+                                                            {item.officeName}
+                                                        </div>
+                                                        <div className="truncate text-xs text-slate-500">
+                                                            {item.divisionName}
+                                                        </div>
                                                     </div>
-                                                    <div className="truncate text-xs text-slate-500">
-                                                        {item.divisionName}
-                                                    </div>
-                                                </div>
 
-                                                <span className="shrink-0 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold text-blue-700">
-                                                    Search
-                                                </span>
-                                            </button>
-                                        ))}
+                                                    <span className="shrink-0 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                                                        Search
+                                                    </span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-4 text-sm text-slate-500">
+                                                No office matches found.
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -171,21 +183,57 @@ const DepartmentHeadList = ({
                     </TableHeader>
 
                     <TableBody>
-                        {paginatedRows.length > 0 ? (
+                        {isLoading ? (
+                            Array.from({ length: skeletonRows }).map(
+                                (_, index) => (
+                                    <TableRow
+                                        key={`office-head-skeleton-${index}`}
+                                        className="h-[64px]"
+                                    >
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1">
+                                                    <Skeleton className="h-4 w-44 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-40 max-w-full" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-start gap-2">
+                                                <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-44 max-w-full" />
+                                                    <Skeleton className="h-3 w-36 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-6 w-24 rounded-full" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-24" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <div className="flex justify-center">
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ),
+                            )
+                        ) : paginatedRows.length > 0 ? (
                             paginatedRows.map((row) => {
                                 const emp = row.head?.employee;
                                 const fullName = getEmployeeName(emp);
-                                const isHighlighted =
-                                    String(row.office.id) ===
-                                    String(animatedOfficeId);
 
                                 return (
                                     <TableRow
                                         key={row.office.id}
                                         className={`h-[64px] transition ${
-                                            isHighlighted
-                                                ? "bg-amber-50 ring-1 ring-inset ring-amber-300 hover:bg-amber-100"
-                                                : !row.head
+                                            !row.head
                                                   ? "bg-gray-100 hover:bg-gray-200"
                                                   : "bg-white hover:bg-blue-50"
                                         }`}
@@ -278,11 +326,7 @@ const DepartmentHeadList = ({
                                             ) : (
                                                 <Button
                                                     size="sm"
-                                                    className={`bg-white text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white ${
-                                                        isHighlighted
-                                                            ? "animate-bounce bg-blue-600 font-semibold text-white shadow-lg shadow-blue-200"
-                                                            : ""
-                                                    }`}
+                                                    className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white"
                                                     onClick={() => {
                                                         openDepartmentModal(
                                                             "assign-office-head",
@@ -316,49 +360,21 @@ const DepartmentHeadList = ({
                 </Table>
             </div>
 
-            <div className="flex items-center mt-4">
-                <div className="text-sm text-gray-500 font-medium">
-                    Showing {startIndex} to {endIndex} of {totalEntries} entries
-                </div>
-
-                <div className="ml-auto">
-                    {totalPages > 1 && (
-                        <Pagination>
-                            <PaginationPrevious
-                                onClick={() =>
-                                    handlePageChange(currentPage - 1)
-                                }
-                            />
-                            <PaginationContent>
-                                {Array.from({ length: totalPages }, (_, i) => (
-                                    <PaginationItem key={i}>
-                                        <PaginationLink
-                                            isActive={currentPage === i + 1}
-                                            onClick={() =>
-                                                handlePageChange(i + 1)
-                                            }
-                                        >
-                                            {i + 1}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                ))}
-                            </PaginationContent>
-                            <PaginationNext
-                                onClick={() =>
-                                    handlePageChange(currentPage + 1)
-                                }
-                            />
-                        </Pagination>
-                    )}
-                </div>
-            </div>
+            <PaginationMain
+                currentPage={currentPage}
+                from={startIndex}
+                onPageChange={handlePageChange}
+                to={endIndex}
+                total={totalEntries}
+                totalPages={totalPages}
+            />
 
             <ConfirmPasswordDialog
                 trigger={null}
                 title="Delete Office Head"
                 description="You are about to permanently remove this office head assignment."
                 itemLabel="Office Head"
-                itemName={deleteOfficeHeadModal?.employee_name || ""}
+                itemName={getEmployeeName(deleteOfficeHeadModal?.employee)}
                 action={
                     deleteOfficeHeadModal?.id
                         ? route(

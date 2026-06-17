@@ -22,16 +22,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { BadgeCheckIcon, Building2 } from "lucide-react";
 
-import {
-    Pagination,
-    PaginationContent,
-    PaginationLink,
-    PaginationItem,
-    PaginationPrevious,
-    PaginationNext,
-} from "@/components/ui/pagination";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
+import PaginationMain from "@/Components/PaginationMain";
 import { SuggestionSkeletonList } from "@/Components/Skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import useEmployeeListControls, {
     formatWorkSchedule,
 } from "../hooks/useEmployeeListControls";
@@ -41,12 +35,14 @@ const EmployeeList = ({
     employees = [],
     filteredEmployees = [],
     pagination,
+    isLoading = false,
     isRegistered,
     handleEdit,
     searchInput,
     setSearchInput,
     applySearch,
     offices = [],
+    isSchoolAdmin = false,
     selectedOffice,
     setSelectedOffice,
     statusOptions,
@@ -55,6 +51,10 @@ const EmployeeList = ({
     applyFilters,
 }) => {
     const paginatedEmployees = filteredEmployees;
+    const skeletonRows = Math.max(
+        5,
+        Math.min(Number(pagination?.per_page || 10), 10),
+    );
     const {
         currentPage,
         handlePageChange,
@@ -79,7 +79,6 @@ const EmployeeList = ({
         <div className="rounded-2xl p-4 mt-4 border border-blue-100 shadow-lg">
             <div className="rounded-xl">
                 <div className="flex items-center justify-between mb-4 gap-4">
-                    {/* LEFT SIDE */}
                     <div className="min-w-0">
                         <h2 className="text-l font-bold">Employee List</h2>
                         <p className="text-sm text-gray-500">
@@ -89,7 +88,12 @@ const EmployeeList = ({
 
                     {/* RIGHT SIDE */}
                     <div className="flex items-start gap-4 ">
-                        <div ref={searchBoxRef} className="relative w-full">
+                        <div
+                            ref={searchBoxRef}
+                            className={`relative w-full ${
+                                isSchoolAdmin ? "min-w-[360px]" : ""
+                            }`}
+                        >
                             <FloatingInput
                                 label="Employee Name"
                                 icon={Search}
@@ -163,31 +167,33 @@ const EmployeeList = ({
                                 setStatusFilter(val);
                                 applyFilters({ statusValue: val });
                             }}
-                            buttonVariant="blue"
-                            className="w-32"
+                            buttonVariant="outline"
+                            className="h-10 w-32 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                         />
 
-                        <CustomDropdownCheckboxObject
-                            label="Select Office"
-                            items={officeItems}
-                            selected={selectedOffice}
-                            buttonLabel={
-                                offices.find(
-                                    (office) =>
-                                        Number(office.id) ===
-                                        Number(selectedOffice),
-                                )?.name || "All Offices"
-                            }
-                            onChange={(val) => {
-                                const nextOffice =
-                                    val === "all" ? "all" : Number(val);
+                        {!isSchoolAdmin && (
+                            <CustomDropdownCheckboxObject
+                                label="Select Office"
+                                items={officeItems}
+                                selected={selectedOffice}
+                                buttonLabel={
+                                    offices.find(
+                                        (office) =>
+                                            Number(office.id) ===
+                                            Number(selectedOffice),
+                                    )?.name || "All Offices"
+                                }
+                                onChange={(val) => {
+                                    const nextOffice =
+                                        val === "all" ? "all" : Number(val);
 
-                                setSelectedOffice(nextOffice);
-                                applyFilters({ officeValue: nextOffice });
-                            }}
-                            buttonVariant="green"
-                            className="w-[360px]"
-                        />
+                                    setSelectedOffice(nextOffice);
+                                    applyFilters({ officeValue: nextOffice });
+                                }}
+                                buttonVariant="outline"
+                                className="h-10 w-[360px] border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                            />
+                        )}
                     </div>
                 </div>
             </div>
@@ -203,7 +209,7 @@ const EmployeeList = ({
                                 Position
                             </TableHead>
                             <TableHead className="text-white text-left w-[25%]">
-                                Office
+                                {isSchoolAdmin ? "School" : "Section / Unit"}
                             </TableHead>
                             <TableHead className="text-white text-left w-[15%]">
                                 Work Schedule
@@ -215,13 +221,62 @@ const EmployeeList = ({
                     </TableHeader>
 
                     <TableBody>
-                        {paginatedEmployees.length > 0 ? (
-                        paginatedEmployees.map((emp) => {
-                            const hasWorkSchedule = Boolean(
-                                emp.work_schedule,
-                            );
+                        {isLoading ? (
+                            Array.from({ length: skeletonRows }).map(
+                                (_, index) => (
+                                    <TableRow
+                                        key={`employee-management-skeleton-${index}`}
+                                        className="h-[64px]"
+                                    >
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 gap-3">
+                                                <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                                                <div className="flex min-w-0 flex-1 items-center gap-2">
+                                                    <Skeleton className="h-4 w-48 max-w-full" />
+                                                    <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
 
-                            return (
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-40 max-w-full" />
+                                        </TableCell>
+
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-44 max-w-full" />
+                                                    <Skeleton className="h-3 w-36 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-32 max-w-full" />
+                                                    <Skeleton className="h-3 w-28 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell className="p-3">
+                                            <div className="flex justify-center">
+                                                <Skeleton className="h-8 w-[90px] rounded-md" />
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ),
+                            )
+                        ) : paginatedEmployees.length > 0 ? (
+                            paginatedEmployees.map((emp) => {
+                                const hasWorkSchedule = Boolean(
+                                    emp.work_schedule,
+                                );
+
+                                return (
                                     <TableRow
                                         key={emp.id}
                                         className="h-[64px] hover:bg-blue-50 transition"
@@ -236,7 +291,7 @@ const EmployeeList = ({
 
                                                 {/* Name + badge */}
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    <span className="font-medium truncate max-w-[150px]">
+                                                    <span className="font-medium truncate max-w-[230px]">
                                                         {getEmployeeName(emp)}
                                                     </span>
 
@@ -292,7 +347,7 @@ const EmployeeList = ({
                                             {emp.position || "-"}
                                         </TableCell>
 
-                                        {/* OFFICE */}
+                                        {/* OFFICE / SCHOOL */}
                                         <TableCell className="p-3">
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <div className="w-7 h-7 min-w-[28px] flex items-center justify-center rounded-full bg-gray-300">
@@ -301,18 +356,29 @@ const EmployeeList = ({
 
                                                 <span className="truncate">
                                                     <span className="block truncate">
-                                                        {emp.office?.name ||
-                                                            "-"}
+                                                        {isSchoolAdmin
+                                                            ? emp.station
+                                                                  ?.name || "-"
+                                                            : emp.office
+                                                                  ?.name || "-"}
                                                     </span>
                                                     <span className="block truncate text-xs text-gray-500">
-                                                        {[
-                                                            emp.office?.division
-                                                                ?.code,
-                                                            emp.office?.division
-                                                                ?.name,
-                                                        ]
-                                                            .filter(Boolean)
-                                                            .join(" - ") || "-"}
+                                                        {isSchoolAdmin
+                                                            ? "Station"
+                                                            : [
+                                                                  emp.office
+                                                                      ?.division
+                                                                      ?.code,
+                                                                  emp.office
+                                                                      ?.division
+                                                                      ?.name,
+                                                              ]
+                                                                  .filter(
+                                                                      Boolean,
+                                                                  )
+                                                                  .join(
+                                                                      " - ",
+                                                                  ) || "-"}
                                                     </span>
                                                 </span>
                                             </div>
@@ -377,40 +443,15 @@ const EmployeeList = ({
                 </Table>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <Pagination className="my-2 justify-end">
-                    <PaginationPrevious
-                        disabled={currentPage === 1}
-                        onClick={() => handlePageChange(currentPage - 1)}
-                    />
-                    <PaginationContent>
-                        {pageNumbers.map((page) => (
-                            <PaginationItem key={page}>
-                                {typeof page === "number" ? (
-                                    <PaginationLink
-                                        isActive={currentPage === page}
-                                        onClick={() => handlePageChange(page)}
-                                    >
-                                        {page}
-                                    </PaginationLink>
-                                ) : (
-                                    <span className="flex h-9 min-w-9 items-center justify-center px-2 text-sm font-medium text-slate-400">
-                                        ...
-                                    </span>
-                                )}
-                            </PaginationItem>
-                        ))}
-                    </PaginationContent>
-                    <PaginationNext
-                        disabled={currentPage === totalPages}
-                        onClick={() => handlePageChange(currentPage + 1)}
-                    />
-                </Pagination>
-            )}
+            <PaginationMain
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+                pageNumbers={pageNumbers}
+                pagination={pagination}
+                totalPages={totalPages}
+            />
         </div>
     );
 };
 
 export default EmployeeList;
-

@@ -125,7 +125,7 @@ const EmployeeEditDialog = ({
                                                 <img
                                                     src={displayImage}
                                                     alt="Profile preview"
-                                                    className="h-full w-full object-cover"
+                                                    className="h-full w-full object-cover object-top"
                                                 />
                                             ) : (
                                                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-600 to-sky-400 text-4xl font-bold text-white">

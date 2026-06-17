@@ -112,7 +112,7 @@ class StationManagementRepository
                     ->orWhere('code', 'like', "%{$search}%");
             })
             ->orderBy('name')
-            ->limit(8)
+            ->limit(10)
             ->get()
             ->map(fn ($item) => [
                 'id' => 'sdo-' . $item->role,
@@ -123,7 +123,7 @@ class StationManagementRepository
                 'role' => $item->role,
             ]);
 
-        $remaining = 8 - $sdo->count();
+        $remaining = 10 - $sdo->count();
         $stations = collect();
 
         if ($remaining > 0) {
@@ -185,7 +185,7 @@ class StationManagementRepository
         $total = (clone $employeesQuery)->count();
 
         return [
-            'data' => $employeesQuery->limit(5)->get(),
+            'data' => $employeesQuery->limit(10)->get(),
             'total' => $total,
         ];
     }

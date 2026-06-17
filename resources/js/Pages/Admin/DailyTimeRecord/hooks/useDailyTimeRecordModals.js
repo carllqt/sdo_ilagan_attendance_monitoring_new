@@ -48,7 +48,7 @@ const useDailyTimeRecordModals = ({
         params.set("employee_id", employee.id);
         params.set("name", getEmployeeName(employee));
 
-        router.get(route("dailytimerecord"), Object.fromEntries(params), {
+        router.get(route("daily-time-record"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -77,7 +77,7 @@ const useDailyTimeRecordModals = ({
         params.set("employee_id", firstEmployee.id);
         params.set("name", getEmployeeName(firstEmployee));
 
-        router.get(route("dailytimerecord"), Object.fromEntries(params), {
+        router.get(route("daily-time-record"), Object.fromEntries(params), {
             only: ["printDtrModal"],
             preserveState: true,
             preserveScroll: true,
@@ -92,7 +92,7 @@ const useDailyTimeRecordModals = ({
         setDialogOpen(false);
         setPrintEmployees([]);
 
-        router.get(route("dailytimerecord"), Object.fromEntries(params), {
+        router.get(route("daily-time-record"), Object.fromEntries(params), {
             only: ["printDtrModal"],
             preserveState: true,
             preserveScroll: true,
@@ -105,7 +105,7 @@ const useDailyTimeRecordModals = ({
 
         clearDtrModalParams(params);
 
-        router.get(route("dailytimerecord"), Object.fromEntries(params), {
+        router.get(route("daily-time-record"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -118,7 +118,7 @@ const useDailyTimeRecordModals = ({
         params.set("modal", "print-department");
         setDepartmentDialogOpen(true);
 
-        router.get(route("dailytimerecord"), Object.fromEntries(params), {
+        router.get(route("daily-time-record"), Object.fromEntries(params), {
             only: ["departmentPrintModal"],
             preserveState: true,
             preserveScroll: true,
@@ -133,7 +133,7 @@ const useDailyTimeRecordModals = ({
         params.delete("name");
         setDepartmentDialogOpen(false);
 
-        router.get(route("dailytimerecord"), Object.fromEntries(params), {
+        router.get(route("daily-time-record"), Object.fromEntries(params), {
             only: ["departmentPrintModal"],
             preserveState: true,
             preserveScroll: true,

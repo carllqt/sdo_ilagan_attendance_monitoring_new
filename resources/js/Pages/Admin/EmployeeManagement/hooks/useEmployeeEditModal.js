@@ -14,7 +14,7 @@ const useEmployeeEditModal = (editEmployeeModal) => {
         params.set("modal", "edit-employee");
         params.set("employee_id", employee.id);
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -27,7 +27,7 @@ const useEmployeeEditModal = (editEmployeeModal) => {
         params.delete("modal");
         params.delete("employee_id");
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             preserveState: true,
             preserveScroll: true,
             replace: true,

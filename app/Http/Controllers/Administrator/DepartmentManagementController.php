@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administrator;
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
 use App\Data\Administrator\DepartmentManagementListFilter\DepartmentEmployeeCandidateFilter;
+use App\Data\Administrator\DepartmentManagementListFilter\DepartmentPageFilter;
 use App\Http\Requests\Administrator\DepartmentManagement\{
     DepartmentEmployeeCandidateRequest,
     StoreDivisionHeadRequest,
@@ -40,6 +41,24 @@ class DepartmentManagementController extends Controller
         return response()->json(
             $this->departments->employeeCandidates(
                 DepartmentEmployeeCandidateFilter::fromArray($request->validated()),
+            ),
+        );
+    }
+
+    public function officeHeadRows(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->departments->officeHeadRows(
+                DepartmentPageFilter::fromRequest($request),
+            ),
+        );
+    }
+
+    public function officeHeadSuggestions(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->departments->officeHeadSuggestions(
+                trim((string) $request->query('search', '')),
             ),
         );
     }

@@ -7,16 +7,9 @@ import {
     XCircle,
     X,
 } from "lucide-react";
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
 import FloatingInput from "@/components/floating-input";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
+import PaginationMain from "@/Components/PaginationMain";
 import SchoolList from "./SchoolList";
 import useSearchSuggestions from "../hooks/useSearchSuggestions";
 
@@ -131,7 +124,6 @@ const EmployeeList = ({
     });
     const page = employees?.current_page || 1;
     const pageCount = employees?.last_page || 1;
-    const perPage = employees?.per_page || 12;
     const total = employees?.total || 0;
     const startIndex = employees?.from || 0;
     const endIndex = employees?.to || 0;
@@ -290,51 +282,16 @@ const EmployeeList = ({
                         </div>
                     )}
 
-                    <div className="mt-7 flex items-center">
-                        <div className="text-sm font-semibold text-slate-500">
-                            Showing {total === 0 ? 0 : startIndex} to{" "}
-                            {endIndex || Math.min(page * perPage, total)} of{" "}
-                            {total}
-                        </div>
-
-                        <div className="ml-auto">
-                            {pageCount > 1 && (
-                                <Pagination>
-                                    <PaginationPrevious
-                                        onClick={() =>
-                                            goToPage(Math.max(1, page - 1))
-                                        }
-                                    />
-                                    <PaginationContent>
-                                        {Array.from(
-                                            { length: pageCount },
-                                            (_, index) => (
-                                                <PaginationItem key={index}>
-                                                    <PaginationLink
-                                                        isActive={
-                                                            page === index + 1
-                                                        }
-                                                        onClick={() =>
-                                                            goToPage(index + 1)
-                                                        }
-                                                    >
-                                                        {index + 1}
-                                                    </PaginationLink>
-                                                </PaginationItem>
-                                            ),
-                                        )}
-                                    </PaginationContent>
-                                    <PaginationNext
-                                        onClick={() =>
-                                            goToPage(
-                                                Math.min(pageCount, page + 1),
-                                            )
-                                        }
-                                    />
-                                </Pagination>
-                            )}
-                        </div>
-                    </div>
+                    <PaginationMain
+                        className="mt-7"
+                        currentPage={page}
+                        from={total === 0 ? 0 : startIndex}
+                        onPageChange={goToPage}
+                        showEntryLabel={false}
+                        to={endIndex}
+                        total={total}
+                        totalPages={pageCount}
+                    />
                 </div>
             </div>
         </section>

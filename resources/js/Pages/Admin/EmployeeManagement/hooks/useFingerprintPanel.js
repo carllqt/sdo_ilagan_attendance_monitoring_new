@@ -9,6 +9,7 @@ import { getEmployeeName } from "@/lib/utils";
 const useFingerprintPanel = ({
     filteredEmployees,
     fingerprintServiceUrl,
+    isSchoolAdmin = false,
     selectedFingerprintEmployeeProp,
     testFingerprintModal,
 }) => {
@@ -71,7 +72,7 @@ const useFingerprintPanel = ({
         params.delete("fingerprint_employee_id");
         params.delete("fingerprint_registration");
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             preserveState: false,
             preserveScroll: true,
             replace: true,
@@ -201,11 +202,14 @@ const useFingerprintPanel = ({
                 if (!data || Object.keys(data).length === 0) return;
 
                 if (data.success && data.employee) {
-                    const { position, office } = data.employee;
+                    const { office, position, station } = data.employee;
+                    const locationName = isSchoolAdmin
+                        ? station?.name || "No station"
+                        : office?.name || "-";
 
                     setTestStatus("success");
                     setTestMessage(
-                        `Match: ${getEmployeeName(data.employee)} (${office?.name || "No office"} - ${position})`,
+                        `Match: ${getEmployeeName(data.employee)} (${locationName} - ${position})`,
                     );
 
                     setTimeout(() => {
@@ -249,7 +253,7 @@ const useFingerprintPanel = ({
             formatFingerprintRegistrationParam(employee),
         );
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             preserveState: false,
             preserveScroll: true,
             replace: true,
@@ -273,7 +277,7 @@ const useFingerprintPanel = ({
             params.delete("modal");
         }
 
-        router.get(route("employeemanagement"), Object.fromEntries(params), {
+        router.get(route("employee-management"), Object.fromEntries(params), {
             only: ["testFingerprintModal"],
             preserveState: true,
             preserveScroll: true,

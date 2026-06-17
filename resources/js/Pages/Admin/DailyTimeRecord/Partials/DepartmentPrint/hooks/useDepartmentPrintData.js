@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import { buildPaginationItems } from "@/Components/PaginationMain";
 import { EMPLOYEES_PER_PAGE } from "../utils";
-import {
-    sortAlphabetically,
-    sortEmployeesAlphabetically,
-} from "@/lib/utils";
+import { sortAlphabetically, sortEmployeesAlphabetically } from "@/lib/utils";
 
 const defaultEmployeePagination = {
     current_page: 1,
@@ -39,9 +37,9 @@ const useDepartmentPrintData = ({
     const lastDepartmentSearchRef = useRef(null);
 
     const totalEmployeePages = employeePagination.last_page || 1;
-    const employeePageNumbers = Array.from(
-        { length: totalEmployeePages },
-        (_, index) => index + 1,
+    const employeePageNumbers = useMemo(
+        () => buildPaginationItems(employeePage, totalEmployeePages),
+        [employeePage, totalEmployeePages],
     );
 
     useEffect(() => {
@@ -66,7 +64,7 @@ const useDepartmentPrintData = ({
 
         const timeout = setTimeout(() => {
             axios
-                .get(route("dailytimerecord.offices"), {
+                .get(route("daily-time-record.offices"), {
                     params: {
                         search: currentSearch,
                         department: selectedDepartment,
@@ -130,7 +128,7 @@ const useDepartmentPrintData = ({
                     window.history.replaceState(
                         {},
                         "",
-                        `${route("dailytimerecord")}?${params.toString()}`,
+                        `${route("daily-time-record")}?${params.toString()}`,
                     );
                 })
                 .catch(() => {
@@ -202,4 +200,3 @@ const useDepartmentPrintData = ({
 };
 
 export default useDepartmentPrintData;
-

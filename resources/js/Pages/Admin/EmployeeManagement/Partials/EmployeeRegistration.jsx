@@ -64,13 +64,13 @@ const EmployeeRegistration = ({
                         </div>
 
                         <div>
-                            <h2 className="text-lg font-bold">
+                            <h2 className="text-l font-bold">
                                 Employee Registration
                             </h2>
                             <p className="max-w text-sm text-blue-100">
                                 Register a new employee, attach a profile photo,
-                                and assign the correct station and office in
-                                one place.
+                                and assign the correct station and office in one
+                                place.
                             </p>
                         </div>
                     </div>
@@ -100,7 +100,7 @@ const EmployeeRegistration = ({
                                         <img
                                             src={previewUrl}
                                             alt="Profile preview"
-                                            className="h-full w-full object-cover"
+                                            className="h-full w-full object-cover object-top"
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-600 to-sky-400 text-4xl font-bold text-white">
@@ -213,7 +213,9 @@ const EmployeeRegistration = ({
                                         label="Select Office"
                                         items={offices}
                                         selected={form.office_id}
-                                        onChange={(val) => updateFormValue("office_id", val)}
+                                        onChange={(val) =>
+                                            updateFormValue("office_id", val)
+                                        }
                                         buttonVariant="white"
                                         iconOnly
                                         disabled={isDepartmentLocked}
@@ -234,7 +236,12 @@ const EmployeeRegistration = ({
                                         label="Select Work Schedule"
                                         items={scheduleItems}
                                         selected={form.work_schedule_id}
-                                        onChange={(val) => updateFormValue("work_schedule_id", val)}
+                                        onChange={(val) =>
+                                            updateFormValue(
+                                                "work_schedule_id",
+                                                val,
+                                            )
+                                        }
                                         buttonVariant="white"
                                         iconOnly
                                     />
@@ -287,4 +294,3 @@ const EmployeeRegistration = ({
 };
 
 export default EmployeeRegistration;
-

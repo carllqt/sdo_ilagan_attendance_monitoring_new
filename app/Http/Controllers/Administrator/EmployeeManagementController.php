@@ -22,32 +22,32 @@ class EmployeeManagementController extends Controller
     {
         $user = auth()->user();
         $stationId = $user->employee->station_id;
-        $limit = $this->employees->listLimit($request);
+        $isSchoolAdmin = $user->hasRole('school_admin') && ! $user->hasRole('sdo_admin');
 
-        if ((string) $request->query('limit') !== (string) $limit) {
-            return redirect()->to($request->fullUrlWithQuery([
-                'limit' => $limit,
-            ]));
-        }
-
-        $employeeList = $this->employees->employeeListData($request, $stationId);
-        $options = $this->employees->pageOptions();
+        $employeeList = null;
+        $options = null;
+        $employeeListData = function () use (&$employeeList, $request, $stationId, $isSchoolAdmin) {
+            return $employeeList ??= $this->employees->employeeListData($request, $stationId, $isSchoolAdmin);
+        };
+        $pageOptions = function () use (&$options) {
+            return $options ??= $this->employees->pageOptions();
+        };
 
         return Inertia::render('Admin/EmployeeManagement/EmployeeManagement', [
-            'offices' => $employeeList['offices'],
-            'filteredEmployeesList' => $employeeList['filteredEmployeesList'],
-            'stations' => $options['stations'],
-            'workSchedules' => $options['workSchedules'],
-            'selectedFingerprintEmployee' => $this->employees->selectedFingerprintEmployee($request, $stationId),
+            'offices' => fn () => $employeeListData()['offices'],
+            'filteredEmployeesList' => fn () => $employeeListData()['filteredEmployeesList'],
+            'stations' => fn () => $pageOptions()['stations'],
+            'workSchedules' => fn () => $pageOptions()['workSchedules'],
+            'selectedFingerprintEmployee' => fn () => $this->employees->selectedFingerprintEmployee($request, $stationId),
             'userStation' => $user->employee->station->name ?? null,
             'userStationId' => $stationId,
-            'search' => $employeeList['search'],
-            'status' => $employeeList['status'],
-            'officeName' => $employeeList['officeName'],
-            'limit' => $employeeList['limit'],
-            'editEmployeeModal' => $this->employees->editModal($request, 'edit-employee'),
-            'testFingerprintModal' => $this->employees->testFingerprintModal($request),
-            'fingerprintServiceUrl' => $this->employees->fingerprintServiceUrl($request),
+            'search' => fn () => $employeeListData()['search'],
+            'status' => fn () => $employeeListData()['status'],
+            'officeName' => fn () => $employeeListData()['officeName'],
+            'limit' => fn () => $employeeListData()['limit'],
+            'editEmployeeModal' => fn () => $this->employees->editModal($request, 'edit-employee'),
+            'testFingerprintModal' => fn () => $this->employees->testFingerprintModal($request),
+            'fingerprintServiceUrl' => fn () => $this->employees->fingerprintServiceUrl($request),
         ]);
     }
 

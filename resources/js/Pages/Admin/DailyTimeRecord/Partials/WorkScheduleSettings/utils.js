@@ -28,7 +28,7 @@ export const openWorkScheduleModal = (router, modal, params = {}) => {
         }
     });
 
-    router.get(route("dailytimerecord"), Object.fromEntries(query), {
+    router.get(route("daily-time-record"), Object.fromEntries(query), {
         preserveState: true,
         preserveScroll: true,
         replace: true,
@@ -39,7 +39,7 @@ export const closeWorkScheduleModal = (router) => {
     const query = new URLSearchParams(window.location.search);
     clearWorkScheduleModalParams(query);
 
-    router.get(route("dailytimerecord"), Object.fromEntries(query), {
+    router.get(route("daily-time-record"), Object.fromEntries(query), {
         preserveState: true,
         preserveScroll: true,
         replace: true,

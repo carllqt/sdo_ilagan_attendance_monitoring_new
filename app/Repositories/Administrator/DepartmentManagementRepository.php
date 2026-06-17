@@ -61,6 +61,139 @@ class DepartmentManagementRepository
             ->get();
     }
 
+    public function officeRowsPage(string $search, int $limit, int $page)
+    {
+        return Office::with('division:id,code,name')
+            ->select('id', 'division_id', 'name')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('division', function ($divisionQuery) use ($search) {
+                            $divisionQuery->where('code', 'like', "%{$search}%")
+                                ->orWhere('name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy('name')
+            ->paginate($limit, ['*'], 'office_page', $page)
+            ->withQueryString();
+    }
+
+    public function divisionRowsPage(string $search, int $limit, int $page)
+    {
+        return Division::select('id', 'code', 'name')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('code')
+            ->paginate($limit, ['*'], 'division_page', $page)
+            ->withQueryString();
+    }
+
+    public function divisionHeadRowsPage(string $search, int $limit, int $page)
+    {
+        $divisionsPage = Division::select('id', 'code', 'name')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('code')
+            ->paginate($limit, ['*'], 'division_head_page', $page)
+            ->withQueryString();
+
+        $divisionIds = $divisionsPage->getCollection()->pluck('id');
+        $heads = DivisionHead::with([
+            'employee:id,first_name,middle_name,last_name,profile_img,position,office_id,work_schedule_id',
+            'employee.workSchedule.workType:id,name',
+            'employee.office:id,name,division_id',
+            'employee.office.division:id,code,name',
+            'division:id,code,name',
+        ])
+            ->where('type', 'division_head')
+            ->whereIn('division_id', $divisionIds)
+            ->latest()
+            ->get()
+            ->keyBy('division_id');
+
+        $divisionsPage->setCollection(
+            $divisionsPage->getCollection()
+                ->map(fn ($division) => [
+                    'division' => $division,
+                    'head' => $heads->get($division->id),
+                ]),
+        );
+
+        return $divisionsPage;
+    }
+
+    public function officeHeadRowsPage(string $search, int $limit, int $page, ?int $officeId = null)
+    {
+        $officesPage = Office::with('division:id,code,name')
+            ->select('id', 'division_id', 'name')
+            ->when($officeId !== null, function ($query) use ($officeId) {
+                $query->where('id', $officeId);
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->orderBy('name')
+            ->paginate($limit, ['*'], 'office_head_page', $page)
+            ->withQueryString();
+
+        $officeIds = $officesPage->getCollection()->pluck('id');
+        $heads = DivisionHead::with([
+            'employee:id,first_name,middle_name,last_name,profile_img,position,office_id,work_schedule_id',
+            'employee.workSchedule.workType:id,name',
+            'employee.office:id,name,division_id',
+            'employee.office.division:id,code,name',
+            'division:id,code,name',
+        ])
+            ->where('type', 'unit_head')
+            ->whereIn('office_id', $officeIds)
+            ->latest()
+            ->get()
+            ->keyBy('office_id');
+
+        $officesPage->setCollection(
+            $officesPage->getCollection()
+                ->map(fn ($office) => [
+                    'office' => $office,
+                    'head' => $heads->get($office->id),
+                ]),
+        );
+
+        return $officesPage;
+    }
+
+    public function officeHeadSuggestions(string $search, int $limit): array
+    {
+        if ($search === '') {
+            return [];
+        }
+
+        return Office::with('division:id,code,name')
+            ->select('id', 'division_id', 'name')
+            ->where('name', 'like', "%{$search}%")
+            ->orderBy('name')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($office) => [
+                'officeId' => $office->id,
+                'officeName' => $office->name,
+                'divisionName' => $office->division
+                    ? collect([$office->division->code, $office->division->name])->filter()->join(' - ')
+                    : '-',
+                'value' => $office->name,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function employeeCandidates(DepartmentEmployeeCandidateFilter $filter)
     {
         $query = Employee::with([

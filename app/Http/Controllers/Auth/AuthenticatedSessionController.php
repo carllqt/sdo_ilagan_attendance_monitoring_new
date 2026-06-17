@@ -19,7 +19,7 @@ class AuthenticatedSessionController extends Controller
     public function create(): Response|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('employeemanagement');
+            return redirect()->route('employee-management');
         }
 
         return Inertia::render('Auth/Login', [
@@ -37,7 +37,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('employeemanagement');
+        return redirect()->route('employee-management');
     }
 
     /**

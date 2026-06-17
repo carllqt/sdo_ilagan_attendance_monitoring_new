@@ -1,14 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
     Table,
     TableBody,
     TableCell,
@@ -18,11 +10,13 @@ import {
 } from "@/components/ui/table";
 import { Trash2, LandPlot, CheckCircle2, XCircle } from "lucide-react";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
+import PaginationMain from "@/Components/PaginationMain";
 import AssignStationAdminModal from "./AssignStationAdminModal";
 import FloatingInput from "@/components/floating-input";
 import { Search } from "lucide-react";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import { SuggestionSkeletonList } from "@/Components/Skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import useStationAdminList from "../hooks/useStationAdminList";
 import { getStationHighlightKey } from "../utils";
 
@@ -43,6 +37,7 @@ const StationAdminList = ({
         endIndex,
         getEmployeeName,
         handlePageChange,
+        isLoading,
         openAssignModal,
         openRemoveAdminModal,
         pageNumbers,
@@ -66,12 +61,13 @@ const StationAdminList = ({
         search,
         stationRows,
     });
+    const skeletonRows = Math.max(5, Math.min(Number(adminLimit || 10), 10));
 
     return (
         <div className="rounded-xl">
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                    <h2 className="text-lg font-bold">
+                    <h2 className="text-l font-bold">
                         Station Administrator List
                     </h2>
                     <p className="text-sm text-gray-500">
@@ -177,7 +173,47 @@ const StationAdminList = ({
                     </TableHeader>
 
                     <TableBody>
-                        {paginatedRows.length > 0 ? (
+                        {isLoading ? (
+                            Array.from({ length: skeletonRows }).map(
+                                (_, index) => (
+                                    <TableRow
+                                        key={`station-admin-skeleton-${index}`}
+                                        className="h-[64px]"
+                                    >
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-44 max-w-full" />
+                                                    <Skeleton className="h-3 w-32 max-w-full" />
+                                                    <Skeleton className="h-3 w-40 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-16" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                <Skeleton className="h-4 w-48 max-w-full" />
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-6 w-24 rounded-full" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-24" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <div className="flex justify-center">
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ),
+                            )
+                        ) : paginatedRows.length > 0 ? (
                             paginatedRows.map(({ station, admin }) => {
                                 const emp = admin?.employee;
                                 const isHighlighted =
@@ -318,44 +354,15 @@ const StationAdminList = ({
                 </Table>
             </div>
 
-            <div className="flex items-center mt-4">
-                <div className="text-sm text-gray-500 font-medium">
-                    Showing {startIndex} to {endIndex} of {totalEntries} entries
-                </div>
-
-                <div className="ml-auto">
-                    {totalPages > 1 && (
-                        <Pagination>
-                            <PaginationPrevious
-                                onClick={() => handlePageChange(activePage - 1)}
-                            />
-                            <PaginationContent>
-                                {pageNumbers.map((page) => (
-                                    <PaginationItem key={page}>
-                                        {typeof page === "number" ? (
-                                            <PaginationLink
-                                                isActive={activePage === page}
-                                                onClick={() =>
-                                                    handlePageChange(page)
-                                                }
-                                            >
-                                                {page}
-                                            </PaginationLink>
-                                        ) : (
-                                            <span className="flex h-9 min-w-9 items-center justify-center px-2 text-sm font-medium text-slate-400">
-                                                ...
-                                            </span>
-                                        )}
-                                    </PaginationItem>
-                                ))}
-                            </PaginationContent>
-                            <PaginationNext
-                                onClick={() => handlePageChange(activePage + 1)}
-                            />
-                        </Pagination>
-                    )}
-                </div>
-            </div>
+            <PaginationMain
+                currentPage={activePage}
+                from={startIndex}
+                onPageChange={handlePageChange}
+                pageNumbers={pageNumbers}
+                to={endIndex}
+                total={totalEntries}
+                totalPages={totalPages}
+            />
 
             <AssignStationAdminModal
                 open={!!assignStationModal}
@@ -377,7 +384,7 @@ const StationAdminList = ({
                 title="Remove Station Admin"
                 description="Remove assigned admin from this station."
                 itemLabel="Station Admin"
-                itemName={removeStationAdminModal?.employee_name || ""}
+                itemName={getEmployeeName(removeStationAdminModal?.employee)}
                 method="delete"
                 open={!!removeStationAdminModal}
                 onOpenChange={(nextOpen) => {

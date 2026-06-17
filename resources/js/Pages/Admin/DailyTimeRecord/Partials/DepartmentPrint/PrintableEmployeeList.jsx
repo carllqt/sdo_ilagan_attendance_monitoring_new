@@ -11,6 +11,7 @@ import { Button } from "@/Components/ui/button";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import { PrintableEmployeeSkeletonList } from "@/Components/Skeletons";
 import { employeeDepartment, formatMonth } from "./utils";
+import { getEmployeeName } from "@/lib/utils";
 
 const PrintableEmployeeList = ({
     departmentsLoading,
@@ -27,8 +28,8 @@ const PrintableEmployeeList = ({
     onOpenSignatoryPopover,
 }) => (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <div>
+        <div className="flex min-w-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+            <div className="min-w-0">
                 <div className="text-sm font-semibold text-slate-800">
                     Employees to Print
                 </div>
@@ -38,7 +39,7 @@ const PrintableEmployeeList = ({
                     {employeePagination.total || 0}
                 </div>
             </div>
-            <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
+            <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
                 {formatMonth(selectedMonth)} {selectedYear}
             </span>
         </div>
@@ -49,22 +50,23 @@ const PrintableEmployeeList = ({
                     <PrintableEmployeeSkeletonList />
                 ) : employees.length ? (
                     employees.map((employee) => {
+                        const employeeName = getEmployeeName(employee) || "-";
                         const signatory = selectedEmployeeSignatory(employee);
 
                         return (
                             <div
                                 key={employee.id}
-                                className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
+                                className="flex min-w-0 items-center justify-between gap-3 px-3 py-2.5 text-sm"
                             >
-                                <div className="flex min-w-0 items-center gap-3">
+                                <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
                                     <EmployeeAvatar
                                         employee={employee}
-                                        name={employee.full_name}
-                                        className="h-9 w-9"
+                                        name={employeeName}
+                                        className="h-9 w-9 shrink-0"
                                     />
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 flex-1 overflow-hidden">
                                         <div className="truncate font-medium text-slate-800">
-                                            {employee.full_name || "-"}
+                                            {employeeName}
                                         </div>
                                         <div className="truncate text-xs text-slate-500">
                                             {employeeDepartment(employee)} -{" "}
@@ -87,7 +89,7 @@ const PrintableEmployeeList = ({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="h-7 shrink-0 rounded-full border-blue-200 px-2 text-xs text-blue-700 hover:bg-blue-50"
+                                    className="h-7 w-[116px] shrink-0 rounded-full border-blue-200 px-2 text-xs text-blue-700 hover:bg-blue-50"
                                     onClick={(event) =>
                                         onOpenSignatoryPopover(event, employee)
                                     }
@@ -114,13 +116,19 @@ const PrintableEmployeeList = ({
                         <PaginationContent>
                             {employeePageNumbers.map((page) => (
                                 <PaginationItem key={page}>
-                                    <PaginationLink
-                                        className="h-7 w-7 text-xs"
-                                        isActive={employeePage === page}
-                                        onClick={() => onChangePage(page)}
-                                    >
-                                        {page}
-                                    </PaginationLink>
+                                    {typeof page === "number" ? (
+                                        <PaginationLink
+                                            className="h-7 w-7 text-xs"
+                                            isActive={employeePage === page}
+                                            onClick={() => onChangePage(page)}
+                                        >
+                                            {page}
+                                        </PaginationLink>
+                                    ) : (
+                                        <span className="flex h-7 w-7 items-center justify-center text-xs font-medium text-slate-400">
+                                            ...
+                                        </span>
+                                    )}
                                 </PaginationItem>
                             ))}
                         </PaginationContent>

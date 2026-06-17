@@ -16,7 +16,7 @@ const DeleteWorkScheduleDialogs = ({
             note="Work types with schedules cannot be deleted until their schedules are removed."
             action={
                 deleteWorkTypeModal?.id
-                    ? route("dailytimerecord.worktypes.destroy", deleteWorkTypeModal.id)
+                    ? route("daily-time-record.work-types.destroy", deleteWorkTypeModal.id)
                     : ""
             }
             method="delete"
@@ -38,7 +38,7 @@ const DeleteWorkScheduleDialogs = ({
             action={
                 deleteWorkScheduleModal?.id
                     ? route(
-                          "dailytimerecord.workschedules.destroy",
+                          "daily-time-record.work-schedules.destroy",
                           deleteWorkScheduleModal.id,
                       )
                     : ""

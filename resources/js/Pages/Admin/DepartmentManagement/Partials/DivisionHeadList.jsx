@@ -7,54 +7,45 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Building2, CheckCircle2, Trash2 } from "lucide-react";
 import ConfirmPasswordDialog from "@/Components/ConfirmPasswordDialog";
+import PaginationMain from "@/Components/PaginationMain";
+import { Skeleton } from "@/components/ui/skeleton";
 import AddDivisionHeadForm from "./AddDivisionHeadForm";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import useDivisionHeadList from "../hooks/useDivisionHeadList";
 
 const DivisionHeadList = ({
-    division_heads = [],
     divisions = [],
+    divisionHeadRows = {},
+    divisionHeadLimit,
     assignDivisionHeadModal = null,
     deleteDivisionHeadModal = null,
-    onAssignNow,
-    highlightedDivisionId = null,
-    highlightRequestKey = 0,
 }) => {
     const {
-        animatedDivisionId,
         closeDepartmentModal,
         currentPage,
         endIndex,
         getEmployeeName,
+        isLoading,
         openDepartmentModal,
         paginatedRows,
-        setCurrentPage,
+        handlePageChange,
         startIndex,
+        totalEntries,
         totalPages,
-        visibleDivisionRows,
     } = useDivisionHeadList({
-        division_heads,
-        divisions,
-        highlightedDivisionId,
-        highlightRequestKey,
+        divisionHeadRows,
+        divisionHeadLimit,
     });
+    const skeletonRows = 3;
 
     return (
         <div className="rounded-xl">
             <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-lg font-bold">Division Head</h2>
+                    <h2 className="text-l font-bold">Division Head</h2>
                     <p className="text-sm text-gray-500">
                         Manage division head assignments
                     </p>
@@ -98,19 +89,57 @@ const DivisionHeadList = ({
                     </TableHeader>
 
                     <TableBody>
-                        {paginatedRows.length > 0 ? (
+                        {isLoading ? (
+                            Array.from({ length: skeletonRows }).map(
+                                (_, index) => (
+                                    <TableRow
+                                        key={`division-head-skeleton-${index}`}
+                                        className="h-[64px]"
+                                    >
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-44 max-w-full" />
+                                                    <Skeleton className="h-3 w-36 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-40 max-w-full" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <div className="flex min-w-0 items-start gap-2">
+                                                <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-20 max-w-full" />
+                                                    <Skeleton className="h-3 w-40 max-w-full" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-6 w-24 rounded-full" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <Skeleton className="h-4 w-24" />
+                                        </TableCell>
+                                        <TableCell className="p-3">
+                                            <div className="flex justify-center">
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ),
+                            )
+                        ) : paginatedRows.length > 0 ? (
                             paginatedRows.map((row) => {
                                 const emp = row.head?.employee;
-                                const isHighlighted =
-                                    row.division.id === animatedDivisionId;
 
                                 return (
                                     <TableRow
                                         key={row.division.id}
                                         className={`h-[64px] transition ${
-                                            isHighlighted
-                                                ? "bg-amber-50 ring-1 ring-inset ring-amber-300 hover:bg-amber-100"
-                                                : !row.head
+                                            !row.head
                                                   ? "bg-gray-100 hover:bg-gray-200"
                                                   : "bg-white hover:bg-blue-50"
                                         }`}
@@ -214,11 +243,7 @@ const DivisionHeadList = ({
                                             ) : (
                                                 <Button
                                                     size="sm"
-                                                    className={`min-w-[60px] border border-blue-600 bg-white text-blue-600 hover:bg-blue-600 hover:text-white ${
-                                                        isHighlighted
-                                                            ? "animate-bounce bg-blue-600 font-semibold text-white shadow-lg shadow-blue-200"
-                                                            : ""
-                                                    }`}
+                                                    className="min-w-[60px] border border-blue-600 bg-white text-blue-600 hover:bg-blue-600 hover:text-white"
                                                     onClick={() => {
                                                         openDepartmentModal(
                                                             "assign-division-head",
@@ -227,9 +252,6 @@ const DivisionHeadList = ({
                                                                     row.division
                                                                         .name,
                                                             },
-                                                        );
-                                                        onAssignNow?.(
-                                                            row.division.id,
                                                         );
                                                     }}
                                                     title="Assign Division Head"
@@ -255,57 +277,21 @@ const DivisionHeadList = ({
                 </Table>
             </div>
 
-            <div className="mt-4 flex items-center">
-                <div className="text-sm font-medium text-gray-500">
-                    Showing {startIndex} to {endIndex} of{" "}
-                    {visibleDivisionRows.length} entries
-                </div>
-
-                <div className="ml-auto">
-                    {totalPages > 1 && (
-                        <Pagination className="w-auto">
-                            <PaginationPrevious
-                                onClick={() =>
-                                    setCurrentPage((value) =>
-                                        Math.max(1, value - 1),
-                                    )
-                                }
-                            />
-
-                            <PaginationContent>
-                                {Array.from({ length: totalPages }, (_, i) => (
-                                    <PaginationItem key={i}>
-                                        <PaginationLink
-                                            isActive={currentPage === i + 1}
-                                            onClick={() =>
-                                                setCurrentPage(i + 1)
-                                            }
-                                            className="text-sm"
-                                        >
-                                            {i + 1}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                ))}
-                            </PaginationContent>
-
-                            <PaginationNext
-                                onClick={() =>
-                                    setCurrentPage((value) =>
-                                        Math.min(totalPages, value + 1),
-                                    )
-                                }
-                            />
-                        </Pagination>
-                    )}
-                </div>
-            </div>
+            <PaginationMain
+                currentPage={currentPage}
+                from={startIndex}
+                onPageChange={handlePageChange}
+                to={endIndex}
+                total={totalEntries}
+                totalPages={totalPages}
+            />
 
             <ConfirmPasswordDialog
                 trigger={null}
                 title="Delete Division Head"
                 description="You are about to permanently remove this division head assignment."
                 itemLabel="Division Head"
-                itemName={deleteDivisionHeadModal?.employee_name || ""}
+                itemName={getEmployeeName(deleteDivisionHeadModal?.employee)}
                 action={
                     deleteDivisionHeadModal?.id
                         ? route(

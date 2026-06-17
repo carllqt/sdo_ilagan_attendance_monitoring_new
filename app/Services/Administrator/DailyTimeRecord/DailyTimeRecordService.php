@@ -9,6 +9,7 @@ use App\Models\Administrator\WorkType;
 use App\Repositories\Administrator\DailyTimeRecordRepository;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DailyTimeRecordService
@@ -29,8 +30,6 @@ class DailyTimeRecordService
     public function pageData(Request $request, int $stationId): array
     {
         $filter = DailyTimeRecordFilter::fromRequest($request, $stationId);
-        $this->computeStationTardiness($filter);
-
         $offices = $this->repository->officesForStation($stationId);
 
         if ($filter->officeName !== '' && $filter->officeName !== 'all') {
@@ -42,24 +41,29 @@ class DailyTimeRecordService
         }
 
         return [
-            'time_record' => $this->repository->paginatedEmployees($filter),
-            'offices' => $offices,
+            'time_record' => function () use ($filter) {
+                $this->computeStationTardiness($filter);
+
+                return $this->repository->paginatedEmployees($filter);
+            },
+            'offices' => fn () => $offices,
+            'years' => fn () => $this->repository->attendanceYearsForStation($stationId),
             'search' => $filter->search,
             'office' => $filter->officeId === 'all' ? 'all' : $filter->officeName,
             'month' => $filter->month,
             'year' => $filter->year,
             'limit' => $filter->limit,
-            'workTypes' => $this->repository->workTypes(),
-            'workSchedules' => $this->repository->workSchedules(),
-            'addWorkTypeModal' => $request->query('modal') === 'add-work-type',
-            'addWorkScheduleModal' => $request->query('modal') === 'add-work-schedule',
-            'editWorkTypeModal' => $this->workTypeModal($request, 'edit-work-type'),
-            'deleteWorkTypeModal' => $this->workTypeModal($request, 'delete-work-type'),
-            'editWorkScheduleModal' => $this->workScheduleModal($request, 'edit-work-schedule'),
-            'deleteWorkScheduleModal' => $this->workScheduleModal($request, 'delete-work-schedule'),
-            'previewDtrModal' => $this->previewDtrModal($request, $stationId),
-            'printDtrModal' => $this->printDtrModal($request, $stationId),
-            'departmentPrintModal' => $this->departmentPrintModal($request),
+            'workTypes' => fn () => $this->repository->workTypes(),
+            'workSchedules' => fn () => $this->repository->workSchedules(),
+            'addWorkTypeModal' => fn () => $request->query('modal') === 'add-work-type',
+            'addWorkScheduleModal' => fn () => $request->query('modal') === 'add-work-schedule',
+            'editWorkTypeModal' => fn () => $this->workTypeModal($request, 'edit-work-type'),
+            'deleteWorkTypeModal' => fn () => $this->workTypeModal($request, 'delete-work-type'),
+            'editWorkScheduleModal' => fn () => $this->workScheduleModal($request, 'edit-work-schedule'),
+            'deleteWorkScheduleModal' => fn () => $this->workScheduleModal($request, 'delete-work-schedule'),
+            'previewDtrModal' => fn () => $this->previewDtrModal($request, $stationId),
+            'printDtrModal' => fn () => $this->printDtrModal($request, $stationId),
+            'departmentPrintModal' => fn () => $this->departmentPrintModal($request),
         ];
     }
 
@@ -127,32 +131,12 @@ class DailyTimeRecordService
         int $stationId,
         string $from,
         string $to,
-    ): string {
+    ): array {
         if (! $this->repository->employeeForStation($employeeId, $stationId)) {
             abort(404, 'Employee not found.');
         }
 
         $undoToken = (string) Str::uuid();
-        $previousRecords = $this->repository
-            ->tardinessRecordsForEmployeeDateRange($employeeId, $from, $to)
-            ->map(fn ($record) => $record->getAttributes())
-            ->all();
-
-        session()->put(self::RECOMPUTE_UNDO_SESSION_KEY . ".{$undoToken}", [
-            'employee_id' => $employeeId,
-            'station_id' => $stationId,
-            'from' => $from,
-            'to' => $to,
-            'records' => $previousRecords,
-            'expires_at' => now()->addSeconds(8)->toIso8601String(),
-        ]);
-
-        $this->repository->deleteTardinessRecordsForEmployeeDateRange(
-            $employeeId,
-            $from,
-            $to,
-        );
-
         $attendances = $this->repository->employeeAttendancesForDateRange(
             $employeeId,
             $stationId,
@@ -161,27 +145,101 @@ class DailyTimeRecordService
         );
 
         if ($attendances->isEmpty()) {
-            return $undoToken;
+            return [
+                'token' => null,
+                'employee_id' => $employeeId,
+                'from' => $from,
+                'to' => $to,
+                'attendance_count' => 0,
+                'record_count' => 0,
+            ];
         }
 
-        $workType = $attendances
-            ->first()
-            ?->employee
-            ?->workSchedule
-            ?->workType
-            ?->name;
+        $workTypeGroups = $attendances->toBase()->groupBy(
+            fn ($attendance) => $attendance
+                ?->employee
+                ?->workSchedule
+                ?->workType
+                ?->name ?? 'Missing',
+        );
+        $supportedWorkTypes = collect(['Fixed', 'Work From Home', 'Full']);
+        $unsupportedWorkTypes = $workTypeGroups
+            ->keys()
+            ->diff($supportedWorkTypes)
+            ->values();
+        $computableAttendances = $workTypeGroups->only([
+            'Fixed',
+            'Work From Home',
+            'Full',
+        ]);
 
-        if (in_array($workType, ['Fixed', 'Work From Home'], true)) {
-            $this->fixedService->computeForAttendances($attendances);
-
-            return $undoToken;
+        if ($unsupportedWorkTypes->isNotEmpty()) {
+            abort(
+                422,
+                'Employee has unsupported work schedule data for the selected dates: '
+                    . $unsupportedWorkTypes->join(', '),
+            );
         }
 
-        if ($workType === 'Full') {
-            $this->fullService->computeForAttendances($attendances);
-        }
+        $result = DB::transaction(function () use (
+            $employeeId,
+            $from,
+            $to,
+            $attendances,
+            $computableAttendances,
+        ) {
+            $previousRecords = $this->repository
+                ->tardinessRecordsForEmployeeDateRange($employeeId, $from, $to)
+                ->map(fn ($record) => $record->getAttributes())
+                ->all();
 
-        return $undoToken;
+            $this->repository->deleteTardinessRecordsForEmployeeDateRange(
+                $employeeId,
+                $from,
+                $to,
+            );
+
+            $fixedAttendances = $computableAttendances
+                ->only(['Fixed', 'Work From Home'])
+                ->flatMap(fn ($group) => $group->values())
+                ->values();
+
+            if ($fixedAttendances->isNotEmpty()) {
+                $this->fixedService->computeForAttendances($fixedAttendances);
+            }
+
+            $fullAttendances = $computableAttendances->get('Full', collect());
+
+            if ($fullAttendances->isNotEmpty()) {
+                $this->fullService->computeForAttendances($fullAttendances);
+            }
+
+            return [
+                'attendance_count' => $attendances->count(),
+                'previous_records' => $previousRecords,
+                'record_count' => $this->repository
+                    ->tardinessRecordsForEmployeeDateRange($employeeId, $from, $to)
+                    ->count(),
+            ];
+        });
+
+        session()->put(self::RECOMPUTE_UNDO_SESSION_KEY . ".{$undoToken}", [
+            'employee_id' => $employeeId,
+            'station_id' => $stationId,
+            'from' => $from,
+            'to' => $to,
+            'records' => $result['previous_records'],
+            'expires_at' => now()->addSeconds(8)->toIso8601String(),
+        ]);
+
+        return [
+            'token' => $undoToken,
+            'employee_id' => $employeeId,
+            'from' => $from,
+            'to' => $to,
+            'attendance_count' => $result['attendance_count'],
+            'record_count' => $result['record_count'],
+        ];
     }
 
     public function undoRecomputeEmployeeDateRange(int $employeeId, int $stationId, string $token): void
@@ -499,7 +557,7 @@ class DailyTimeRecordService
         }
 
         return [
-            'name' => $this->formatEmployeeName($officeHead->employee),
+            'name' => $officeHead->employee->full_name ?: 'Employee',
             'position' => $officeHead->employee->position ?: 'Office Head',
             'office' => $employee->office?->name,
             'employee' => $this->signatoryEmployee($officeHead->employee),
@@ -526,7 +584,7 @@ class DailyTimeRecordService
         }
 
         return [
-            'name' => $this->formatEmployeeName($divisionHead->employee),
+            'name' => $divisionHead->employee->full_name ?: 'Employee',
             'position' => $divisionHead->employee->position ?: 'Division Head',
             'office' => $employee->office?->name,
             'employee' => $this->signatoryEmployee($divisionHead->employee),
@@ -552,7 +610,7 @@ class DailyTimeRecordService
         }
 
         return [
-            'name' => $this->formatEmployeeName($osdsHead->employee),
+            'name' => $osdsHead->employee->full_name ?: 'Employee',
             'position' => $osdsHead->employee->position ?: 'OSDS Head',
             'office' => $osdsHead->division?->name ?: 'OSDS',
             'employee' => $this->signatoryEmployee($osdsHead->employee),
@@ -569,40 +627,15 @@ class DailyTimeRecordService
             'first_name' => $employee->first_name,
             'middle_name' => $employee->middle_name,
             'last_name' => $employee->last_name,
-            'full_name' => $this->formatEmployeeName($employee),
+            'full_name' => $employee->full_name ?: 'Employee',
             'profile_img' => $employee->profile_img,
             'position' => $employee->position,
         ];
     }
 
-    private function formatEmployeeName(?Employee $employee): string
-    {
-        if (! $employee) {
-            return 'Employee';
-        }
-
-        $name = preg_replace(
-            '/\s+/',
-            ' ',
-            trim("{$employee->first_name} {$employee->middle_name} {$employee->last_name}"),
-        );
-
-        return $name !== '' ? $name : 'Employee';
-    }
-
     private function formatSuggestion(Employee $employee): array
     {
-        $fullName = trim(
-            preg_replace(
-                '/\s+/',
-                ' ',
-                implode(' ', [
-                    $employee->first_name ?? '',
-                    $employee->middle_name ?? '',
-                    $employee->last_name ?? '',
-                ]),
-            ),
-        );
+        $fullName = $employee->full_name ?: '';
 
         return [
             'id' => $employee->id,
@@ -622,7 +655,7 @@ class DailyTimeRecordService
             'first_name' => $employee->first_name,
             'middle_name' => $employee->middle_name,
             'last_name' => $employee->last_name,
-            'full_name' => $this->formatEmployeeName($employee),
+            'full_name' => $employee->full_name ?: 'Employee',
             'profile_img' => $employee->profile_img,
             'position' => $employee->position,
             'department' => $employee->office?->name,

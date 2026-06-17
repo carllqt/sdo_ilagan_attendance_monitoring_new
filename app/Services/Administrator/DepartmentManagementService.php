@@ -4,7 +4,6 @@ namespace App\Services\Administrator;
 
 use App\Data\Administrator\DepartmentManagementListFilter\DepartmentEmployeeCandidateFilter;
 use App\Data\Administrator\DepartmentManagementListFilter\DepartmentPageFilter;
-use App\Models\Administrator\Employee;
 use App\Repositories\Administrator\DepartmentManagementRepository;
 use Illuminate\Http\Request;
 
@@ -19,24 +18,73 @@ class DepartmentManagementService
         $filter = DepartmentPageFilter::fromRequest($request);
 
         return [
-            'office_heads' => $this->repository->headRows('unit_head'),
-            'filtered_office_heads' => $this->repository->headRows('unit_head', $filter->officeSearch),
-            'division_heads' => $this->repository->headRows('division_head'),
-            'filtered_division_heads' => $this->repository->headRows('division_head', $filter->divisionSearch),
-            'divisions' => $this->repository->divisions(),
-            'offices' => $this->repository->offices(),
+            'office_heads' => fn () => $this->repository->headRows('unit_head'),
+            'filtered_office_heads' => fn () => $this->repository->headRows('unit_head', $filter->officeSearch),
+            'officeHeadRows' => fn () => $this->repository->officeHeadRowsPage(
+                $filter->officeSearch,
+                $filter->officeHeadLimit,
+                $filter->officeHeadPage,
+                $filter->officeHeadOfficeId,
+            ),
+            'division_heads' => fn () => $this->repository->headRows('division_head'),
+            'filtered_division_heads' => fn () => $this->repository->headRows('division_head', $filter->divisionSearch),
+            'divisions' => fn () => $this->repository->divisions(),
+            'divisionList' => fn () => $this->repository->divisionRowsPage(
+                $filter->divisionSearch,
+                $filter->divisionLimit,
+                $filter->divisionPage,
+            ),
+            'divisionHeadRows' => fn () => $this->repository->divisionHeadRowsPage(
+                $filter->divisionSearch,
+                $filter->divisionHeadLimit,
+                $filter->divisionHeadPage,
+            ),
+            'offices' => fn () => $this->repository->offices(),
+            'officeList' => fn () => $this->repository->officeRowsPage(
+                '',
+                $filter->officeLimit,
+                $filter->officePage,
+            ),
             'office_search' => $filter->officeSearch,
             'division_search' => $filter->divisionSearch,
-            'addDivisionModal' => $this->isModal($request, 'add-division'),
-            'addOfficeModal' => $this->isModal($request, 'add-office'),
-            'editDivisionModal' => $this->divisionModal($request, 'edit-division'),
-            'editOfficeModal' => $this->officeModal($request, 'edit-office'),
-            'deleteOfficeModal' => $this->officeModal($request, 'delete-office'),
-            'assignOfficeHeadModal' => $this->assignOfficeHeadModal($request),
-            'assignDivisionHeadModal' => $this->assignDivisionHeadModal($request),
-            'deleteOfficeHeadModal' => $this->headModal($request, 'delete-office-head', 'unit_head'),
-            'deleteDivisionHeadModal' => $this->headModal($request, 'delete-division-head', 'division_head'),
+            'officeLimit' => $filter->officeLimit,
+            'officeHeadLimit' => $filter->officeHeadLimit,
+            'divisionPage' => $filter->divisionPage,
+            'divisionLimit' => $filter->divisionLimit,
+            'divisionHeadPage' => $filter->divisionHeadPage,
+            'divisionHeadLimit' => $filter->divisionHeadLimit,
+            'addDivisionModal' => fn () => $this->isModal($request, 'add-division'),
+            'addOfficeModal' => fn () => $this->isModal($request, 'add-office'),
+            'editDivisionModal' => fn () => $this->divisionModal($request, 'edit-division'),
+            'editOfficeModal' => fn () => $this->officeModal($request, 'edit-office'),
+            'deleteOfficeModal' => fn () => $this->officeModal($request, 'delete-office'),
+            'assignOfficeHeadModal' => fn () => $this->assignOfficeHeadModal($request),
+            'assignDivisionHeadModal' => fn () => $this->assignDivisionHeadModal($request),
+            'deleteOfficeHeadModal' => fn () => $this->headModal($request, 'delete-office-head', 'unit_head'),
+            'deleteDivisionHeadModal' => fn () => $this->headModal($request, 'delete-division-head', 'division_head'),
         ];
+    }
+
+    public function officeHeadRows(DepartmentPageFilter $filter): array
+    {
+        return [
+            'officeHeadRows' => $this->repository->officeHeadRowsPage(
+                $filter->officeSearch,
+                $filter->officeHeadLimit,
+                $filter->officeHeadPage,
+                $filter->officeHeadOfficeId,
+            ),
+            'office_search' => $filter->officeSearch,
+            'officeHeadLimit' => $filter->officeHeadLimit,
+        ];
+    }
+
+    public function officeHeadSuggestions(string $search): array
+    {
+        return $this->repository->officeHeadSuggestions(
+            $search,
+            DepartmentPageFilter::HEAD_LIMIT,
+        );
     }
 
     public function employeeCandidates(DepartmentEmployeeCandidateFilter $filter): array
@@ -187,7 +235,7 @@ class DepartmentManagementService
         if ($type === 'unit_head') {
             return [
                 'id' => $head->id,
-                'employee_name' => $this->formatEmployeeName($head->employee),
+                'employee' => $head->employee,
                 'office_name' => $head->employee?->office?->name,
                 'division_name' => $head->employee?->office?->division?->name,
             ];
@@ -195,7 +243,7 @@ class DepartmentManagementService
 
         return [
             'id' => $head->id,
-            'employee_name' => $this->formatEmployeeName($head->employee),
+            'employee' => $head->employee,
             'division_code' => $head->division?->code,
             'division_name' => $head->division?->name,
         ];
@@ -243,21 +291,6 @@ class DepartmentManagementService
             'division_code' => $division->code,
             'division_name' => $division->name,
         ];
-    }
-
-    private function formatEmployeeName(?Employee $employee): string
-    {
-        if (! $employee) {
-            return 'Employee';
-        }
-
-        $name = preg_replace(
-            '/\s+/',
-            ' ',
-            trim("{$employee->first_name} {$employee->middle_name} {$employee->last_name}"),
-        ) ?? '';
-
-        return $name !== '' ? $name : 'Employee';
     }
 
     private function isModal(Request $request, string $modal): bool

@@ -1,3 +1,5 @@
+import { buildPaginationItems } from "@/Components/PaginationMain";
+
 export const getStationHighlightKey = (station) => {
     if (!station) return null;
 
@@ -40,30 +42,6 @@ export const getStationPagination = (activePage, totalPages, maxPages = 4) => {
 };
 
 export const getWidePagination = (activePage, totalPages) => {
-    if (totalPages <= 7) {
-        return Array.from({ length: totalPages }, (_, index) => index + 1);
-    }
-
-    const pages = [1];
-    const start = Math.max(2, activePage - 1);
-    const end = Math.min(totalPages - 1, activePage + 2);
-
-    if (start > 2) {
-        pages.push("start-ellipsis");
-    }
-
-    for (let page = start; page <= end; page += 1) {
-        pages.push(page);
-    }
-
-    if (end < totalPages - 1) {
-        pages.push("end-ellipsis");
-    }
-
-    if (!pages.includes(totalPages)) {
-        pages.push(totalPages);
-    }
-
-    return pages;
+    return buildPaginationItems(activePage, totalPages);
 };
 

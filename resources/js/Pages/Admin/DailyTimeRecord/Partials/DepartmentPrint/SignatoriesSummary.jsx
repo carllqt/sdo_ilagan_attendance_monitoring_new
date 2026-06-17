@@ -3,14 +3,14 @@ import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import { SignatorySkeleton } from "@/Components/Skeletons";
 
 const SignatoryCard = ({ label, missing, signatory }) => (
-    <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
-        <div className="flex items-center gap-3">
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white/80 p-3">
+        <div className="flex min-w-0 items-center gap-3">
             <EmployeeAvatar
                 employee={signatory?.employee}
                 name={signatory?.name}
-                className="h-10 w-10"
+                className="h-10 w-10 shrink-0"
             />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1 overflow-hidden">
                 <div className="truncate text-[11px] font-medium uppercase tracking-wide text-blue-600">
                     {label}
                 </div>

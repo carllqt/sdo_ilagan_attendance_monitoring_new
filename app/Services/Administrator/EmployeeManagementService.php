@@ -19,12 +19,12 @@ class EmployeeManagementService
         return EmployeeListFilter::limitFromRequest($request);
     }
 
-    public function employeeListData(Request $request, int $stationId): array
+    public function employeeListData(Request $request, int $stationId, bool $ignoreOffice = false): array
     {
         $filter = EmployeeListFilter::fromRequest($request, $stationId);
         $offices = $this->repository->offices();
 
-        if ($filter->officeName !== '' && $filter->officeName !== 'all') {
+        if (! $ignoreOffice && $filter->officeName !== '' && $filter->officeName !== 'all') {
             $officeId = $offices
                 ->firstWhere('name', $filter->officeName)
                 ?->id ?? 'all';
@@ -41,7 +41,7 @@ class EmployeeManagementService
             'filteredEmployeesList' => $filteredEmployeesList,
             'search' => $filter->search,
             'status' => $filter->status,
-            'officeName' => $filter->officeId === 'all' ? 'all' : $filter->officeName,
+            'officeName' => $ignoreOffice || $filter->officeId === 'all' ? 'all' : $filter->officeName,
             'limit' => $filter->limit,
         ];
     }
@@ -79,7 +79,7 @@ class EmployeeManagementService
 
         return [
             'id' => $employee->id,
-            'full_name' => $this->formatEmployeeName($employee),
+            'full_name' => $employee->full_name ?: 'Employee',
             'first_name' => $employee->first_name,
             'middle_name' => $employee->middle_name,
             'last_name' => $employee->last_name,
@@ -161,24 +161,9 @@ class EmployeeManagementService
         );
     }
 
-    public function formatEmployeeName(?Employee $employee): string
-    {
-        if (! $employee) {
-            return 'Employee';
-        }
-
-        $name = preg_replace(
-            '/\s+/',
-            ' ',
-            trim("{$employee->first_name} {$employee->middle_name} {$employee->last_name}"),
-        );
-
-        return $name !== '' ? $name : 'Employee';
-    }
-
     public function formatFingerprintEmployee(Employee $employee): array
     {
-        $fullName = $this->formatEmployeeName($employee);
+        $fullName = $employee->full_name ?: 'Employee';
         $availableFingers = max(3 - (int) $employee->biometrics_count, 0);
 
         return [
@@ -193,6 +178,7 @@ class EmployeeManagementService
             'profile_img' => $employee->profile_img,
             'position' => $employee->position,
             'office' => $employee->office,
+            'station' => $employee->station,
             'available_fingers' => $availableFingers,
         ];
     }

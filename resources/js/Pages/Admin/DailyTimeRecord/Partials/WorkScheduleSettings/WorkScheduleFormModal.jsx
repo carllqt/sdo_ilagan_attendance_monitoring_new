@@ -38,13 +38,13 @@ const WorkScheduleFormModal = ({ mode, open, onClose, workSchedule, workTypes })
         <>
             <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
                 <DialogContent className="max-w-md overflow-hidden rounded-2xl p-0">
-                    <div className="bg-slate-900 px-5 py-4 text-white">
+                    <div className="bg-blue-700 px-5 py-4 text-white">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2 text-white">
                                 <Clock3 className="h-5 w-5" />
                                 {isEdit ? "Edit Work Schedule" : "Add Work Schedule"}
                             </DialogTitle>
-                            <DialogDescription className="text-slate-300">
+                            <DialogDescription className="text-blue-100">
                                 Set the work type and time range.
                             </DialogDescription>
                         </DialogHeader>
@@ -143,7 +143,7 @@ const WorkScheduleFormModal = ({ mode, open, onClose, workSchedule, workTypes })
                     description="Please confirm your password before updating this work schedule."
                     action={
                         workSchedule?.id
-                            ? route("dailytimerecord.workschedules.update", workSchedule.id)
+                            ? route("daily-time-record.work-schedules.update", workSchedule.id)
                             : ""
                     }
                     method="put"

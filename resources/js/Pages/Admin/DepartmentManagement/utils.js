@@ -1,16 +1,13 @@
-export const ITEMS_PER_PAGE = 6;
-export const HEAD_ITEMS_PER_PAGE = 10;
-
 export const getOfficeHeadKey = (office) => {
     if (!office) return null;
 
     return String(office.id);
 };
 
-export const paginateItems = (items, page, perPage = ITEMS_PER_PAGE) =>
+export const paginateItems = (items, page, perPage) =>
     items.slice((page - 1) * perPage, page * perPage);
 
-export const getTotalPages = (items, perPage = ITEMS_PER_PAGE) =>
+export const getTotalPages = (items, perPage) =>
     Math.max(Math.ceil(items.length / perPage), 1);
 
 export const blueBlackPalette = [

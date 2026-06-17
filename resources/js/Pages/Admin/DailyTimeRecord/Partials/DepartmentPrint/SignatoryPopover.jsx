@@ -6,6 +6,7 @@ import {
     SIGNATORY_POPOVER_WIDTH,
     signatoryKey,
 } from "./utils";
+import { getEmployeeName } from "@/lib/utils";
 
 const SignatoryPopover = ({
     employee,
@@ -18,6 +19,8 @@ const SignatoryPopover = ({
     onClose,
 }) => {
     if (!employee || !position) return null;
+
+    const employeeName = getEmployeeName(employee) || "Selected employee";
 
     return (
         <>
@@ -40,17 +43,23 @@ const SignatoryPopover = ({
             >
                 <span className="absolute -right-2 top-1/2 h-4 w-4 -translate-y-1/2 rotate-45 border-r border-t border-slate-200 bg-white" />
 
-                <div className="mb-3 pr-2">
+                <div className="mb-3 min-w-0 pr-2">
                     <div className="text-sm font-semibold text-slate-900">
                         Change Signatory
                     </div>
                     <div className="truncate text-xs text-slate-500">
-                        {employee.full_name || "Selected employee"}
+                        {employeeName}
                     </div>
                 </div>
 
                 <div className="grid gap-2">
                     {options(employee).map(({ choice, signatory }) => {
+                        const signatoryName =
+                            (signatory.missing
+                                ? signatory.name
+                                : getEmployeeName(signatory.employee)) ||
+                            signatory.name ||
+                            choice.label;
                         const isSelected =
                             selectedEmployeeSignatoryType(employee) ===
                                 choice.value ||
@@ -80,15 +89,15 @@ const SignatoryPopover = ({
                                 <div className="flex min-w-0 items-center gap-2">
                                     <EmployeeAvatar
                                         employee={signatory.employee}
-                                        name={signatory.name}
-                                        className="h-9 w-9"
+                                        name={signatoryName}
+                                        className="h-9 w-9 shrink-0"
                                     />
-                                    <div className="min-w-0 pr-3">
+                                    <div className="min-w-0 flex-1 overflow-hidden pr-3">
                                         <div className="truncate text-[10px] font-medium uppercase tracking-wide text-blue-600">
                                             {signatory.label || choice.label}
                                         </div>
                                         <div className="truncate text-sm font-semibold text-slate-900">
-                                            {signatory.name}
+                                            {signatoryName}
                                         </div>
                                         <div className="truncate text-xs text-slate-500">
                                             {signatory.missing

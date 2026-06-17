@@ -22,6 +22,7 @@ import usePrintDialog, {
     resolveSignatory,
     signatoryKey,
 } from "../hooks/usePrintDialog";
+import { getEmployeeName } from "@/lib/utils";
 
 const PrintDialog = ({
     open,
@@ -93,6 +94,14 @@ const PrintDialog = ({
                             <div className="grid gap-3 md:grid-cols-2">
                                 {visibleSignatoryChoices.map(
                                     ({ choice, signatory }) => {
+                                        const signatoryName =
+                                            (signatory.missing
+                                                ? signatory.name
+                                                : getEmployeeName(
+                                                      signatory.employee,
+                                                  )) ||
+                                            signatory.name ||
+                                            choice.label;
                                         const isSelected =
                                             signatoryType === choice.value ||
                                             selectedSignatoryKey ===
@@ -127,7 +136,7 @@ const PrintDialog = ({
                                                         employee={
                                                             signatory.employee
                                                         }
-                                                        name={signatory.name}
+                                                        name={signatoryName}
                                                         className="h-10 w-10"
                                                     />
                                                     <div className="min-w-0">
@@ -138,7 +147,7 @@ const PrintDialog = ({
                                                             </span>
                                                         </div>
                                                         <div className="truncate text-sm font-semibold text-slate-900">
-                                                            {signatory.name}
+                                                            {signatoryName}
                                                         </div>
                                                         <div className="truncate text-xs text-slate-500">
                                                             {signatory.missing
@@ -186,34 +195,38 @@ const PrintDialog = ({
                             </div>
                             <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-slate-100 p-2">
                                 {printEmployees.length ? (
-                                    printEmployees.map((employee) => (
-                                        <div
-                                            key={employee.id}
-                                            className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-blue-50"
-                                        >
-                                            <div className="flex min-w-0 items-center gap-3">
-                                                <EmployeeAvatar
-                                                    employee={employee}
-                                                    name={employee.full_name}
-                                                    className="h-10 w-10"
-                                                />
-                                                <div className="min-w-0">
-                                                    <div className="truncate font-medium text-slate-800">
-                                                        {employee.full_name ||
-                                                            "-"}
-                                                    </div>
-                                                    <div className="truncate text-xs text-slate-500">
-                                                        {employeeDepartment(
-                                                            employee,
-                                                        )}{" "}
-                                                        -{" "}
-                                                        {employee.position ||
-                                                            "-"}
+                                    printEmployees.map((employee) => {
+                                        const employeeName =
+                                            getEmployeeName(employee) || "-";
+
+                                        return (
+                                            <div
+                                                key={employee.id}
+                                                className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-blue-50"
+                                            >
+                                                <div className="flex min-w-0 items-center gap-3">
+                                                    <EmployeeAvatar
+                                                        employee={employee}
+                                                        name={employeeName}
+                                                        className="h-10 w-10"
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-medium text-slate-800">
+                                                            {employeeName}
+                                                        </div>
+                                                        <div className="truncate text-xs text-slate-500">
+                                                            {employeeDepartment(
+                                                                employee,
+                                                            )}{" "}
+                                                            -{" "}
+                                                            {employee.position ||
+                                                                "-"}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 ) : isLoadingEmployeeData ? (
                                     <PrintableEmployeeSkeleton />
                                 ) : (
@@ -236,7 +249,7 @@ const PrintDialog = ({
                                     ref={(element) =>
                                         (pdfRefs.current[employee.id] = element)
                                     }
-                                    name={employee.full_name}
+                                    name={getEmployeeName(employee)}
                                     dateRange={{
                                         start: dayjs(
                                             `${selectedYear}-${String(

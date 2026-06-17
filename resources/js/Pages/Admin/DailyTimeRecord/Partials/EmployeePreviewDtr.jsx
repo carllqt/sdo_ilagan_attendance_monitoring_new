@@ -1,6 +1,6 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Loader2 } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -137,37 +137,42 @@ const EmployeePreviewDtr = ({
 
     return (
         <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-            <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-base">
-                        {timeRecord
-                            ? `${fullName} - DTR Preview`
-                            : "Daily Time Record Preview"}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs">
-                        {timeRecord
-                            ? `Attendance for ${fullName} on ${previewMonthLabel} ${previewYear}`
-                            : "Compact monthly preview for the current month."}
-                    </DialogDescription>
-                </DialogHeader>
+            <DialogContent className="max-h-[92vh] max-w-5xl overflow-hidden rounded-2xl p-0">
+                <div className="bg-blue-700 px-5 py-4 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-white">
+                            <FileText className="h-5 w-5" />
+                            {timeRecord
+                                ? `${fullName} - DTR Preview`
+                                : "Daily Time Record Preview"}
+                        </DialogTitle>
+                        <DialogDescription className="text-blue-100">
+                            {timeRecord
+                                ? `Attendance for ${fullName} on ${previewMonthLabel} ${previewYear}`
+                                : "Compact monthly preview for the current month."}
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
 
-                {open && !previewDtrModal ? (
-                    <div className="flex min-h-[18rem] items-center justify-center gap-2 text-sm text-slate-500">
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                        Loading DTR preview...
-                    </div>
-                ) : timeRecord ? (
-                    <PreviewDtrTable
-                        logs={logs}
-                        undertimeTotal={undertimeTotal}
-                        selectedMonth={previewMonth}
-                        selectedYear={previewYear}
-                    />
-                ) : (
-                    <div className="py-8 text-center text-sm text-slate-500">
-                        Unable to load DTR preview.
-                    </div>
-                )}
+                <div className="max-h-[calc(92vh-5.5rem)] overflow-y-auto px-5 pb-5 pt-4">
+                    {open && !previewDtrModal ? (
+                        <div className="flex min-h-[18rem] items-center justify-center gap-2 text-sm text-slate-500">
+                            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                            Loading DTR preview...
+                        </div>
+                    ) : timeRecord ? (
+                        <PreviewDtrTable
+                            logs={logs}
+                            undertimeTotal={undertimeTotal}
+                            selectedMonth={previewMonth}
+                            selectedYear={previewYear}
+                        />
+                    ) : (
+                        <div className="py-8 text-center text-sm text-slate-500">
+                            Unable to load DTR preview.
+                        </div>
+                    )}
+                </div>
             </DialogContent>
         </Dialog>
     );

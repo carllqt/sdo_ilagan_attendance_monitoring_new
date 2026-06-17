@@ -37,7 +37,8 @@ class DailyTimeRecordFilter
 
     public function hasInvalidLimit(Request $request): bool
     {
-        return (string) $request->query('limit') !== (string) $this->limit;
+        return $request->has('limit')
+            && (string) $request->query('limit') !== (string) $this->limit;
     }
 
     public function withOfficeId(int|string $officeId): self

@@ -19,7 +19,7 @@ const useWorkTypeFormModal = ({ mode, open, onClose, workType }) => {
     const submitAdd = (event) => {
         event.preventDefault();
 
-        router.post(route("dailytimerecord.worktypes.store"), payload, {
+        router.post(route("daily-time-record.work-types.store"), payload, {
             onSuccess: onClose,
         });
     };

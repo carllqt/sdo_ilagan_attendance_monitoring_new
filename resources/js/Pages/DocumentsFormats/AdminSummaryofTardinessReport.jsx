@@ -1,21 +1,25 @@
 import React from "react";
 
 const AdminSummaryofTardinessReport = React.forwardRef(
-    ({ summary, selectedYear }, ref) => {
+    ({ summary, selectedMonth = "Whole Year", selectedYear }, ref) => {
         const monthList = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "June",
-            "July",
-            "Aug",
-            "Sept",
-            "Oct",
-            "Nov",
-            "Dec",
+            { full: "January", short: "Jan", number: 1 },
+            { full: "February", short: "Feb", number: 2 },
+            { full: "March", short: "Mar", number: 3 },
+            { full: "April", short: "Apr", number: 4 },
+            { full: "May", short: "May", number: 5 },
+            { full: "June", short: "June", number: 6 },
+            { full: "July", short: "July", number: 7 },
+            { full: "August", short: "Aug", number: 8 },
+            { full: "September", short: "Sept", number: 9 },
+            { full: "October", short: "Oct", number: 10 },
+            { full: "November", short: "Nov", number: 11 },
+            { full: "December", short: "Dec", number: 12 },
         ];
+        const selectedMonths =
+            selectedMonth === "Whole Year"
+                ? monthList
+                : monthList.filter((month) => month.full === selectedMonth);
 
         // Get unique departments
         const departments = Array.from(
@@ -43,7 +47,9 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                             SUMMARY OF TARDINESS
                         </h1>
                         <h2 className="text-[10px] font-semibold tracking-wider">
-                            {selectedYear}
+                            {selectedMonth === "Whole Year"
+                                ? selectedYear
+                                : `${selectedMonth} ${selectedYear}`}
                         </h2>
                     </div>
 
@@ -73,7 +79,7 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                                 Name
                             </th>
                             <th
-                                colSpan={12}
+                                colSpan={selectedMonths.length}
                                 className="border border-black px-2 py-2 text-[9px]"
                             >
                                 Number of hours
@@ -86,12 +92,12 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                             </th>
                         </tr>
                         <tr>
-                            {monthList.map((month, idx) => (
+                            {selectedMonths.map((month) => (
                                 <th
-                                    key={idx}
+                                    key={month.number}
                                     className="border border-black px-2 py-2 text-[9px]"
                                 >
-                                    {month}
+                                    {month.short}
                                 </th>
                             ))}
                         </tr>
@@ -108,7 +114,7 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                                 {/* Department row */}
                                 <tr style={{ pageBreakInside: "avoid" }}>
                                     <td
-                                        colSpan={monthList.length + 3}
+                                        colSpan={selectedMonths.length + 3}
                                         className="border border-black font-bold text-center bg-gray-100 py-3"
                                     >
                                         {dept}
@@ -127,22 +133,32 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                                         <td className="border border-black px-2 py-2 text-center">
                                             {emp.employee.full_name}
                                         </td>
-                                        {monthList.map((_, monthIndex) => (
+                                        {selectedMonths.map((month) => (
                                             <td
-                                                key={monthIndex}
+                                                key={month.number}
                                                 className="border border-black px-2 py-2 text-center"
                                             >
                                                 {emp.tardyPerMonths[
                                                     selectedYear
-                                                ]?.[monthIndex + 1]?.toFixed(
+                                                ]?.[month.number]?.toFixed(
                                                     2
                                                 ) || "0.00"}
                                             </td>
                                         ))}
                                         <td className="border border-black px-2 py-2 text-center">
-                                            {emp.tardyPerYear[
-                                                selectedYear
-                                            ]?.toFixed(2) || "0.00"}
+                                            {selectedMonths
+                                                .reduce(
+                                                    (total, month) =>
+                                                        total +
+                                                        Number(
+                                                            emp.tardyPerMonths[
+                                                                selectedYear
+                                                            ]?.[month.number] ||
+                                                                0
+                                                        ),
+                                                    0
+                                                )
+                                                .toFixed(2)}
                                         </td>
                                     </tr>
                                 ))}
