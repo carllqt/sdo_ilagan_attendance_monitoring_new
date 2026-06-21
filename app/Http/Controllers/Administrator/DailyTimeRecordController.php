@@ -56,6 +56,16 @@ class DailyTimeRecordController extends Controller
         );
     }
 
+    public function computeTardiness(Request $request)
+    {
+        return response()->json(
+            $this->dailyTimeRecords->computeStationTardinessForRequest(
+                $request,
+                $this->stationId(),
+            ),
+        );
+    }
+
     public function details($employeeId)
     {
         return response()->json(

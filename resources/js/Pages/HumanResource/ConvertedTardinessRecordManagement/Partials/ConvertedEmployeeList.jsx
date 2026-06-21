@@ -144,8 +144,11 @@ const ConvertedEmployeeList = ({
                         </p>
                     </div>
 
-                    <div className="grid w-full grid-cols-1 items-center gap-3 md:w-auto md:grid-cols-[280px_120px]">
-                        <div ref={searchBoxRef} className="relative">
+                    <div className="flex items-start gap-4">
+                        <div
+                            ref={searchBoxRef}
+                            className="relative w-[340px] shrink-0"
+                        >
                             <FloatingInput
                                 label="Search name"
                                 icon={Search}
@@ -213,7 +216,7 @@ const ConvertedEmployeeList = ({
                             selected={String(selectedYear || "")}
                             onChange={handleYearChange}
                             buttonVariant="outline"
-                            className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                            className="h-10 w-[100px] min-w-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                         />
                     </div>
                 </div>

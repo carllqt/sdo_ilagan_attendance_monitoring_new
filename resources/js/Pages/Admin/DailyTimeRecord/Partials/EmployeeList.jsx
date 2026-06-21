@@ -36,6 +36,7 @@ import useEmployeeListControls, {
     formatWorkSchedule,
     monthOptions,
 } from "../hooks/useEmployeeListControls";
+import TardinessComputingState from "./TardinessComputingState";
 
 const EmployeeList = ({
     employees,
@@ -52,12 +53,15 @@ const EmployeeList = ({
     pagination,
     applyFilters,
     isLoading = false,
+    isComputingTardiness = false,
+    tardinessAnimationData = null,
     onPreviewEmployee,
     onPrintEmployee,
     onPrintDepartment,
     onRecomputeEmployee,
 }) => {
     const displayedEmployees = employees;
+    const controlsDisabled = isLoading || isComputingTardiness;
     const skeletonRows = Math.max(
         5,
         Math.min(Number(pagination?.per_page || 10), 10),
@@ -103,19 +107,31 @@ const EmployeeList = ({
                         </p>
                     </div>
 
-                    <div className="grid w-full grid-cols-1 items-center gap-4 xl:ml-auto xl:w-auto xl:grid-cols-[340px_112px_112px_150px_180px]">
-                        <div ref={searchBoxRef} className="relative">
+                    <div className="flex items-start gap-4 xl:ml-auto">
+                        <div
+                            ref={searchBoxRef}
+                            className="relative w-[340px] shrink-0"
+                        >
                             <FloatingInput
                                 label="Search Employee"
                                 icon={Search}
                                 name="search"
                                 value={search}
+                                disabled={controlsDisabled}
                                 onChange={(e) => {
+                                    if (controlsDisabled) return;
+
                                     setSearch(e.target.value);
                                     setShowSuggestions(true);
                                 }}
-                                onFocus={() => setShowSuggestions(true)}
+                                onFocus={() => {
+                                    if (controlsDisabled) return;
+
+                                    setShowSuggestions(true);
+                                }}
                                 onKeyDown={(e) => {
+                                    if (controlsDisabled) return;
+
                                     if (e.key === "Enter") {
                                         e.preventDefault();
                                         submitSearch(search);
@@ -124,7 +140,9 @@ const EmployeeList = ({
                                 }}
                             />
 
-                            {showSuggestions && search.trim() ? (
+                            {!controlsDisabled &&
+                            showSuggestions &&
+                            search.trim() ? (
                                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         Employees
@@ -140,6 +158,7 @@ const EmployeeList = ({
                                                         key={suggestion.id}
                                                         type="button"
                                                         onMouseDown={() =>
+                                                            !controlsDisabled &&
                                                             selectSuggestion(
                                                                 suggestion,
                                                             )
@@ -179,7 +198,10 @@ const EmployeeList = ({
                             label="Select Month"
                             items={monthOptions.map((item) => item.label)}
                             selected={selectedMonthLabel}
+                            disabled={controlsDisabled}
                             onChange={(monthLabel) => {
+                                if (controlsDisabled) return;
+
                                 const nextMonth =
                                     monthOptions.find(
                                         (item) => item.label === monthLabel,
@@ -192,14 +214,17 @@ const EmployeeList = ({
                                 });
                             }}
                             buttonVariant="outline"
-                            className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                            className="h-10 w-[145px] min-w-0 truncate border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                         />
 
                         <CustomDropdownCheckbox
                             label="Select Year"
                             items={yearOptions}
                             selected={String(selectedYear)}
+                            disabled={controlsDisabled}
                             onChange={(nextYear) => {
+                                if (controlsDisabled) return;
+
                                 setSelectedYear(nextYear);
                                 applyFilters({
                                     yearValue: nextYear,
@@ -207,14 +232,17 @@ const EmployeeList = ({
                                 });
                             }}
                             buttonVariant="outline"
-                            className="h-10 border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-none"
+                            className="h-10 w-[100px] min-w-0 border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-none"
                         />
                         <CustomDropdownCheckboxObject
                             label="Select Office"
                             items={officeItems}
                             selected={selectedOffice}
                             buttonLabel={officeButtonLabel}
+                            disabled={controlsDisabled}
                             onChange={(value) => {
+                                if (controlsDisabled) return;
+
                                 const nextOffice =
                                     value === "all" ? "all" : Number(value);
 
@@ -224,15 +252,17 @@ const EmployeeList = ({
                                 });
                             }}
                             buttonVariant="outline"
-                            className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                            className="h-10 w-[180px] shrink-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                         />
 
                         <Button
                             type="button"
                             onClick={() =>
+                                !controlsDisabled &&
                                 onPrintDepartment?.(displayedEmployees)
                             }
-                            className="h-10 gap-2 whitespace-nowrap bg-blue-700 text-white hover:bg-blue-800"
+                            disabled={controlsDisabled}
+                            className="h-10 shrink-0 gap-2 whitespace-nowrap bg-blue-700 text-white hover:bg-blue-800"
                         >
                             <Printer className="h-4 w-4" />
                             Print by Department
@@ -314,6 +344,14 @@ const EmployeeList = ({
                                     </TableRow>
                                 ),
                             )
+                        ) : isComputingTardiness ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="p-0">
+                                    <TardinessComputingState
+                                        animationData={tardinessAnimationData}
+                                    />
+                                </TableCell>
+                            </TableRow>
                         ) : displayedEmployees.length > 0 ? (
                             displayedEmployees.map((emp) => {
                                 const fullName = getEmployeeName(emp) || "-";
@@ -407,9 +445,13 @@ const EmployeeList = ({
                                                             size="icon"
                                                             variant="outline"
                                                             onClick={() =>
+                                                                !controlsDisabled &&
                                                                 onPreviewEmployee?.(
                                                                     emp,
                                                                 )
+                                                            }
+                                                            disabled={
+                                                                controlsDisabled
                                                             }
                                                             className="h-8 w-8 rounded-full border-blue-200 text-blue-700 hover:bg-blue-50"
                                                             title="Preview DTR"
@@ -421,9 +463,13 @@ const EmployeeList = ({
                                                             size="icon"
                                                             variant="outline"
                                                             onClick={() =>
+                                                                !controlsDisabled &&
                                                                 onPrintEmployee?.(
                                                                     emp,
                                                                 )
+                                                            }
+                                                            disabled={
+                                                                controlsDisabled
                                                             }
                                                             className="h-8 w-8 rounded-full border-blue-200 text-blue-700 hover:bg-blue-50"
                                                             title="Print DTR"
@@ -435,9 +481,13 @@ const EmployeeList = ({
                                                             size="icon"
                                                             variant="outline"
                                                             onClick={() =>
+                                                                !controlsDisabled &&
                                                                 onRecomputeEmployee?.(
                                                                     emp,
                                                                 )
+                                                            }
+                                                            disabled={
+                                                                controlsDisabled
                                                             }
                                                             className="h-8 w-8 rounded-full border-blue-200 text-blue-700 hover:bg-blue-50"
                                                             title="Recompute DTR"
@@ -498,6 +548,7 @@ const EmployeeList = ({
                 pageNumbers={pageNumbers}
                 pagination={pagination}
                 totalPages={totalPages}
+                disabled={controlsDisabled}
             />
         </div>
     );

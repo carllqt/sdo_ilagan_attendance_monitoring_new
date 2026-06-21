@@ -38,6 +38,16 @@ export const signatoryChoices = [
     { value: "division_head", label: "Division Head" },
 ];
 
+const travelOrdersFor = (timeRecord) =>
+    timeRecord?.employee_travel_orders || timeRecord?.employeeTravelOrders || [];
+
+const travelOrderForDate = (timeRecord, date) =>
+    travelOrdersFor(timeRecord).find(
+        (travelOrder) =>
+            !date.isBefore(dayjs(travelOrder.start_date), "day") &&
+            !date.isAfter(dayjs(travelOrder.end_date), "day"),
+    );
+
 export const signatoryKey = (signatory) =>
     signatory?.employee?.id
         ? `employee:${signatory.employee.id}`
@@ -62,9 +72,22 @@ export const generateLogs = (timeRecord, selectedMonth, selectedYear) => {
     }
 
     return days.map((date) => {
+        const travelOrder = travelOrderForDate(timeRecord, date);
         const attendance = attendances.find((item) =>
             dayjs(item.date).isSame(date, "day"),
         );
+
+        if (travelOrder) {
+            return {
+                date: date.format("YYYY-MM-DD"),
+                isTravelOrder: true,
+                amIn: "-",
+                amOut: "-",
+                pmIn: "-",
+                pmOut: "-",
+                undertime: "-",
+            };
+        }
 
         return {
             date: date.format("YYYY-MM-DD"),
@@ -76,4 +99,3 @@ export const generateLogs = (timeRecord, selectedMonth, selectedYear) => {
         };
     });
 };
-

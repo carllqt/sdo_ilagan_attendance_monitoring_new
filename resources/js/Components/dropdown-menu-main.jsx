@@ -3,6 +3,7 @@
 import React from "react";
 import { CheckCircle2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,11 +33,12 @@ export function CustomDropdownCheckbox({
                     disabled={disabled}
                     aria-label={label || "Open dropdown"}
                     title={iconOnly ? label : undefined}
-                    className={
+                    className={cn(
                         iconOnly
-                            ? `h-8 w-8 min-w-0 justify-center rounded-md p-0 ${className}`
-                            : `flex min-w-[120px] items-center justify-between gap-2 ${className}`
-                    }
+                            ? "h-8 w-8 min-w-0 justify-center rounded-md p-0"
+                            : "flex min-w-[120px] items-center justify-between gap-2",
+                        className,
+                    )}
                 >
                     {!iconOnly && (
                         <span className="min-w-0 truncate">
@@ -48,7 +50,7 @@ export function CustomDropdownCheckbox({
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent className="max-h-80 min-w-[14rem] overflow-y-auto rounded-xl border border-slate-200 bg-white p-0 shadow-2xl">
+            <DropdownMenuContent className="max-h-80 w-max min-w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-0 shadow-2xl">
                 {label && (
                     <>
                         <DropdownMenuLabel className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -101,11 +103,12 @@ export function CustomDropdownCheckboxObject({
                     disabled={disabled}
                     aria-label={label || "Open dropdown"}
                     title={iconOnly ? label : undefined}
-                    className={
+                    className={cn(
                         iconOnly
-                            ? `h-8 w-8 min-w-0 justify-center rounded-md p-0 ${className}`
-                            : `flex min-w-[120px] items-center justify-between gap-2 ${className}`
-                    }
+                            ? "h-8 w-8 min-w-0 justify-center rounded-md p-0"
+                            : "flex min-w-[120px] items-center justify-between gap-2",
+                        className,
+                    )}
                 >
                     {!iconOnly && (
                         <span className="min-w-0 truncate">
@@ -117,7 +120,7 @@ export function CustomDropdownCheckboxObject({
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent className="max-h-96 min-w-[18rem] overflow-y-auto rounded-xl border border-slate-200 bg-white p-0 shadow-2xl">
+            <DropdownMenuContent className="max-h-96 w-max min-w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-0 shadow-2xl">
                 {label && (
                     <>
                         <DropdownMenuLabel className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -197,11 +200,12 @@ export function CustomDropdownWorkSchedule({
                     disabled={disabled}
                     aria-label={label || "Open dropdown"}
                     title={iconOnly ? label : undefined}
-                    className={
+                    className={cn(
                         iconOnly
-                            ? `h-8 w-8 min-w-0 justify-center rounded-md p-0 ${className}`
-                            : `flex min-w-[120px] items-center justify-between gap-2 ${className}`
-                    }
+                            ? "h-8 w-8 min-w-0 justify-center rounded-md p-0"
+                            : "flex min-w-[120px] items-center justify-between gap-2",
+                        className,
+                    )}
                 >
                     {!iconOnly && (
                         <span className="min-w-0 truncate">
@@ -213,7 +217,7 @@ export function CustomDropdownWorkSchedule({
                 </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent className="max-h-96 min-w-[20rem] overflow-y-auto rounded-xl border border-slate-200 bg-white p-0 shadow-2xl">
+            <DropdownMenuContent className="max-h-96 w-max min-w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-0 shadow-2xl">
                 {label && (
                     <DropdownMenuLabel className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {label}

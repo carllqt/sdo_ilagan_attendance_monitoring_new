@@ -35,40 +35,42 @@ const getAllDaysInMonth = (year, month) => {
     return days;
 };
 
-const generateLogs = (
-    timeRecord,
-    employeeLeaves,
-    selectedMonth,
-    selectedYear,
-) =>
+const travelOrdersFor = (timeRecord) =>
+    timeRecord?.employee_travel_orders || timeRecord?.employeeTravelOrders || [];
+
+const travelOrderForDate = (timeRecord, date) =>
+    travelOrdersFor(timeRecord).find(
+        (travelOrder) =>
+            !date.isBefore(dayjs(travelOrder.start_date), "day") &&
+            !date.isAfter(dayjs(travelOrder.end_date), "day"),
+    );
+
+const generateLogs = (timeRecord, selectedMonth, selectedYear) =>
     getAllDaysInMonth(selectedYear, selectedMonth).map((date) => {
-        const formattedDate = date.format("YYYY-MM-DD");
+        const travelOrder = travelOrderForDate(timeRecord, date);
         const attendance = (timeRecord.attendances || []).find((att) =>
             dayjs(att.date).isSame(date, "day"),
         );
-        const leave = employeeLeaves.find(
-            (item) => item.date === formattedDate,
-        );
+
+        if (travelOrder) {
+            return {
+                date: date.format("YYYY-MM-DD"),
+                isTravelOrder: true,
+                amIn: "-",
+                amOut: "-",
+                pmIn: "-",
+                pmOut: "-",
+                undertime: "-",
+            };
+        }
 
         return {
-            date: formattedDate,
-            amIn: leave
-                ? leave.leave_type
-                : formatTime(attendance?.am?.am_time_in),
-            amOut: leave
-                ? leave.leave_type
-                : formatTime(attendance?.am?.am_time_out),
-            pmIn: leave
-                ? leave.leave_type
-                : formatTime(attendance?.pm?.pm_time_in),
-            pmOut: leave
-                ? leave.leave_type
-                : formatTime(attendance?.pm?.pm_time_out),
-            undertime: leave
-                ? leave.leave_type
-                : (attendance?.tardiness_record?.converted_tardy ?? "-"),
-            isLeave: Boolean(leave),
-            leave_type: leave?.leave_type ?? null,
+            date: date.format("YYYY-MM-DD"),
+            amIn: formatTime(attendance?.am?.am_time_in),
+            amOut: formatTime(attendance?.am?.am_time_out),
+            pmIn: formatTime(attendance?.pm?.pm_time_in),
+            pmOut: formatTime(attendance?.pm?.pm_time_out),
+            undertime: attendance?.tardiness_record?.converted_tardy ?? "-",
         };
     });
 
@@ -83,12 +85,7 @@ const useEmployeePreviewDtr = ({
         const previewMonth = String(selectedMonth).padStart(2, "0");
         const previewYear = String(selectedYear);
         const logs = timeRecord
-            ? generateLogs(
-                  timeRecord,
-                  previewDtrModal?.employee_leaves || [],
-                  previewMonth,
-                  previewYear,
-              )
+            ? generateLogs(timeRecord, previewMonth, previewYear)
             : [];
         const monthKey = `${previewYear}-${previewMonth}`;
         const undertimeTotal =

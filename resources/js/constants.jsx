@@ -16,14 +16,3 @@ export const DEPARTMENT_OPTIONS = {
     ict_unit: "ICT UNIT",
     supply_unit: "SUPPLY UNIT",
 };
-
-export const POSITION_CATEGORY_OPTIONS = {
-    Teaching: "Teaching",
-    "Non-Teaching": "Non-Teaching",
-};
-
-export const POSITION_LEVEL_OPTIONS = {
-    School: "School",
-    Division: "Division",
-    Regional: "Regional",
-};

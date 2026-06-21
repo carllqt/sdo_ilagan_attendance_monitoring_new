@@ -68,8 +68,11 @@ const EmployeeList = ({
                     </p>
                 </div>
 
-                <div className="grid w-full grid-cols-1 items-center gap-4 xl:ml-auto xl:w-auto xl:grid-cols-[350px_130px_130px_150px_150px]">
-                    <div ref={searchBoxRef} className="relative w-full">
+                <div className="flex items-start gap-4 xl:ml-auto">
+                    <div
+                        ref={searchBoxRef}
+                        className="relative w-[340px] shrink-0"
+                    >
                         <FloatingInput
                             label="Employee Name"
                             icon={Search}
@@ -137,7 +140,7 @@ const EmployeeList = ({
                         selected={selectedMonth}
                         onChange={setSelectedMonth}
                         buttonVariant="outline"
-                        className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                        className="h-10 w-[130px] min-w-0 truncate border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                     />
                     <CustomDropdownCheckbox
                         label="Select Year"
@@ -148,7 +151,7 @@ const EmployeeList = ({
                             applyFilters({ yearValue: nextYear });
                         }}
                         buttonVariant="outline"
-                        className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                        className="h-10 w-[100px] min-w-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                     />
                     <CustomDropdownCheckboxObject
                         label="Select Office"
@@ -165,12 +168,12 @@ const EmployeeList = ({
                             applyFilters({ officeValue });
                         }}
                         buttonVariant="outline"
-                        className="h-10 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                        className="h-10 w-[180px] shrink-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                     />
                     <Button
                         type="button"
                         onClick={onDownloadPDF}
-                        className="h-10 gap-2 whitespace-nowrap bg-blue-700 text-white hover:bg-blue-800"
+                        className="h-10 shrink-0 gap-2 whitespace-nowrap bg-blue-700 text-white hover:bg-blue-800"
                     >
                         <Download className="h-4 w-4" />
                         Print Summary

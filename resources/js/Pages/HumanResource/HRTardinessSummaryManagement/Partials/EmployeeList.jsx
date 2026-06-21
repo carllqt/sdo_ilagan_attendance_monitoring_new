@@ -68,12 +68,15 @@ const EmployeeList = ({
                         Employee List
                     </h2>
                     <p className="text-sm text-gray-500">
-                        Converted tardiness summary records
+                        Convert tardiness summary records
                     </p>
                 </div>
 
-                <div className="grid w-full grid-cols-1 items-center gap-4 xl:ml-auto xl:w-auto xl:grid-cols-[300px_80px_130px_1px_130px_150px_160px]">
-                    <div ref={searchBoxRef} className="relative w-full">
+                <div className="flex items-start gap-4 xl:ml-auto">
+                    <div
+                        ref={searchBoxRef}
+                        className="relative w-[340px] shrink-0"
+                    >
                         <FloatingInput
                             label="Employee Name"
                             icon={Search}
@@ -134,7 +137,9 @@ const EmployeeList = ({
                         ) : null}
                     </div>
 
-                    <span className="text-sm font-semibold">Date Range:</span>
+                    <span className="flex h-10 shrink-0 items-center text-sm font-semibold">
+                        Date Range:
+                    </span>
 
                     <CustomDropdownCheckbox
                         label="Start Month"
@@ -142,9 +147,9 @@ const EmployeeList = ({
                         selected={selectedFirstMonth}
                         onChange={setSelectedFirstMonth}
                         buttonVariant="outline"
-                        className="h-10 w-full border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        className="h-10 w-[130px] min-w-0 truncate border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     />
-                    <span className="text-center text-sm font-semibold text-gray-500">
+                    <span className="flex h-10 shrink-0 items-center text-center text-sm font-semibold text-gray-500">
                         -
                     </span>
                     <CustomDropdownCheckbox
@@ -153,7 +158,7 @@ const EmployeeList = ({
                         selected={selectedSecondMonth}
                         onChange={setSelectedSecondMonth}
                         buttonVariant="outline"
-                        className="h-10 w-full border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        className="h-10 w-[130px] min-w-0 truncate border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     />
                     <CustomDropdownCheckboxObject
                         label="Office"
@@ -162,13 +167,13 @@ const EmployeeList = ({
                         buttonLabel={officeButtonLabel}
                         onChange={setSelectedOffice}
                         buttonVariant="outline"
-                        className="h-10 w-full border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        className="h-10 w-[180px] shrink-0 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     />
                     <ConfirmPasswordDialog
                         trigger={
                             <Button
                                 variant="green"
-                                className="relative h-10 w-full bg-emerald-600 shadow-sm hover:bg-emerald-700"
+                                className="relative h-10 shrink-0 bg-emerald-600 shadow-sm hover:bg-emerald-700"
                                 disabled={isLoading || convertCount === 0}
                             >
                                 Convert & Save

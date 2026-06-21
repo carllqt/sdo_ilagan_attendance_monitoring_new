@@ -23,6 +23,8 @@ class TardinessConversionService
     public function pageData(Request $request): array
     {
         $filter = TardinessConversionFilter::fromRequest($request);
+        $officeOptions = $this->repository->officeOptions();
+        $filter = $this->resolveOfficeFilter($filter, $officeOptions);
         $monthList = $this->monthList($filter);
         $defaultStartMonth = $monthList->first() ?: now()->format('F Y');
         $defaultEndMonth = $monthList->last() ?: now()->format('F Y');
@@ -56,7 +58,7 @@ class TardinessConversionService
             'summaryPayload' => $summaryPayload,
             'printRecords' => $printRecords,
             'monthList' => $monthList,
-            'offices' => $this->officeOptions(),
+            'offices' => $this->officeOptions($officeOptions),
             'office' => $filter->officeId,
             'search' => $filter->search,
             'selectedFirstMonth' => $filter->startMonth,
@@ -70,6 +72,10 @@ class TardinessConversionService
     public function suggestions(Request $request): array
     {
         $filter = TardinessConversionFilter::fromRequest($request);
+        $filter = $this->resolveOfficeFilter(
+            $filter,
+            $this->repository->officeOptions(),
+        );
         $monthList = $this->monthList($filter);
         $filter = $filter->withDefaults(
             $monthList->first() ?: now()->format('F Y'),
@@ -293,12 +299,28 @@ class TardinessConversionService
         return $filter->withMonthRange($startMonth, $endMonth);
     }
 
-    private function officeOptions(): Collection
+    private function resolveOfficeFilter(
+        TardinessConversionFilter $filter,
+        Collection $officeOptions,
+    ): TardinessConversionFilter {
+        if ($filter->officeId === 'all' || is_numeric($filter->officeId)) {
+            return $filter;
+        }
+
+        $officeName = trim((string) $filter->officeId);
+        $officeId = $officeOptions
+            ->firstWhere('name', $officeName)
+            ?->id ?? 'all';
+
+        return $filter->withOfficeId($officeId);
+    }
+
+    private function officeOptions(?Collection $officeOptions = null): Collection
     {
         return collect([
             ['id' => 'all', 'name' => 'All Offices'],
         ])->merge(
-            $this->repository->officeOptions()->map(function (Office $office) {
+            ($officeOptions ?: $this->repository->officeOptions())->map(function (Office $office) {
                 $division = $office->division;
 
                 return [

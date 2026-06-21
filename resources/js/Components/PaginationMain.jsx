@@ -42,6 +42,7 @@ const PaginationMain = ({
     to = 0,
     total = 0,
     totalPages = 1,
+    disabled = false,
 }) => {
     const activePage = pagination?.current_page || currentPage;
     const pagesTotal = pagination?.last_page || totalPages;
@@ -61,8 +62,12 @@ const PaginationMain = ({
                 {pagesTotal > 1 && (
                     <Pagination>
                         <PaginationPrevious
-                            disabled={activePage === 1}
-                            onClick={() => onPageChange?.(activePage - 1)}
+                            disabled={disabled || activePage === 1}
+                            onClick={() => {
+                                if (disabled) return;
+
+                                onPageChange?.(activePage - 1);
+                            }}
                         />
                         <PaginationContent>
                             {pages.map((page, index) => (
@@ -70,7 +75,17 @@ const PaginationMain = ({
                                     {typeof page === "number" ? (
                                         <PaginationLink
                                             isActive={activePage === page}
-                                            onClick={() => onPageChange?.(page)}
+                                            aria-disabled={disabled}
+                                            className={
+                                                disabled
+                                                    ? "pointer-events-none opacity-50"
+                                                    : undefined
+                                            }
+                                            onClick={() => {
+                                                if (disabled) return;
+
+                                                onPageChange?.(page);
+                                            }}
                                         >
                                             {page}
                                         </PaginationLink>
@@ -83,8 +98,12 @@ const PaginationMain = ({
                             ))}
                         </PaginationContent>
                         <PaginationNext
-                            disabled={activePage === pagesTotal}
-                            onClick={() => onPageChange?.(activePage + 1)}
+                            disabled={disabled || activePage === pagesTotal}
+                            onClick={() => {
+                                if (disabled) return;
+
+                                onPageChange?.(activePage + 1);
+                            }}
                         />
                     </Pagination>
                 )}

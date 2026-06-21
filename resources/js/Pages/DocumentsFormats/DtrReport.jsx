@@ -197,7 +197,7 @@ const DTRReport = React.forwardRef(
                                     <td style={cellStyle(0, { align: "left" })}>
                                         {formatted} {weekday}
                                     </td>
-                                    {log.isLeave ? (
+                                    {log.isTravelOrder ? (
                                         <td
                                             colSpan={7}
                                             style={{
@@ -206,13 +206,7 @@ const DTRReport = React.forwardRef(
                                                 fontWeight: "bold",
                                             }}
                                         >
-                                            {log.leave_type === "VL"
-                                                ? "Vacation Leave"
-                                                : log.leave_type === "SL"
-                                                ? "Sick Leave"
-                                                : log.leave_type === "OB"
-                                                ? "Official Business"
-                                                : log.leave_type}
+                                            Travel Order
                                         </td>
                                     ) : (
                                         <>
@@ -315,4 +309,3 @@ const DTRReport = React.forwardRef(
 );
 
 export default DTRReport;
-

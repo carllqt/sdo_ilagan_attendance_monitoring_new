@@ -41,11 +41,8 @@ class DailyTimeRecordService
         }
 
         return [
-            'time_record' => function () use ($filter) {
-                $this->computeStationTardiness($filter);
-
-                return $this->repository->paginatedEmployees($filter);
-            },
+            'time_record' => fn () => $this->repository->paginatedEmployees($filter),
+            'tardiness_status' => fn () => $this->tardinessStatus($filter),
             'offices' => fn () => $offices,
             'years' => fn () => $this->repository->attendanceYearsForStation($stationId),
             'search' => $filter->search,
@@ -67,6 +64,15 @@ class DailyTimeRecordService
         ];
     }
 
+    public function computeStationTardinessForRequest(Request $request, int $stationId): array
+    {
+        $filter = DailyTimeRecordFilter::fromRequest($request, $stationId);
+
+        $this->computeStationTardiness($filter);
+
+        return $this->tardinessStatus($filter);
+    }
+
     public function suggestions(Request $request, int $stationId): array
     {
         $search = trim((string) $request->query('search', ''));
@@ -84,7 +90,6 @@ class DailyTimeRecordService
         return [
             'time_record' => $timeRecord,
             'monthly_totals' => $this->monthlyTotalsForEmployee($timeRecord),
-            'employee_leaves' => $this->repository->employeeLeaves($employeeId),
             'signatory' => $this->defaultSignatory($timeRecord),
             'signatories' => $this->availableSignatories($timeRecord),
         ];
@@ -294,7 +299,6 @@ class DailyTimeRecordService
             'name' => trim((string) $request->query('name', '')),
             'time_record' => $timeRecord,
             'monthly_totals' => $this->monthlyTotalsForEmployee($timeRecord),
-            'employee_leaves' => $this->repository->employeeLeaves($employeeId),
             'signatory' => $this->defaultSignatory($timeRecord),
             'signatories' => $this->availableSignatories($timeRecord),
         ];
@@ -329,7 +333,6 @@ class DailyTimeRecordService
             'details' => [
                 'time_record' => $employee,
                 'monthly_totals' => $this->monthlyTotalsForEmployee($employee),
-                'employee_leaves' => $this->repository->employeeLeaves($employeeId),
                 'signatory' => $this->defaultSignatory($employee),
                 'signatories' => $this->availableSignatories($employee),
             ],
@@ -475,6 +478,23 @@ class DailyTimeRecordService
         if ($fullAttendances->isNotEmpty()) {
             $this->fullService->computeForAttendances($fullAttendances);
         }
+    }
+
+    private function tardinessStatus(DailyTimeRecordFilter $filter): array
+    {
+        $unprocessedCount = $this->repository->unprocessedAttendanceCountByWorkTypes(
+            $filter->stationId,
+            ['Fixed', 'Work From Home', 'Full'],
+            $filter->month,
+            $filter->year,
+        );
+
+        return [
+            'needs_computation' => $unprocessedCount > 0,
+            'unprocessed_count' => $unprocessedCount,
+            'month' => $filter->month,
+            'year' => $filter->year,
+        ];
     }
 
     private function stationEmployeeTimeRecord(int $employeeId, int $stationId): Employee
@@ -670,7 +690,6 @@ class DailyTimeRecordService
             'details' => [
                 'time_record' => $employee,
                 'monthly_totals' => $this->monthlyTotalsForEmployee($employee),
-                'employee_leaves' => $this->repository->employeeLeaves($employee->id),
                 'signatory' => $this->defaultSignatory($employee),
                 'signatories' => $this->availableSignatories($employee),
             ],

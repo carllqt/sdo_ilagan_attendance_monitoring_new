@@ -73,6 +73,19 @@ class TardinessConversionFilter
         );
     }
 
+    public function withOfficeId(int|string $officeId): self
+    {
+        return new self(
+            startMonth: $this->startMonth,
+            endMonth: $this->endMonth,
+            officeId: $officeId,
+            limit: $this->limit,
+            page: $this->page,
+            search: $this->search,
+            employeeId: $this->employeeId,
+        );
+    }
+
     public function withEmployeeId(?int $employeeId): self
     {
         return new self(

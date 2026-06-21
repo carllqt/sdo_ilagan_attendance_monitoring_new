@@ -58,18 +58,12 @@ const PreviewDtrTable = ({
                                     {log.date}
                                 </TableCell>
 
-                                {log.isLeave ? (
+                                {log.isTravelOrder ? (
                                     <TableCell
                                         className="px-2 py-1 text-center text-[11px] font-semibold text-orange-700"
                                         colSpan={4}
                                     >
-                                        {log.leave_type === "VL"
-                                            ? "Vacation Leave"
-                                            : log.leave_type === "SL"
-                                              ? "Sick Leave"
-                                              : log.leave_type === "OB"
-                                                ? "Official Business"
-                                                : log.leave_type}
+                                        Travel Order
                                     </TableCell>
                                 ) : (
                                     <>
@@ -89,7 +83,7 @@ const PreviewDtrTable = ({
                                 )}
 
                                 <TableCell className="px-2 py-1 text-center text-[11px] font-medium text-slate-700">
-                                    {log.isLeave ? " " : log.undertime}
+                                    {log.isTravelOrder ? " " : log.undertime}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -179,4 +173,3 @@ const EmployeePreviewDtr = ({
 };
 
 export default EmployeePreviewDtr;
-

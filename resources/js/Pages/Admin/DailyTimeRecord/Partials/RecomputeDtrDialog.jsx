@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Check, RotateCcw } from "lucide-react";
+import {
+    CalendarDays,
+    Check,
+    ChevronLeft,
+    ChevronRight,
+    RotateCcw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -10,6 +16,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const monthStartDate = (month, year) =>
     `${year}-${String(month).padStart(2, "0")}-01`;
@@ -22,6 +29,144 @@ const monthEndDate = (month, year) => {
     return `${lastDay.getFullYear()}-${formattedMonth}-${formattedDay}`;
 };
 
+const monthFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+});
+
+const formatInputDate = (value) => {
+    const [year, month, day] = String(value).split("-");
+
+    return `${month}/${day}/${year}`;
+};
+
+const dateValue = (date) => {
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${date.getFullYear()}-${month}-${day}`;
+};
+
+const parseDateValue = (value) => {
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    return new Date(year, month - 1, day);
+};
+
+const sameDay = (first, second) =>
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate();
+
+const buildCalendarDays = (viewDate) => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const gridStart = new Date(year, month, 1 - firstDay.getDay());
+
+    return Array.from({ length: 42 }, (_, index) => {
+        const day = new Date(gridStart);
+        day.setDate(gridStart.getDate() + index);
+
+        return day;
+    });
+};
+
+const CalendarPopup = ({ value, max, onChange }) => {
+    const selectedDate = parseDateValue(value);
+    const maxDate = parseDateValue(max);
+    const [viewDate, setViewDate] = useState(selectedDate);
+    const calendarDays = buildCalendarDays(viewDate);
+
+    useEffect(() => {
+        setViewDate(parseDateValue(value));
+    }, [value]);
+
+    const moveMonth = (amount) => {
+        setViewDate(
+            (current) =>
+                new Date(current.getFullYear(), current.getMonth() + amount, 1),
+        );
+    };
+
+    const nextMonth = new Date(
+        viewDate.getFullYear(),
+        viewDate.getMonth() + 1,
+        1,
+    );
+    const canMoveNext = nextMonth <= new Date(
+        maxDate.getFullYear(),
+        maxDate.getMonth(),
+        1,
+    );
+
+    return (
+        <div className="absolute right-0 top-full z-50 mt-2 w-[320px] rounded-2xl border border-slate-200 bg-white px-4 pb-4 pt-3 shadow-2xl">
+            <div>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="text-lg font-bold text-slate-800">
+                        {monthFormatter.format(viewDate)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100"
+                            onClick={() => moveMonth(-1)}
+                            aria-label="Previous month"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                            disabled={!canMoveNext}
+                            onClick={() => moveMonth(1)}
+                            aria-label="Next month"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mb-2 grid grid-cols-7 text-center text-xs font-bold text-slate-400">
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                        <div key={`${day}-${index}`}>{day}</div>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-y-1 text-center">
+                    {calendarDays.map((day) => {
+                        const isCurrentMonth =
+                            day.getMonth() === viewDate.getMonth();
+                        const isSelected = sameDay(day, selectedDate);
+                        const isDisabled = day > maxDate;
+
+                        return (
+                            <button
+                                type="button"
+                                key={dateValue(day)}
+                                className={cn(
+                                    "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition",
+                                    isSelected
+                                        ? "bg-orange-100 text-slate-900"
+                                        : "text-slate-700 hover:bg-blue-50",
+                                    !isCurrentMonth && "text-slate-300",
+                                    isDisabled &&
+                                        "cursor-not-allowed text-slate-200 hover:bg-transparent",
+                                )}
+                                disabled={isDisabled}
+                                onClick={() => onChange(dateValue(day))}
+                            >
+                                {day.getDate()}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const RecomputeDtrDialog = ({
     employee,
     onClose,
@@ -31,6 +176,7 @@ const RecomputeDtrDialog = ({
 }) => {
     const [mode, setMode] = useState("month");
     const [from, setFrom] = useState(monthStartDate(selectedMonth, selectedYear));
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const to = monthEndDate(selectedMonth, selectedYear);
     const isOpen = Boolean(employee);
 
@@ -39,11 +185,13 @@ const RecomputeDtrDialog = ({
 
         setMode("month");
         setFrom(monthStartDate(selectedMonth, selectedYear));
+        setIsDatePickerOpen(false);
     }, [isOpen, selectedMonth, selectedYear]);
 
     const selectMonth = () => {
         setMode("month");
         setFrom(monthStartDate(selectedMonth, selectedYear));
+        setIsDatePickerOpen(false);
     };
 
     const submit = () => {
@@ -64,7 +212,7 @@ const RecomputeDtrDialog = ({
                 if (!nextOpen) onClose?.();
             }}
         >
-            <DialogContent className="max-w-md overflow-hidden rounded-2xl p-0">
+            <DialogContent className="max-w-md overflow-visible rounded-2xl p-0">
                 <div className="bg-blue-700 px-5 py-4 text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-white">
@@ -130,12 +278,33 @@ const RecomputeDtrDialog = ({
                             <label className="mb-2 block text-sm font-medium text-slate-700">
                                 From
                             </label>
-                            <Input
-                                type="date"
-                                value={from}
-                                max={to}
-                                onChange={(event) => setFrom(event.target.value)}
-                            />
+                            <div className="relative">
+                                <Input
+                                    readOnly
+                                    value={formatInputDate(from)}
+                                    className="pr-11"
+                                />
+                                <button
+                                    type="button"
+                                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-blue-50 hover:text-blue-600"
+                                    onClick={() =>
+                                        setIsDatePickerOpen((open) => !open)
+                                    }
+                                    aria-label="Open date picker"
+                                >
+                                    <CalendarDays className="h-4 w-4" />
+                                </button>
+                                {isDatePickerOpen ? (
+                                    <CalendarPopup
+                                        value={from}
+                                        max={to}
+                                        onChange={(value) => {
+                                            setFrom(value);
+                                            setIsDatePickerOpen(false);
+                                        }}
+                                    />
+                                ) : null}
+                            </div>
                         </div>
                     ) : null}
 

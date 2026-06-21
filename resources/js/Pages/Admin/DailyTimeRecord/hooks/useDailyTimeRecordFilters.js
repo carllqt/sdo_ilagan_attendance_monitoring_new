@@ -2,6 +2,24 @@ import { useEffect, useState } from "react";
 import { router } from "@inertiajs/react";
 import { formatSearchDisplay } from "../utils";
 
+const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+];
+
+const monthQueryValue = (month) =>
+    monthNames[Number(month) - 1] || monthNames[new Date().getMonth()];
+
 const useDailyTimeRecordFilters = ({
     currentMonth,
     currentYear,
@@ -39,7 +57,7 @@ const useDailyTimeRecordFilters = ({
     } = {}) => {
         const query = {
             limit: limitValue,
-            month: monthValue,
+            month: monthQueryValue(monthValue),
             year: yearValue,
         };
 
@@ -60,7 +78,15 @@ const useDailyTimeRecordFilters = ({
         }
 
         router.get(route("daily-time-record"), query, {
-            only: ["time_record", "search", "office", "month", "year", "limit"],
+            only: [
+                "time_record",
+                "tardiness_status",
+                "search",
+                "office",
+                "month",
+                "year",
+                "limit",
+            ],
             preserveState: true,
             preserveScroll: true,
             replace: true,

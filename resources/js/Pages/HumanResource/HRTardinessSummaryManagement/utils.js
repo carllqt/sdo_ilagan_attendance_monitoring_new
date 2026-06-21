@@ -53,8 +53,8 @@ export const buildTardinessConversionQuery = ({
     startMonthValue,
 }) => {
     const query = {
-        office: officeValue,
         limit: limitValue,
+        page: pageValue || 1,
     };
     const cleanSearch = String(searchValue || "").trim();
 
@@ -66,12 +66,12 @@ export const buildTardinessConversionQuery = ({
         query.end_month = endMonthValue;
     }
 
-    if (cleanSearch) {
-        query.search = cleanSearch;
+    if (officeValue && officeValue !== "all") {
+        query.office = officeValue;
     }
 
-    if (pageValue > 1) {
-        query.page = pageValue;
+    if (cleanSearch) {
+        query.search = cleanSearch;
     }
 
     return query;

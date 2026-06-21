@@ -474,7 +474,7 @@ const Attendance = ({
 
                     {/* Right Panel */}
                     <Card className="col-span-2 shadow-xl rounded-2xl p-4 flex flex-col border border-gray-100">
-                        <div className="relative w-full mb-4">
+                        <div className="relative mb-4 w-[340px] shrink-0">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <input
                                 type="text"
@@ -591,5 +591,4 @@ const Attendance = ({
 };
 
 export default Attendance;
-
 

@@ -68,7 +68,7 @@ const DepartmentHeadList = ({
                 </div>
 
                 <form
-                    className="relative w-full max-w-sm"
+                    className="relative w-[340px] shrink-0"
                     onSubmit={handleSearch}
                 >
                     <div className="relative">

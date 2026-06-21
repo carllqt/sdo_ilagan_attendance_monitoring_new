@@ -16,6 +16,7 @@ const useTardinessConversionFilters = ({
     filteredSummaryPayload = [],
     monthList = [],
     office = "all",
+    offices = [],
     records = {},
     search = "",
     selectedFirstMonth: selectedFirstMonthProp,
@@ -82,12 +83,19 @@ const useTardinessConversionFilters = ({
         limitValue = records?.per_page || 10,
         searchValue = searchInput,
     } = {}) => {
+        const selectedOfficeName =
+            String(officeValue) === "all"
+                ? "all"
+                : offices.find(
+                      (office) => String(office.id) === String(officeValue),
+                  )?.name || officeValue;
+
         router.get(
             route("tardiness-conversion"),
             buildTardinessConversionQuery({
                 endMonthValue,
                 limitValue,
-                officeValue,
+                officeValue: selectedOfficeName,
                 pageValue,
                 searchValue,
                 startMonthValue,

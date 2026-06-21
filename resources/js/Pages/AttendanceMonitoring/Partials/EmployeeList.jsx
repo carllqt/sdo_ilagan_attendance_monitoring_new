@@ -165,7 +165,7 @@ const EmployeeList = ({
                         <div className="flex items-center gap-3">
                             <div
                                 ref={searchBoxRef}
-                                className="relative w-[22.5rem]"
+                                className="relative w-[340px] shrink-0"
                             >
                                 <form
                                     onSubmit={(event) => {

@@ -10,7 +10,6 @@ use App\Models\Administrator\Office;
 use App\Models\Administrator\TardinessRecord;
 use App\Models\Administrator\WorkSchedule;
 use App\Models\Administrator\WorkType;
-use App\Models\EmployeeLeave;
 
 class DailyTimeRecordRepository
 {
@@ -70,6 +69,25 @@ class DailyTimeRecordRepository
             ->get();
     }
 
+    public function unprocessedAttendanceCountByWorkTypes(
+        int $stationId,
+        array $workTypes,
+        int $month,
+        int $year,
+    ): int {
+        return Attendance::whereHas('employee', function ($query) use ($stationId, $workTypes) {
+            $query->where('station_id', $stationId)
+                ->whereHas('workSchedule.workType', function ($query) use ($workTypes) {
+                    $query->whereIn('name', $workTypes);
+                })
+                ->where('active_status', 1);
+        })
+            ->doesntHave('tardinessRecord')
+            ->whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->count();
+    }
+
     public function officesForStation(int $stationId)
     {
         $officeIds = Employee::where('station_id', $stationId)
@@ -101,6 +119,9 @@ class DailyTimeRecordRepository
 
     public function paginatedEmployees(DailyTimeRecordFilter $filter)
     {
+        $monthStart = sprintf('%04d-%02d-01', $filter->year, $filter->month);
+        $monthEnd = date('Y-m-t', strtotime($monthStart));
+
         return Employee::with([
             'office:id,name,division_id',
             'office.division:id,code,name',
@@ -111,9 +132,14 @@ class DailyTimeRecordRepository
             ->when($filter->officeId !== 'all', function ($query) use ($filter) {
                 $query->where('office_id', (int) $filter->officeId);
             })
-            ->whereHas('attendances', function ($query) use ($filter) {
-                $query->whereYear('date', $filter->year)
-                    ->whereMonth('date', $filter->month);
+            ->where(function ($query) use ($filter, $monthStart, $monthEnd) {
+                $query->whereHas('attendances', function ($query) use ($filter) {
+                    $query->whereYear('date', $filter->year)
+                        ->whereMonth('date', $filter->month);
+                })->orWhereHas('employeeTravelOrders', function ($query) use ($monthStart, $monthEnd) {
+                    $query->whereDate('start_date', '<=', $monthEnd)
+                        ->whereDate('end_date', '>=', $monthStart);
+                });
             })
             ->when($filter->search !== '', function ($query) use ($filter) {
                 $query->where(function ($employeeQuery) use ($filter) {
@@ -187,11 +213,6 @@ class DailyTimeRecordRepository
             ->get();
     }
 
-    public function employeeLeaves(int $employeeId)
-    {
-        return EmployeeLeave::where('employee_id', $employeeId)->get();
-    }
-
     public function employeeTimeRecordForStation(
         int $employeeId,
         int $stationId,
@@ -199,11 +220,24 @@ class DailyTimeRecordRepository
         ?int $year = null,
     ): ?Employee
     {
+        $monthStart = $month && $year
+            ? sprintf('%04d-%02d-01', $year, $month)
+            : null;
+        $monthEnd = $monthStart ? date('Y-m-t', strtotime($monthStart)) : null;
+
         return Employee::with([
             'office:id,name,division_id',
             'office.division:id,code,name',
             'workSchedule:id,work_type_id,name,time_in,time_out',
             'workSchedule.workType:id,name',
+            'employeeTravelOrders' => function ($query) use ($monthStart, $monthEnd) {
+                $query
+                    ->when($monthStart && $monthEnd, function ($query) use ($monthStart, $monthEnd) {
+                        $query->whereDate('start_date', '<=', $monthEnd)
+                            ->whereDate('end_date', '>=', $monthStart);
+                    })
+                    ->orderBy('start_date');
+            },
             'attendances' => function ($query) use ($month, $year) {
                 $query
                     ->when($year, fn ($query) => $query->whereYear('date', $year))
@@ -300,23 +334,36 @@ class DailyTimeRecordRepository
 
     public function printOfficesForStation(int $stationId, string $search, int $month, int $year)
     {
+        $monthStart = sprintf('%04d-%02d-01', $year, $month);
+        $monthEnd = date('Y-m-t', strtotime($monthStart));
+
         return Office::with('division:id,code,name')
             ->select('id', 'division_id', 'name')
-            ->whereHas('employees', function ($query) use ($stationId, $month, $year) {
+            ->whereHas('employees', function ($query) use ($stationId, $month, $year, $monthStart, $monthEnd) {
                 $query->where('station_id', $stationId)
                     ->where('active_status', 1)
-                    ->whereHas('attendances', function ($attendanceQuery) use ($month, $year) {
-                        $attendanceQuery->whereYear('date', $year)
-                            ->whereMonth('date', $month);
+                    ->where(function ($query) use ($month, $year, $monthStart, $monthEnd) {
+                        $query->whereHas('attendances', function ($attendanceQuery) use ($month, $year) {
+                            $attendanceQuery->whereYear('date', $year)
+                                ->whereMonth('date', $month);
+                        })->orWhereHas('employeeTravelOrders', function ($travelOrderQuery) use ($monthStart, $monthEnd) {
+                            $travelOrderQuery->whereDate('start_date', '<=', $monthEnd)
+                                ->whereDate('end_date', '>=', $monthStart);
+                        });
                     });
             })
             ->withCount([
-                'employees as employees_count' => function ($query) use ($stationId, $month, $year) {
+                'employees as employees_count' => function ($query) use ($stationId, $month, $year, $monthStart, $monthEnd) {
                     $query->where('station_id', $stationId)
                         ->where('active_status', 1)
-                        ->whereHas('attendances', function ($attendanceQuery) use ($month, $year) {
-                            $attendanceQuery->whereYear('date', $year)
-                                ->whereMonth('date', $month);
+                        ->where(function ($query) use ($month, $year, $monthStart, $monthEnd) {
+                            $query->whereHas('attendances', function ($attendanceQuery) use ($month, $year) {
+                                $attendanceQuery->whereYear('date', $year)
+                                    ->whereMonth('date', $month);
+                            })->orWhereHas('employeeTravelOrders', function ($travelOrderQuery) use ($monthStart, $monthEnd) {
+                                $travelOrderQuery->whereDate('start_date', '<=', $monthEnd)
+                                    ->whereDate('end_date', '>=', $monthStart);
+                            });
                         });
                 },
             ])
@@ -343,11 +390,19 @@ class DailyTimeRecordRepository
         int $page = 1,
     )
     {
+        $monthStart = sprintf('%04d-%02d-01', $year, $month);
+        $monthEnd = date('Y-m-t', strtotime($monthStart));
+
         return Employee::with([
             'office:id,name,division_id',
             'office.division:id,code,name',
             'workSchedule:id,work_type_id,name,time_in,time_out',
             'workSchedule.workType:id,name',
+            'employeeTravelOrders' => function ($query) use ($monthStart, $monthEnd) {
+                $query->whereDate('start_date', '<=', $monthEnd)
+                    ->whereDate('end_date', '>=', $monthStart)
+                    ->orderBy('start_date');
+            },
             'attendances' => function ($query) use ($month, $year) {
                 $query->whereYear('date', $year)
                     ->whereMonth('date', $month)
@@ -360,9 +415,14 @@ class DailyTimeRecordRepository
             ->whereHas('office', function ($query) use ($officeName) {
                 $query->where('name', $officeName);
             })
-            ->whereHas('attendances', function ($query) use ($month, $year) {
-                $query->whereYear('date', $year)
-                    ->whereMonth('date', $month);
+            ->where(function ($query) use ($month, $year, $monthStart, $monthEnd) {
+                $query->whereHas('attendances', function ($query) use ($month, $year) {
+                    $query->whereYear('date', $year)
+                        ->whereMonth('date', $month);
+                })->orWhereHas('employeeTravelOrders', function ($query) use ($monthStart, $monthEnd) {
+                    $query->whereDate('start_date', '<=', $monthEnd)
+                        ->whereDate('end_date', '>=', $monthStart);
+                });
             })
             ->orderByName()
             ->paginate($perPage, ['*'], 'page', $page);

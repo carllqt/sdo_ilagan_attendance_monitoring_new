@@ -3,6 +3,7 @@
 namespace App\Models\Administrator;
 
 use App\Models\Biometric;
+use App\Models\EmployeeTravelOrder;
 use App\Models\HumanResource\HrTardinessConversion;
 use App\Models\HumanResource\SickLeave;
 use App\Models\HumanResource\VacationLeave;
@@ -115,6 +116,11 @@ class Employee extends Model
     public function vacationLeaves()
     {
         return $this->hasMany(VacationLeave::class);
+    }
+
+    public function employeeTravelOrders()
+    {
+        return $this->hasMany(EmployeeTravelOrder::class);
     }
 
     public function office()

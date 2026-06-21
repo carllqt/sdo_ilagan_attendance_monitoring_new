@@ -1,5 +1,4 @@
 import React from "react";
-import { router } from "@inertiajs/react";
 import { CalendarClock, CalendarDays, Eye, Hash, Users } from "lucide-react";
 import PaginationMain from "@/Components/PaginationMain";
 import { Button } from "@/components/ui/button";
@@ -12,66 +11,16 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { formatDateTime } from "../utils";
+import useBatchConvertedHistory from "../hooks/useBatchConvertedHistory";
 import BatchDetailsDialog from "./BatchDetailsDialog";
 
-const BatchConvertedHistory = ({
-    batches = {},
-    records = {},
-    selectedBatch = null,
-}) => {
-    const batchItems = batches?.data || [];
-
-    const handlePageChange = (page) => {
-        const query = new URLSearchParams(window.location.search);
-
-        query.set("batch_page", page);
-        query.set("batch_limit", batches?.per_page || 5);
-        query.delete("batch_id");
-
-        router.get(
-            route("converted-tardiness-record"),
-            Object.fromEntries(query),
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    };
-
-    const openBatchDetails = (batchId) => {
-        const query = new URLSearchParams(window.location.search);
-
-        query.set("batch_id", batchId);
-
-        router.get(
-            route("converted-tardiness-record"),
-            Object.fromEntries(query),
-            {
-                only: ["selectedBatch"],
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    };
-
-    const closeBatchDetails = () => {
-        const query = new URLSearchParams(window.location.search);
-
-        query.delete("batch_id");
-
-        router.get(
-            route("converted-tardiness-record"),
-            Object.fromEntries(query),
-            {
-                only: ["selectedBatch"],
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    };
+const BatchConvertedHistory = ({ batches = {}, selectedBatch = null }) => {
+    const {
+        batchItems,
+        closeBatchDetails,
+        handlePageChange,
+        openBatchDetails,
+    } = useBatchConvertedHistory({ batches });
 
     return (
         <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">

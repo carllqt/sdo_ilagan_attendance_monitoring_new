@@ -75,7 +75,7 @@ const StationAdminList = ({
                     </p>
                 </div>
 
-                <div ref={searchBoxRef} className="relative w-full max-w-sm">
+                <div ref={searchBoxRef} className="relative w-[340px] shrink-0">
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();

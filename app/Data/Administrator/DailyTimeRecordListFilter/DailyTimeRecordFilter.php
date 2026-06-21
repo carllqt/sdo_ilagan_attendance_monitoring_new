@@ -2,6 +2,7 @@
 
 namespace App\Data\Administrator\DailyTimeRecordListFilter;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DailyTimeRecordFilter
@@ -21,7 +22,7 @@ class DailyTimeRecordFilter
     public static function fromRequest(Request $request, int $stationId): self
     {
         $limit = (int) $request->query('limit', 10);
-        $month = (int) $request->query('month', now()->month);
+        $month = self::monthFromRequest($request);
         $year = (int) $request->query('year', now()->year);
 
         return new self(
@@ -29,10 +30,27 @@ class DailyTimeRecordFilter
             search: trim((string) $request->query('search', '')),
             officeName: trim((string) $request->query('office', 'all')),
             officeId: 'all',
-            month: $month >= 1 && $month <= 12 ? $month : now()->month,
+            month: $month,
             year: $year >= 2000 && $year <= 2100 ? $year : now()->year,
             limit: in_array($limit, self::LIMITS, true) ? $limit : 10,
         );
+    }
+
+    private static function monthFromRequest(Request $request): int
+    {
+        $month = $request->query('month', now()->month);
+
+        if (is_numeric($month)) {
+            $month = (int) $month;
+
+            return $month >= 1 && $month <= 12 ? $month : now()->month;
+        }
+
+        try {
+            return Carbon::parse("1 {$month}")->month;
+        } catch (\Throwable) {
+            return now()->month;
+        }
     }
 
     public function hasInvalidLimit(Request $request): bool

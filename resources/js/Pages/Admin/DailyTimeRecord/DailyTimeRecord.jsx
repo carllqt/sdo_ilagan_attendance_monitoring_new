@@ -1,4 +1,3 @@
-import React from "react";
 import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { CalendarClock } from "lucide-react";
@@ -13,6 +12,7 @@ import useDailyTimeRecordFilters from "./hooks/useDailyTimeRecordFilters";
 import useDailyTimeRecordModals from "./hooks/useDailyTimeRecordModals";
 import useDailyTimeRecordPageData from "./hooks/useDailyTimeRecordPageData";
 import useDailyTimeRecordRecompute from "./hooks/useDailyTimeRecordRecompute";
+import useTardinessComputation from "./hooks/useTardinessComputation";
 
 const Daily_Time_Record = ({
     time_record,
@@ -34,6 +34,7 @@ const Daily_Time_Record = ({
     editWorkScheduleModal = null,
     deleteWorkTypeModal = null,
     deleteWorkScheduleModal = null,
+    tardiness_status = null,
 }) => {
     const { currentMonth, currentYear, employees, sortedOffices } =
         useDailyTimeRecordPageData({
@@ -48,6 +49,12 @@ const Daily_Time_Record = ({
         openRecomputeDialog,
         recomputeEmployee,
     } = useDailyTimeRecordRecompute();
+    const { tardinessAnimationData, tardinessComputing } =
+        useTardinessComputation({
+            currentMonth,
+            currentYear,
+            tardinessStatus: tardiness_status,
+        });
     const {
         applyFilters,
         recordsLoading,
@@ -84,6 +91,7 @@ const Daily_Time_Record = ({
         departmentPrintModal,
         printDtrModal,
     });
+
     return (
         <AuthenticatedLayout
             header={
@@ -123,6 +131,8 @@ const Daily_Time_Record = ({
                     setSelectedYear={setSelectedYear}
                     applyFilters={applyFilters}
                     isLoading={recordsLoading}
+                    isComputingTardiness={tardinessComputing}
+                    tardinessAnimationData={tardinessAnimationData}
                     onPreviewEmployee={handlePreviewEmployee}
                     onPrintEmployee={(employee) => openPrintDialog([employee])}
                     onPrintDepartment={openDepartmentPrintDialog}

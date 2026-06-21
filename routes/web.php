@@ -16,8 +16,8 @@ use App\Http\Controllers\HumanResource\{
     SickLeaveController,
 };
 use App\Http\Controllers\AttendanceMonitoringController;
+use App\Http\Controllers\EmployeeProfileImageController;
 use App\Http\Controllers\ApplicationForLeaveController;
-use App\Http\Controllers\EmployeeLeaveController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SlipMonitoringController;
@@ -33,6 +33,10 @@ use App\Http\Controllers\TravelOrderController;
 
 
 Route::get('/', fn () => Inertia::render('LandingPage'))->name('landing');
+
+Route::get('/employee-profile-images/{filename}', [EmployeeProfileImageController::class, 'show'])
+    ->where('filename', '[^/]+')
+    ->name('employee-profile-images.show');
 
 Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'index'])->name('attendance-monitoring');
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
@@ -64,8 +68,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::get('/attendance-management', [AttendanceManagementController::class, 'index'])->name('attendance-management');
     Route::post('/attendance-management/{id}/update', [AttendanceManagementController::class, 'update'])->name('attendance-management.update');
     Route::post('/attendance-management/create', [AttendanceManagementController::class, 'store'])->name('attendance-management.create');
-    Route::post('/attendance/leave', [EmployeeLeaveController::class, 'store'])->name('attendance.leave.store');
-    Route::delete('/attendance/leave', [EmployeeLeaveController::class, 'destroy']);
+    Route::post('/attendance-management/travel-orders', [AttendanceManagementController::class, 'storeTravelOrder'])->name('attendance-management.travel-orders.store');
 
     // Daily Time Records
     Route::controller(DailyTimeRecordController::class)
@@ -74,6 +77,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
             Route::get('/', 'index')->name('daily-time-record');
             Route::get('/suggestions', 'suggestions')->name('daily-time-record.suggestions');
             Route::get('/offices', 'offices')->name('daily-time-record.offices');
+            Route::post('/tardiness/compute', 'computeTardiness')->name('daily-time-record.tardiness.compute');
             Route::get('/employees/{employeeId}/details', 'details')->name('daily-time-record.details');
             Route::post('/employees/{employeeId}/recompute', 'recompute')->name('daily-time-record.recompute');
             Route::post('/employees/{employeeId}/recompute/undo', 'undoRecompute')->name('daily-time-record.recompute.undo');

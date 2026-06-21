@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('employee_leaves', function (Blueprint $table) {
+        Schema::create('employee_travel_orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
-            $table->date('date');
-            $table->enum('leave_type', ['SL','VL','OB'])->default('SL');
+            $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
+            $table->date('start_date');
+            $table->date('end_date');
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('employee_leaves');
+        Schema::dropIfExists('employee_travel_orders');
     }
 };

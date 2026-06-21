@@ -57,7 +57,7 @@ const SchoolList = ({
             `}</style>
             <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <h2 className="text-base font-black">Schools</h2>
-                <div ref={searchBoxRef} className="relative w-96">
+                <div ref={searchBoxRef} className="relative w-[340px] shrink-0">
                     <form
                         onSubmit={(event) => {
                             event.preventDefault();

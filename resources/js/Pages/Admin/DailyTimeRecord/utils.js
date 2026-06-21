@@ -19,3 +19,24 @@ export const resolveCurrentDateParts = ({ month, year }) => {
     };
 };
 
+export const tardinessAnimationPath =
+    "/animations/daily_time_record_computation.lottie";
+
+let tardinessAnimationPromise = null;
+
+export const loadTardinessAnimationData = () => {
+    if (!tardinessAnimationPromise) {
+        tardinessAnimationPromise = fetch(tardinessAnimationPath, {
+            cache: "force-cache",
+        }).then((response) => {
+            if (!response.ok) {
+                throw new Error("Unable to load tardiness animation.");
+            }
+
+            return response.arrayBuffer();
+        });
+    }
+
+    return tardinessAnimationPromise;
+};
+

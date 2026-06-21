@@ -90,9 +90,7 @@ const EmployeeList = ({
                     <div className="flex items-start gap-4 ">
                         <div
                             ref={searchBoxRef}
-                            className={`relative w-full ${
-                                isSchoolAdmin ? "min-w-[360px]" : ""
-                            }`}
+                            className="relative w-[340px] shrink-0"
                         >
                             <FloatingInput
                                 label="Employee Name"
@@ -191,7 +189,7 @@ const EmployeeList = ({
                                     applyFilters({ officeValue: nextOffice });
                                 }}
                                 buttonVariant="outline"
-                                className="h-10 w-[360px] border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                                className="h-10 w-[180px] shrink-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                             />
                         )}
                     </div>

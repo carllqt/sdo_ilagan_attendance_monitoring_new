@@ -157,7 +157,7 @@ const ApplicationLeaveTable = ({
             >
                 <div className="grid gap-3 xl:grid-cols-[minmax(240px,1fr)_auto_auto_auto] xl:items-end">
                     <form
-                        className="relative"
+                        className="relative w-[340px] shrink-0"
                         onSubmit={(e) => {
                             e.preventDefault();
                             runFilter({ search: searchInput.trim() });
@@ -438,4 +438,3 @@ const ApplicationLeaveTable = ({
 };
 
 export default ApplicationLeaveTable;
-

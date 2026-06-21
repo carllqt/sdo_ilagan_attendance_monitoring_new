@@ -30,6 +30,7 @@ const useTardinessConversionManagement = ({
         filteredSummaryPayload,
         monthList,
         office,
+        offices,
         records,
         search,
         selectedFirstMonth,
