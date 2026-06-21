@@ -8,10 +8,7 @@ import {
     Clock3,
     FileCheck2,
     LogIn,
-    MapPinned,
-    Plane,
     ShieldCheck,
-    Umbrella,
 } from "lucide-react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 
@@ -32,33 +29,6 @@ const itemVariants = {
     },
 };
 
-const services = [
-    {
-        title: "Travel Order",
-        description:
-            "Prepare, submit, and monitor official travel requests from one secure workspace.",
-        routeName: "travel-order",
-        icon: Plane,
-        accent: "bg-blue-600 text-white",
-    },
-    {
-        title: "Locator Slip",
-        description:
-            "Create locator slips and keep employee movement records organized and traceable.",
-        routeName: "locator-slips",
-        icon: MapPinned,
-        accent: "bg-emerald-600 text-white",
-    },
-    {
-        title: "Application for Leave",
-        description:
-            "Prepare Civil Service Form No. 6 leave applications and print clean PDF copies.",
-        routeName: "application-leave",
-        icon: Umbrella,
-        accent: "bg-amber-600 text-white",
-    },
-];
-
 const highlights = [
     { label: "Attendance monitoring", icon: Clock3 },
     { label: "Biometric-based records", icon: ShieldCheck },
@@ -67,8 +37,8 @@ const highlights = [
 
 const movingText = [
     "Attendance monitoring",
-    "Locator slip requests",
-    "Travel order processing",
+    "Daily time records",
+    "Tardiness summaries",
     "Tardiness records",
     "Biometric logs",
     "Employee movement tracking",
@@ -160,10 +130,9 @@ export default function LandingPage() {
                             className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg"
                         >
                             TimeVault streamlines attendance monitoring,
-                            fingerprint-based logging, employee tracking,
-                            locator slip processing, and official travel
-                            management for SDO Ilagan through a faster, more
-                            secure, and fully modernized workflow.
+                            fingerprint-based logging, employee tracking, and
+                            tardiness management for SDO Ilagan through a
+                            faster, more secure, and fully modernized workflow.
                         </motion.p>
 
                         <motion.div
@@ -188,43 +157,31 @@ export default function LandingPage() {
                             variants={itemVariants}
                             className="mt-10 grid max-w-3xl gap-4 md:grid-cols-2"
                         >
-                            {services.map(
-                                ({
-                                    title,
-                                    description,
-                                    routeName,
-                                    icon: Icon,
-                                    accent,
-                                }) => (
-                                    <motion.div
-                                        key={title}
-                                        whileHover={{ y: -5 }}
-                                        whileTap={{ scale: 0.99 }}
-                                    >
-                                        <Link
-                                            href={route(routeName)}
-                                            className="group block rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-lg"
-                                        >
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div
-                                                    className={`flex h-12 w-12 items-center justify-center rounded-lg ${accent}`}
-                                                >
-                                                    <Icon className="h-6 w-6" />
-                                                </div>
+                            <motion.div
+                                whileHover={{ y: -5 }}
+                                whileTap={{ scale: 0.99 }}
+                            >
+                                <Link
+                                    href={route("attendance-monitoring")}
+                                    className="group block rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-lg"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-600 text-white">
+                                            <Clock3 className="h-6 w-6" />
+                                        </div>
 
-                                                <ArrowRight className="mt-2 h-5 w-5 text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-700" />
-                                            </div>
+                                        <ArrowRight className="mt-2 h-5 w-5 text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-700" />
+                                    </div>
 
-                                            <h2 className="mt-5 text-xl font-bold text-slate-950">
-                                                {title}
-                                            </h2>
-                                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                                {description}
-                                            </p>
-                                        </Link>
-                                    </motion.div>
-                                ),
-                            )}
+                                    <h2 className="mt-5 text-xl font-bold text-slate-950">
+                                        Attendance Monitoring
+                                    </h2>
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        View employee attendance records and
+                                        daily monitoring data.
+                                    </p>
+                                </Link>
+                            </motion.div>
                         </motion.div>
                     </div>
 
@@ -252,10 +209,10 @@ export default function LandingPage() {
                                 <div className="flex items-center justify-between gap-4">
                                     <div>
                                         <p className="text-sm font-semibold text-slate-500">
-                                            Public Services
+                                            Monitoring Tools
                                         </p>
                                         <p className="mt-1 text-2xl font-black text-slate-950">
-                                            3
+                                            1
                                         </p>
                                     </div>
                                     <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-700 text-white">
@@ -276,26 +233,26 @@ export default function LandingPage() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                                            Locator Slip
+                                            Attendance
                                         </p>
                                         <p className="mt-1 text-sm font-bold">
-                                            Movement request
+                                            Biometric logs
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                                            Travel Order
+                                            Records
                                         </p>
                                         <p className="mt-1 text-sm font-bold">
-                                            Official travel
+                                            Daily reports
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                                            Leave Form
+                                            Tardiness
                                         </p>
                                         <p className="mt-1 text-sm font-bold">
-                                            Form No. 6
+                                            Summaries
                                         </p>
                                     </div>
                                 </div>
@@ -385,4 +342,3 @@ export default function LandingPage() {
         </>
     );
 }
-

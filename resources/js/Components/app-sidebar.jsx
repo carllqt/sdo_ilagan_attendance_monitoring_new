@@ -18,7 +18,6 @@ import {
     LandPlot,
     Building2,
     Calculator,
-    ClipboardList,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -281,33 +280,6 @@ export function AppSidebar({ active, user, ...props }) {
                                                     }`}
                                                 />
                                                 Tardiness Summary
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-
-                                    <SidebarMenuSubItem>
-                                        <SidebarMenuSubButton
-                                            asChild
-                                            isActive={
-                                                active ===
-                                                "slip-monitoring.index"
-                                            }
-                                        >
-                                            <Link
-                                                href={route(
-                                                    "slip-monitoring.index",
-                                                )}
-                                                className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
-                                            >
-                                                <ClipboardList
-                                                    className={`h-4 w-4 ${
-                                                        active ===
-                                                        "slip-monitoring.index"
-                                                            ? "!text-black"
-                                                            : "!text-white"
-                                                    }`}
-                                                />
-                                                Slip Monitoring
                                             </Link>
                                         </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>

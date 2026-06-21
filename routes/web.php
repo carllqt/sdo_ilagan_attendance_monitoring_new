@@ -17,14 +17,10 @@ use App\Http\Controllers\HumanResource\{
 };
 use App\Http\Controllers\AttendanceMonitoringController;
 use App\Http\Controllers\EmployeeProfileImageController;
-use App\Http\Controllers\ApplicationForLeaveController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\SlipMonitoringController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\LocatorSlipController;
-use App\Http\Controllers\TravelOrderController;
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -42,19 +38,6 @@ Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'in
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
 
-
-Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])
-    ->name('locator-slips');
-Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])
-    ->name('locator-slips.store');
-Route::get('/travel-order', [TravelOrderController::class, 'index'])
-    ->name('travel-order');
-Route::post('/employee/travel-order', [TravelOrderController::class, 'store'])
-    ->name('travel-order.store');
-Route::get('/employee/application-leave', [ApplicationForLeaveController::class, 'index'])
-    ->name('application-leave');
-Route::post('/employee/application-leave', [ApplicationForLeaveController::class, 'store'])
-    ->name('application-leave.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -110,19 +93,10 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::post('/employeestore', [EmployeeManagementController::class, 'store'])->name('employees.store');
     Route::put('/employeeedit/{id}', [EmployeeManagementController::class, 'update'])->name('employees.update');
 
-
-
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/employee/locator-slip', [LocatorSlipController::class, 'index'])->name('locator-slips');
-        Route::post('/employee/locator-slip', [LocatorSlipController::class, 'store'])->name('locator-slips.store');
-    });
-
-
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/slip-monitoring', [SlipMonitoringController::class, 'index'])->name('slip-monitoring.index');
 });
 
 Route::middleware(['role:sdo_admin'])->group(function () {
