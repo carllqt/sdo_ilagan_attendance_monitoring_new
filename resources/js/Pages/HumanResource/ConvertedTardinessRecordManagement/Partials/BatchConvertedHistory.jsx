@@ -57,11 +57,12 @@ const BatchConvertedHistory = ({ batches = {}, selectedBatch = null }) => {
 
                     <TableBody>
                         {batchItems.length > 0 ? (
-                            batchItems.map((batch) => (
-                                <TableRow
-                                    key={batch.id}
-                                    className="transition hover:bg-blue-50"
-                                >
+                            <>
+                                {batchItems.map((batch) => (
+                                    <TableRow
+                                        key={batch.id}
+                                        className="transition hover:bg-blue-50"
+                                    >
                                     <TableCell>
                                         <div className="inline-flex items-center gap-2 font-bold text-slate-900">
                                             <Hash className="h-4 w-4" />
@@ -101,8 +102,9 @@ const BatchConvertedHistory = ({ batches = {}, selectedBatch = null }) => {
                                             View details
                                         </Button>
                                     </TableCell>
-                                </TableRow>
-                            ))
+                                    </TableRow>
+                                ))}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell

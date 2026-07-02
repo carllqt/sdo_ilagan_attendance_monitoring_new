@@ -19,7 +19,8 @@ class ConvertedTardinessRecordService
 
     public function pageData(Request $request): array
     {
-        $filter = ConvertedTardinessRecordFilter::fromRequest($request);
+        $filter = ConvertedTardinessRecordFilter::fromRequest($request)
+            ->withStationId($this->stationId($request));
         $records = $this->repository->paginatedRecords($filter);
         $monthlySummaries = $this->repository->monthlySummaries(
             $records->getCollection()->pluck('id'),
@@ -44,13 +45,14 @@ class ConvertedTardinessRecordService
             'limit' => $filter->limit,
             'search' => $filter->search,
             'year' => $filter->year,
-            'years' => fn () => $this->repository->availableYears(),
+            'years' => fn () => $this->repository->availableYears($filter),
         ];
     }
 
     public function suggestions(Request $request): array
     {
-        $filter = ConvertedTardinessRecordFilter::fromRequest($request);
+        $filter = ConvertedTardinessRecordFilter::fromRequest($request)
+            ->withStationId($this->stationId($request));
 
         return $this->repository
             ->suggestionEmployees($filter)
@@ -66,8 +68,9 @@ class ConvertedTardinessRecordService
             ->all();
     }
 
-    public function batchData(HrTardinessBatch $batch): array
+    public function batchData(Request $request, HrTardinessBatch $batch): array
     {
+        $stationId = $this->stationId($request);
         $start = Carbon::parse($batch->start_month);
         $end = Carbon::parse($batch->end_month);
 
@@ -76,8 +79,13 @@ class ConvertedTardinessRecordService
                 'id' => $batch->id,
                 'month_range' => $this->monthRangeLabel($start, $end),
             ],
-            'records' => $this->repository->batchRecords($batch),
+            'records' => $this->repository->batchRecords($batch, $stationId),
         ];
+    }
+
+    private function stationId(Request $request): ?int
+    {
+        return $request->user()?->employee?->station_id;
     }
 
     private function employeeRecordPayload(Employee $employee, $monthlySummaries): array
@@ -98,7 +106,7 @@ class ConvertedTardinessRecordService
             }
 
             $batchItems = $this->summaryBatchItems((string) $summary->batch_items);
-            $totalTardy = (float) $summary->total_tardy;
+            $totalTardy = $this->minutesToTardyDecimal((int) $summary->total_tardy_minutes);
             $endMonth = (int) $summary->end_month;
 
             $months[$month]['total_tardy'] = $totalTardy;
@@ -123,8 +131,26 @@ class ConvertedTardinessRecordService
             'employee' => $this->employeePayload($employee),
             'records' => $records->values(),
             'months' => $months,
-            'total_tardy' => $records->sum(fn (array $record) => (float) $record['total_tardy']),
+            'total_tardy' => $this->minutesToTardyDecimal(
+                $records->sum(fn (array $record) => $this->tardyDecimalToMinutes($record['total_tardy'])),
+            ),
         ];
+    }
+
+    private function tardyDecimalToMinutes($value): int
+    {
+        $value = (float) $value;
+        $hours = (int) floor($value);
+        $minutes = (int) round(($value - $hours) * 100);
+
+        return ($hours * 60) + $minutes;
+    }
+
+    private function minutesToTardyDecimal(int $minutes): float
+    {
+        $minutes = max($minutes, 0);
+
+        return (float) sprintf('%d.%02d', intdiv($minutes, 60), $minutes % 60);
     }
 
     private function summaryBatchItems(string $batchItems)
@@ -171,7 +197,10 @@ class ConvertedTardinessRecordService
             return null;
         }
 
-        $batch = $this->repository->batchDetails($batchId);
+        $batch = $this->repository->batchDetails(
+            $batchId,
+            $this->stationId($request),
+        );
 
         return $batch ? $this->batchDetailsPayload($batch) : null;
     }

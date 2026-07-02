@@ -66,7 +66,8 @@ const BatchDetailsDialog = ({ batch, onClose }) => {
                         </TableHeader>
                         <TableBody>
                             {batch?.employees?.length > 0 ? (
-                                batch.employees.map((record) => {
+                                <>
+                                    {batch.employees.map((record) => {
                                     const employee = record.employee || {};
                                     const employeeName =
                                         getEmployeeName(employee) || "-";
@@ -113,7 +114,8 @@ const BatchDetailsDialog = ({ batch, onClose }) => {
                                             </TableCell>
                                         </TableRow>
                                     );
-                                })
+                                    })}
+                                </>
                             ) : (
                                 <TableRow>
                                     <TableCell

@@ -29,6 +29,8 @@ const useOfficeHeadRows = ({ officeHeadLimit, officeHeadRows, officeSearch }) =>
         search,
         officeId = selectedOfficeId,
     } = {}) => {
+        if (isLoading) return;
+
         const params = new URLSearchParams(window.location.search);
         const nextSearch = search === undefined ? searchInput : search;
         const requestId = requestRef.current + 1;
@@ -98,21 +100,25 @@ const useOfficeHeadRows = ({ officeHeadLimit, officeHeadRows, officeSearch }) =>
     };
 
     const handlePageChange = (page) => {
+        if (isLoading) return;
         if (page < 1 || page > totalPages) return;
         loadRows({ page, officeId: selectedOfficeId });
     };
 
     const runSearch = (value, officeId = null) => {
+        if (isLoading) return;
         loadRows({ page: 1, search: value || "", officeId });
     };
 
     const updateSearchInput = (value) => {
+        if (isLoading) return;
         setSearchInput(value);
         setSelectedOfficeId(null);
     };
 
     const handleSearch = (event) => {
         event.preventDefault();
+        if (isLoading) return;
         runSearch(searchInput);
     };
 

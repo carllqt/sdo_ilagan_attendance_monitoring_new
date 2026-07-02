@@ -132,7 +132,8 @@ const DivisionHeadList = ({
                                 ),
                             )
                         ) : paginatedRows.length > 0 ? (
-                            paginatedRows.map((row) => {
+                            <>
+                                {paginatedRows.map((row) => {
                                 const emp = row.head?.employee;
 
                                 return (
@@ -226,6 +227,7 @@ const DivisionHeadList = ({
                                             {row.head ? (
                                                 <Button
                                                     size="icon"
+                                                    disabled={isLoading}
                                                     onClick={() =>
                                                         openDepartmentModal(
                                                             "delete-division-head",
@@ -243,6 +245,7 @@ const DivisionHeadList = ({
                                             ) : (
                                                 <Button
                                                     size="sm"
+                                                    disabled={isLoading}
                                                     className="min-w-[60px] border border-blue-600 bg-white text-blue-600 hover:bg-blue-600 hover:text-white"
                                                     onClick={() => {
                                                         openDepartmentModal(
@@ -262,7 +265,8 @@ const DivisionHeadList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -284,6 +288,7 @@ const DivisionHeadList = ({
                 to={endIndex}
                 total={totalEntries}
                 totalPages={totalPages}
+                disabled={isLoading}
             />
 
             <ConfirmPasswordDialog

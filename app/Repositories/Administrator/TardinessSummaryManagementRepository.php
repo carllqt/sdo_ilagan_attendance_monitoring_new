@@ -15,11 +15,9 @@ class TardinessSummaryManagementRepository
     {
         return Office::with('division:id,code,name')
             ->select('id', 'division_id', 'name')
-            ->when($filter->isSchoolAdmin, function ($query) use ($filter) {
-                $query->whereHas('employees', function ($employeeQuery) use ($filter) {
-                    $employeeQuery->where('active_status', 1);
-                    $this->scopeSchool($employeeQuery, $filter);
-                });
+            ->whereHas('employees', function ($employeeQuery) use ($filter) {
+                $employeeQuery->where('active_status', 1);
+                $this->scopeUserStation($employeeQuery, $filter);
             })
             ->orderBy('name')
             ->get();
@@ -29,9 +27,7 @@ class TardinessSummaryManagementRepository
     {
         return TardinessRecord::query()
             ->selectRaw('YEAR(date) as year')
-            ->when($filter->isSchoolAdmin, function ($query) use ($filter) {
-                $query->whereHas('employee', fn ($employeeQuery) => $this->scopeSchool($employeeQuery, $filter));
-            })
+            ->whereHas('employee', fn ($employeeQuery) => $this->scopeUserStation($employeeQuery, $filter))
             ->distinct()
             ->orderByDesc('year')
             ->pluck('year')
@@ -101,7 +97,9 @@ class TardinessSummaryManagementRepository
         [$from, $to] = $filter->dateRange();
 
         return TardinessRecord::query()
-            ->selectRaw('employee_id, MONTH(date) as month, SUM(COALESCE(converted_tardy, 0)) as total')
+            ->selectRaw(
+                'employee_id, MONTH(date) as month, '.$this->totalMinutesExpression().' as total_minutes',
+            )
             ->whereBetween('date', [$from, $to])
             ->whereIn('employee_id', $employeeIds)
             ->groupBy('employee_id', DB::raw('MONTH(date)'))
@@ -141,7 +139,7 @@ class TardinessSummaryManagementRepository
             ->whereHas('tardinessRecords', function ($query) use ($from, $to) {
                 $query->whereBetween('date', [$from, $to]);
             })
-            ->when($filter->isSchoolAdmin, fn ($query) => $this->scopeSchool($query, $filter))
+            ->tap(fn ($query) => $this->scopeUserStation($query, $filter))
             ->when($filter->search !== '', function ($query) use ($filter) {
                 $query->where(function ($query) use ($filter) {
                     $query->where('employees.id', $filter->search)
@@ -166,10 +164,17 @@ class TardinessSummaryManagementRepository
             ->orderByName();
     }
 
-    private function scopeSchool($query, TardinessSummaryFilter $filter)
+    private function scopeUserStation($query, TardinessSummaryFilter $filter)
     {
-        return $filter->schoolStationId
-            ? $query->where('employees.station_id', $filter->schoolStationId)
+        return $filter->userStationId
+            ? $query->where('employees.station_id', $filter->userStationId)
             : $query->whereRaw('1 = 0');
+    }
+
+    private function totalMinutesExpression(): string
+    {
+        $value = 'COALESCE(converted_tardy, 0)';
+
+        return "SUM((FLOOR({$value}) * 60) + ROUND(({$value} - FLOOR({$value})) * 100))";
     }
 }

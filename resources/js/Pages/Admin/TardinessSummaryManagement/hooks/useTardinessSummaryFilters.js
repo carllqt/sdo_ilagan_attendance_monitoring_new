@@ -67,6 +67,8 @@ const useTardinessSummaryFilters = ({
         searchValue = searchInput,
         yearValue = selectedYear,
     } = {}) => {
+        if (summaryLoading) return;
+
         const only = ["summary", "office", "search", "year"];
         const yearChanged = String(yearValue) !== String(selectedYear);
 
@@ -112,6 +114,8 @@ const useTardinessSummaryFilters = ({
     };
 
     const applyVerificationFilters = ({ pageValue = 1, stationValue } = {}) => {
+        if (verificationLoading) return;
+
         const stationName = resolveVerificationStationName(stationValue);
 
         reloadTardinessSummary(
@@ -129,6 +133,8 @@ const useTardinessSummaryFilters = ({
     };
 
     const loadPrintSummary = (options = {}) => {
+        if (summaryLoading) return;
+
         reloadTardinessSummary(currentQuery(), ["printSummary"], options);
     };
 

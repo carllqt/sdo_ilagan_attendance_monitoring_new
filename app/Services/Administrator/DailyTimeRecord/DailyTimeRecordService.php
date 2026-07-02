@@ -515,9 +515,29 @@ class DailyTimeRecordService
     {
         return $employee->attendances
             ->groupBy(fn ($attendance) => Carbon::parse($attendance->date)->format('Y-m'))
-            ->map(fn ($monthGroup) => $monthGroup->sum(
-                fn ($attendance) => $attendance->tardinessRecord->converted_tardy ?? 0,
+            ->map(fn ($monthGroup) => $this->minutesToTardyDecimal(
+                $monthGroup->sum(
+                    fn ($attendance) => $this->tardyDecimalToMinutes(
+                        $attendance->tardinessRecord->converted_tardy ?? 0,
+                    ),
+                ),
             ));
+    }
+
+    private function tardyDecimalToMinutes($value): int
+    {
+        $value = (float) $value;
+        $hours = (int) floor($value);
+        $minutes = (int) round(($value - $hours) * 100);
+
+        return ($hours * 60) + $minutes;
+    }
+
+    private function minutesToTardyDecimal(int $minutes): float
+    {
+        $minutes = max($minutes, 0);
+
+        return (float) sprintf('%d.%02d', intdiv($minutes, 60), $minutes % 60);
     }
 
     private function defaultSignatory(Employee $employee): array

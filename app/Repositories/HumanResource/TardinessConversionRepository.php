@@ -38,6 +38,9 @@ class TardinessConversionRepository
         string $endDate,
     ) {
         return $this->summaryQuery($startDate, $endDate)
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->where('employees.station_id', $filter->stationId);
+            })
             ->when($filter->officeId !== 'all', function ($query) use ($filter) {
                 $query->where('employees.office_id', $filter->officeId);
             })
@@ -90,6 +93,9 @@ class TardinessConversionRepository
         }
 
         return $this->summaryQuery($startDate, $endDate)
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->where('employees.station_id', $filter->stationId);
+            })
             ->when($filter->officeId !== 'all', function ($query) use ($filter) {
                 $query->where('employees.office_id', $filter->officeId);
             })
@@ -116,6 +122,9 @@ class TardinessConversionRepository
         }
 
         return $this->summaryQuery($startDate, $endDate)
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->where('employees.station_id', $filter->stationId);
+            })
             ->when($filter->officeId !== 'all', function ($query) use ($filter) {
                 $query->where('employees.office_id', $filter->officeId);
             })
@@ -140,6 +149,11 @@ class TardinessConversionRepository
     {
         return TardinessRecord::query()
             ->whereDoesntHave('tardinessConversions')
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->whereHas('employee', function ($employeeQuery) use ($filter) {
+                    $employeeQuery->where('station_id', $filter->stationId);
+                });
+            })
             ->when($filter->officeId !== 'all', function ($query) use ($filter) {
                 $query->whereHas('employee', function ($employeeQuery) use ($filter) {
                     $employeeQuery->where('office_id', $filter->officeId);
@@ -152,19 +166,37 @@ class TardinessConversionRepository
             ->get();
     }
 
-    public function officeOptions(): Collection
+    public function officeOptions(?int $stationId = null): Collection
     {
         return Office::with('division:id,code,name')
+            ->when($stationId, function ($query) use ($stationId) {
+                $query->whereHas('employees', function ($employeeQuery) use ($stationId) {
+                    $employeeQuery->where('station_id', $stationId);
+                });
+            })
             ->orderBy('name')
             ->get();
     }
 
-    public function recordIdsForSummary(array $summary): Collection
+    public function recordIdsForSummary(array $summary, ?int $stationId = null): Collection
     {
         return TardinessRecord::where('employee_id', $summary['employee_id'])
             ->whereBetween('date', [$summary['start_month'], $summary['end_month']])
             ->whereDoesntHave('tardinessConversions')
+            ->when($stationId, function ($query) use ($stationId) {
+                $query->whereHas('employee', function ($employeeQuery) use ($stationId) {
+                    $employeeQuery->where('station_id', $stationId);
+                });
+            })
             ->pluck('id');
+    }
+
+    public function employeeBelongsToStation(int $employeeId, int $stationId): bool
+    {
+        return DB::table('employees')
+            ->where('id', $employeeId)
+            ->where('station_id', $stationId)
+            ->exists();
     }
 
     public function conversionModal(string $type, int $id): ?array

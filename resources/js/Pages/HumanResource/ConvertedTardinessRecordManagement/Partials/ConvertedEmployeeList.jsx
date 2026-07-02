@@ -279,7 +279,8 @@ const ConvertedEmployeeList = ({
                                 ),
                             )
                         ) : recordItems.length > 0 ? (
-                            recordItems.map((record) => {
+                            <>
+                                {recordItems.map((record) => {
                                 const employee = record.employee || {};
                                 const employeeName =
                                     getEmployeeName(employee) || "-";
@@ -315,7 +316,8 @@ const ConvertedEmployeeList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell

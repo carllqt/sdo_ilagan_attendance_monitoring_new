@@ -31,6 +31,7 @@ const TravelOrderTable = ({
     years = [],
     onAddTravelOrder,
     onFilterChange,
+    isLoading = false,
 }) => {
     const items = records.data || [];
     const [searchInput, setSearchInput] = useState(filters.search || "");
@@ -82,7 +83,7 @@ const TravelOrderTable = ({
         suggestionMatches,
         suggestionsLoading,
     } = useEmployeeSearchSuggestions({
-        enabled: Boolean(searchInput.trim()),
+        enabled: !isLoading && Boolean(searchInput.trim()),
         query: searchInput,
     });
 
@@ -91,6 +92,8 @@ const TravelOrderTable = ({
     }, [filters.search]);
 
     const applySearch = (value = searchInput) => {
+        if (isLoading) return;
+
         onFilterChange({
             search: String(value || "").trim(),
             page: 1,
@@ -99,6 +102,8 @@ const TravelOrderTable = ({
     };
 
     const selectSuggestion = (employee) => {
+        if (isLoading) return;
+
         setSearchInput(employee.label);
         applySearch(`${employee.id} ${employee.label}`);
     };
@@ -123,6 +128,7 @@ const TravelOrderTable = ({
                             icon={Search}
                             name="travel_order_search"
                             value={searchInput}
+                            disabled={isLoading}
                             onChange={(event) => {
                                 setSearchInput(event.target.value);
                                 setShowSuggestions(true);
@@ -183,6 +189,7 @@ const TravelOrderTable = ({
                         label="Select Day"
                         items={days}
                         selected={selectedDay}
+                        disabled={isLoading}
                         onChange={(day) =>
                             onFilterChange({
                                 day: Number(day),
@@ -196,6 +203,7 @@ const TravelOrderTable = ({
                         label="Select Month"
                         items={months}
                         selected={selectedMonth}
+                        disabled={isLoading}
                         onChange={(month) =>
                             onFilterChange({
                                 month,
@@ -214,6 +222,7 @@ const TravelOrderTable = ({
                         label="Select Year"
                         items={years}
                         selected={selectedYear}
+                        disabled={isLoading}
                         onChange={(year) =>
                             onFilterChange({
                                 year,
@@ -233,6 +242,7 @@ const TravelOrderTable = ({
                         items={officeItems}
                         selected={selectedOffice.id}
                         buttonLabel={officeButtonLabel}
+                        disabled={isLoading}
                         onChange={(officeId) =>
                             onFilterChange({
                                 office:
@@ -250,6 +260,7 @@ const TravelOrderTable = ({
                     <Button
                         type="button"
                         className="h-10 shrink-0 gap-2 bg-blue-700 text-white hover:bg-blue-800"
+                        disabled={isLoading}
                         onClick={onAddTravelOrder}
                     >
                         <Plus className="h-4 w-4" />
@@ -281,7 +292,8 @@ const TravelOrderTable = ({
                     </TableHeader>
                     <TableBody>
                         {items.length > 0 ? (
-                            items.map((travelOrder) => {
+                            <>
+                                {items.map((travelOrder) => {
                                 const employee = travelOrder.employee || {};
                                 const employeeName = getEmployeeName(employee);
                                 const startDate = dayjs(travelOrder.start_date);
@@ -329,7 +341,8 @@ const TravelOrderTable = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -347,6 +360,7 @@ const TravelOrderTable = ({
             <PaginationMain
                 pagination={records}
                 entryLabel="travel orders"
+                disabled={isLoading}
                 onPageChange={(page) => onFilterChange({ page })}
             />
         </div>

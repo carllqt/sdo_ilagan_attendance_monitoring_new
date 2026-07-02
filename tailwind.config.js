@@ -75,6 +75,27 @@ export default {
                     ring: "hsl(var(--sidebar-ring))",
                 },
             },
+            keyframes: {
+                meteor: {
+                    "0%": {
+                        transform: "translate3d(80px, -40px, 0) rotate(-28deg)",
+                        opacity: "0",
+                    },
+                    "8%": {
+                        opacity: "1",
+                    },
+                    "70%": {
+                        opacity: "1",
+                    },
+                    "100%": {
+                        transform: "translate3d(-720px, 360px, 0) rotate(-28deg)",
+                        opacity: "0",
+                    },
+                },
+            },
+            animation: {
+                meteor: "meteor 5s linear infinite",
+            },
         },
     },
 

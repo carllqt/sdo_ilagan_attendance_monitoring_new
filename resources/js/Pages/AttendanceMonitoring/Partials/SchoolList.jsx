@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { ChevronUp, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
 import FloatingInput from "@/components/floating-input";
 import useSearchSuggestions from "../hooks/useSearchSuggestions";
 
@@ -11,6 +11,7 @@ const SchoolList = ({
     stations,
 }) => {
     const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+    const [showSchoolFilter, setShowSchoolFilter] = useState(true);
     const {
         searchBoxRef,
         showSuggestions,
@@ -48,157 +49,206 @@ const SchoolList = ({
     };
 
     return (
-        <div className="mb-10">
+        <div
+            className={
+                showSchoolFilter ? "relative z-30 mb-5" : "relative z-30 mb-2"
+            }
+        >
             <style>{`
                 @keyframes school-drift {
                     from { transform: translateX(0); }
                     to { transform: translateX(-50%); }
                 }
             `}</style>
-            <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <h2 className="text-base font-black">Schools</h2>
-                <div ref={searchBoxRef} className="relative w-[340px] shrink-0">
-                    <form
-                        onSubmit={(event) => {
-                            event.preventDefault();
+            <div
+                className={`relative z-40 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between ${
+                    showSchoolFilter ? "mb-3" : "mb-0"
+                }`}
+            >
+                {showSchoolFilter ? (
+                    <h2 className="text-base font-black text-white">Schools</h2>
+                ) : (
+                    <div />
+                )}
 
-                            if (suggestionMatches.length > 0) {
-                                selectSuggestion(suggestionMatches[0]);
-                            }
-                        }}
-                        className="relative"
-                    >
-                        <FloatingInput
-                            label="Search Station"
-                            icon={Search}
-                            name="attendance_station_search"
-                            value={stationSearch}
-                            onChange={(event) => {
-                                const value = event.target.value;
-
-                                setStationSearch(value);
-                                if (!value.trim()) {
-                                    setSelectedSuggestion(null);
-                                }
-                                setShowSuggestions(true);
-                            }}
-                            onKeyDown={(event) => {
-                                if (
-                                    event.key === "Enter" &&
-                                    suggestionMatches.length > 0
-                                ) {
+                <div className="flex items-center gap-3">
+                    {showSchoolFilter ? (
+                        <div
+                            ref={searchBoxRef}
+                            className="relative z-50 w-[340px] shrink-0"
+                        >
+                            <form
+                                onSubmit={(event) => {
                                     event.preventDefault();
-                                    selectSuggestion(suggestionMatches[0]);
-                                }
-                            }}
-                        />
-                        {stationSearch ? (
-                            <button
-                                type="button"
-                                onClick={clearSearch}
-                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-[#141b6d] hover:text-white"
-                                aria-label="Clear station search"
+
+                                    if (suggestionMatches.length > 0) {
+                                        selectSuggestion(suggestionMatches[0]);
+                                    }
+                                }}
+                                className="relative"
                             >
-                                <X className="h-3 w-3" />
-                            </button>
-                        ) : null}
-                    </form>
+                                <FloatingInput
+                                    label="Station Name"
+                                    icon={Search}
+                                    name="attendance_station_search"
+                                    value={stationSearch}
+                                    variant="glass"
+                                    onChange={(event) => {
+                                        const value = event.target.value;
 
-                    {showSuggestions && stationSearch.trim() ? (
-                        <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
-                            <div className="border-b bg-[#f4f6ff] px-3 py-2 text-xs font-semibold uppercase text-[#141b6d]">
-                                Results for "{stationSearch.trim()}"
-                            </div>
+                                        setStationSearch(value);
+                                        if (!value.trim()) {
+                                            setSelectedSuggestion(null);
+                                        }
+                                        setShowSuggestions(true);
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key === "Enter" &&
+                                            suggestionMatches.length > 0
+                                        ) {
+                                            event.preventDefault();
+                                            selectSuggestion(
+                                                suggestionMatches[0],
+                                            );
+                                        }
+                                    }}
+                                />
+                                {stationSearch ? (
+                                    <button
+                                        type="button"
+                                        onClick={clearSearch}
+                                        className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-[#141b6d] hover:text-white"
+                                        aria-label="Clear station search"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                ) : null}
+                            </form>
 
-                            <div className="max-h-72 overflow-y-auto">
-                                {suggestionsLoading ? (
-                                    <div className="flex items-center gap-3 px-3 py-4 text-sm text-slate-500">
-                                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef1ff] text-[#141b6d]">
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        </span>
-                                        <div>
-                                            <div className="font-medium text-slate-700">
-                                                Searching stations...
-                                            </div>
-                                            <div className="text-xs text-slate-400">
-                                                Checking names and codes
-                                            </div>
-                                        </div>
+                            {showSuggestions && stationSearch.trim() ? (
+                                <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+                                    <div className="border-b bg-[#f4f6ff] px-3 py-2 text-xs font-semibold uppercase text-[#141b6d]">
+                                        Results for "{stationSearch.trim()}"
                                     </div>
-                                ) : suggestionMatches.length > 0 ? (
-                                    suggestionMatches.map((station) => (
-                                        <button
-                                            key={station.id}
-                                            type="button"
-                                            onMouseDown={() =>
-                                                selectSuggestion(station)
-                                            }
-                                            className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-[#f4f6ff]"
-                                        >
-                                            <div className="min-w-0">
-                                                <div className="truncate font-medium text-slate-800">
-                                                    {station.name}
-                                                </div>
-                                                <div className="truncate text-xs text-slate-500">
-                                                    {station.code || "No code"}
+
+                                    <div className="max-h-72 overflow-y-auto">
+                                        {suggestionsLoading ? (
+                                            <div className="flex items-center gap-3 px-3 py-4 text-sm text-slate-500">
+                                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef1ff] text-[#141b6d]">
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                </span>
+                                                <div>
+                                                    <div className="font-medium text-slate-700">
+                                                        Searching stations...
+                                                    </div>
+                                                    <div className="text-xs text-slate-400">
+                                                        Checking names and codes
+                                                    </div>
                                                 </div>
                                             </div>
+                                        ) : suggestionMatches.length > 0 ? (
+                                            suggestionMatches.map((station) => (
+                                                <button
+                                                    key={station.id}
+                                                    type="button"
+                                                    onMouseDown={() =>
+                                                        selectSuggestion(
+                                                            station,
+                                                        )
+                                                    }
+                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-[#f4f6ff]"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="truncate font-medium text-slate-800">
+                                                            {station.name}
+                                                        </div>
+                                                        <div className="truncate text-xs text-slate-500">
+                                                            {station.code ||
+                                                                "No code"}
+                                                        </div>
+                                                    </div>
 
-                                            <span className="shrink-0 rounded-full bg-[#eef1ff] px-2 py-1 text-[11px] font-semibold text-[#141b6d]">
-                                                Select
-                                            </span>
-                                        </button>
-                                    ))
-                                ) : (
-                                    <div className="px-3 py-4 text-sm text-slate-500">
-                                        No station matches found.
+                                                    <span className="shrink-0 rounded-full bg-[#eef1ff] px-2 py-1 text-[11px] font-semibold text-[#141b6d]">
+                                                        Select
+                                                    </span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-4 text-sm text-slate-500">
+                                                No station matches found.
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            ) : null}
                         </div>
                     ) : null}
+
+                    <button
+                        type="button"
+                        onClick={() => setShowSchoolFilter((value) => !value)}
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/35 bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(120,119,255,0.34))] text-white shadow-[0_0_16px_rgba(167,139,250,0.42),inset_0_1px_0_rgba(255,255,255,0.36)] ring-1 ring-violet-200/25 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/25"
+                        title={
+                            showSchoolFilter
+                                ? "Hide school filter"
+                                : "Show school filter"
+                        }
+                        aria-label={
+                            showSchoolFilter
+                                ? "Hide school filter"
+                                : "Show school filter"
+                        }
+                    >
+                        {showSchoolFilter ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                        ) : (
+                            <SlidersHorizontal className="h-3.5 w-3.5" />
+                        )}
+                    </button>
                 </div>
             </div>
-            <div className="relative overflow-hidden">
-                <div className="pointer-events-none absolute left-0 top-0 h-full" />
-                <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white to-transparent" />
-                <div
-                    className="flex w-max flex-nowrap items-center gap-3"
-                    style={{
-                        animation:
-                            stationTabs.length > 5
-                                ? "school-drift 750s linear infinite"
-                                : "none",
-                    }}
-                >
-                    {stationGroups.map((group) => (
-                        <div
-                            key={group}
-                            className="flex shrink-0 flex-nowrap items-center gap-3"
-                            aria-hidden={group === 1}
-                        >
-                            {stationTabs.map((station) => (
-                                <button
-                                    key={`${group}-${station.id}`}
-                                    type="button"
-                                    onClick={() => selectStation(station)}
-                                    className={`shrink-0 rounded-lg border px-5 py-3 text-xs font-black shadow-sm ${
-                                        String(selectedStation) ===
-                                        String(station.id)
-                                            ? "border-[#141b6d] bg-[#141b6d] text-white"
-                                            : "border-slate-200 bg-white text-[#070d3f]"
-                                    }`}
-                                >
-                                    {station.name}
-                                </button>
-                            ))}
-                        </div>
-                    ))}
+            {showSchoolFilter ? (
+                <div className="relative z-30 overflow-hidden py-1">
+                    <div className="pointer-events-none absolute left-0 top-0 h-full" />
+                    <div className="pointer-events-none absolute right-0 top-0 z-20 h-full w-8 bg-gradient-to-l from-[#2734a7]/80 to-transparent" />
+                    <div
+                        className="relative z-10 flex w-max flex-nowrap items-center gap-3"
+                        style={{
+                            animation:
+                                stationTabs.length > 5
+                                    ? "school-drift 750s linear infinite"
+                                    : "none",
+                        }}
+                    >
+                        {stationGroups.map((group) => (
+                            <div
+                                key={group}
+                                className="relative flex shrink-0 flex-nowrap items-center gap-3"
+                                aria-hidden={group === 1}
+                            >
+                                {stationTabs.map((station) => (
+                                    <button
+                                        key={`${group}-${station.id}`}
+                                        type="button"
+                                        onClick={() => selectStation(station)}
+                                        className={`relative z-0 shrink-0 rounded-lg border px-5 py-3 text-xs font-black transition hover:z-30 hover:-translate-y-0.5 ${
+                                            String(selectedStation) ===
+                                            String(station.id)
+                                                ? "border-white/35 bg-[linear-gradient(135deg,rgba(255,255,255,0.34),rgba(120,119,255,0.46))] text-white shadow-[0_0_18px_rgba(167,139,250,0.58),inset_0_1px_0_rgba(255,255,255,0.42)] ring-1 ring-violet-200/45"
+                                                : "border-white/25 bg-transparent text-white shadow-sm backdrop-blur hover:bg-white/10 hover:text-white"
+                                        }`}
+                                    >
+                                        {station.name}
+                                    </button>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            ) : null}
         </div>
     );
 };
 
 export default SchoolList;
-

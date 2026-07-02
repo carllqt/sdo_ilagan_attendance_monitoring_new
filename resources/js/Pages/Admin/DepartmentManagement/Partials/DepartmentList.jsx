@@ -89,6 +89,7 @@ const DepartmentList = ({
                     <div className="flex flex-wrap items-center justify-end gap-2">
                         <Button
                             onClick={() => openDepartmentModal("add-office")}
+                            disabled={officeLoading}
                             className="bg-blue-600 text-white hover:bg-blue-700"
                         >
                             + Add Office
@@ -174,7 +175,8 @@ const DepartmentList = ({
                                     ),
                                 )
                             ) : officeRows.length > 0 ? (
-                                officeRows.map((office) => {
+                                <>
+                                    {officeRows.map((office) => {
                                     return (
                                         <TableRow key={office.id}>
                                             <TableCell className="p-3">
@@ -200,6 +202,7 @@ const DepartmentList = ({
                                             <TableCell className="p-3 text-center">
                                                 <div className="flex justify-center gap-2">
                                                     <Button
+                                                        disabled={officeLoading}
                                                         onClick={() =>
                                                             openDepartmentModal(
                                                                 "edit-office",
@@ -217,6 +220,7 @@ const DepartmentList = ({
                                                     </Button>
 
                                                     <Button
+                                                        disabled={officeLoading}
                                                         onClick={() =>
                                                             openDepartmentModal(
                                                                 "delete-office",
@@ -236,7 +240,8 @@ const DepartmentList = ({
                                             </TableCell>
                                         </TableRow>
                                     );
-                                })
+                                    })}
+                                </>
                             ) : (
                                 <TableRow>
                                     <TableCell
@@ -260,6 +265,7 @@ const DepartmentList = ({
                     to={officeList?.to || 0}
                     total={officeList?.total || 0}
                     totalPages={totalOfficePages}
+                    disabled={officeLoading}
                 />
             </div>
 
@@ -426,6 +432,7 @@ const DepartmentList = ({
 
                         <Button
                             onClick={() => openDepartmentModal("add-division")}
+                            disabled={divisionLoading}
                             className="bg-blue-600 text-white hover:bg-blue-700"
                         >
                             + Add Division
@@ -469,8 +476,9 @@ const DepartmentList = ({
                                         </TableRow>
                                     ))
                                 ) : divisionRows.length > 0 ? (
-                                    divisionRows.map((division) => (
-                                        <TableRow key={division.id}>
+                                    <>
+                                        {divisionRows.map((division) => (
+                                            <TableRow key={division.id}>
                                             <TableCell className="p-3">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-300">
@@ -494,6 +502,9 @@ const DepartmentList = ({
                                             <TableCell className="p-3 text-center">
                                                 <div className="flex justify-center gap-2">
                                                     <Button
+                                                        disabled={
+                                                            divisionLoading
+                                                        }
                                                         onClick={() =>
                                                             openDepartmentModal(
                                                                 "edit-division",
@@ -527,6 +538,9 @@ const DepartmentList = ({
                                                         processingText="Deleting..."
                                                         trigger={
                                                             <Button
+                                                                disabled={
+                                                                    divisionLoading
+                                                                }
                                                                 className="h-8 w-8 rounded-full bg-red-100 text-red-600 hover:bg-red-600 hover:text-white"
                                                                 size="icon"
                                                                 title="Delete Division"
@@ -537,8 +551,9 @@ const DepartmentList = ({
                                                     />
                                                 </div>
                                             </TableCell>
-                                        </TableRow>
-                                    ))
+                                            </TableRow>
+                                        ))}
+                                    </>
                                 ) : (
                                     <TableRow>
                                         <TableCell
@@ -562,6 +577,7 @@ const DepartmentList = ({
                         to={divisionList?.to || 0}
                         total={divisionList?.total || 0}
                         totalPages={totalDivisionPages}
+                        disabled={divisionLoading}
                     />
                 </div>
             </div>

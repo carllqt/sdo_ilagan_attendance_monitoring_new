@@ -8,7 +8,7 @@ last_scan_times = {}
 
 COOLDOWN_SECONDS =0
 
-async def login_with_fingerprint(service):
+async def login_with_fingerprint(service, station_id=None):
     """Handles fingerprint login and attendance recording asynchronously with SSE."""
 
     AM_CUTOFF_HOUR = 13
@@ -82,9 +82,11 @@ async def login_with_fingerprint(service):
 
                 # 🔹 Fetch employee info first
                 service.cursor.execute("""
-                    SELECT e.id, e.first_name, e.middle_name, e.last_name, e.position, e.work_type, o.id, o.name
+                    SELECT e.id, e.first_name, e.middle_name, e.last_name, e.position, wt.name, o.id, o.name, e.station_id
                     FROM employees e
                     LEFT JOIN offices o ON o.id = e.office_id
+                    LEFT JOIN work_schedules ws ON ws.id = e.work_schedule_id
+                    LEFT JOIN work_types wt ON wt.id = ws.work_type_id
                     WHERE e.id=%s
                 """, (employee_id,))
                 emp_row = service.cursor.fetchone()
@@ -103,7 +105,12 @@ async def login_with_fingerprint(service):
                         "id": emp_row[6],
                         "name": emp_row[7],
                     } if emp_row[6] else None,
+                    "station_id": emp_row[8],
                 }
+
+                if station_id is not None and int(emp_row[8] or 0) != int(station_id):
+                    yield f"data: {json.dumps({'success': False, 'message': 'Employee is not assigned to this station.', 'employee': employee_data})}\n\n"
+                    continue
 
                 # ✅ Cooldown check AFTER employee_data exists
                 if employee_id in last_scan_times:

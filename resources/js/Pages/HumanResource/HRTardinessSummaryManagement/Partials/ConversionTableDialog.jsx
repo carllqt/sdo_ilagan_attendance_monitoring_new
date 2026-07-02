@@ -35,32 +35,34 @@ const ConversionTableDialog = ({
 
     const renderRows = (rows) =>
         rows.length > 0 ? (
-            rows.map((item) => (
-                <TableRow key={item.id || `${valueKey}-${item[valueKey]}`}>
-                    <TableCell className="p-3 text-center font-medium text-slate-800">
-                        {item[valueKey]}
-                    </TableCell>
-                    <TableCell className="p-3 text-center text-slate-700">
-                        {Number(item.equivalent_days || 0).toFixed(3)}
-                    </TableCell>
-                    <TableCell className="p-3 text-center">
-                        <Button
-                            type="button"
-                            size="sm"
-                            className={`mx-auto flex h-7 min-w-[68px] items-center justify-center gap-1 border bg-white px-2 text-xs ${
-                                isGreen
-                                    ? "border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white"
-                                    : "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-                            }`}
-                            onClick={() => onOpenEdit?.(item, valueKey)}
-                            title={`Edit ${title} Conversion`}
-                        >
-                            <SquarePen className="h-3.5 w-3.5" />
-                            Edit
-                        </Button>
-                    </TableCell>
-                </TableRow>
-            ))
+            <>
+                {rows.map((item) => (
+                    <TableRow key={item.id || `${valueKey}-${item[valueKey]}`}>
+                        <TableCell className="p-3 text-center font-medium text-slate-800">
+                            {item[valueKey]}
+                        </TableCell>
+                        <TableCell className="p-3 text-center text-slate-700">
+                            {Number(item.equivalent_days || 0).toFixed(3)}
+                        </TableCell>
+                        <TableCell className="p-3 text-center">
+                            <Button
+                                type="button"
+                                size="sm"
+                                className={`mx-auto flex h-7 min-w-[68px] items-center justify-center gap-1 border bg-white px-2 text-xs ${
+                                    isGreen
+                                        ? "border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white"
+                                        : "border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                                }`}
+                                onClick={() => onOpenEdit?.(item, valueKey)}
+                                title={`Edit ${title} Conversion`}
+                            >
+                                <SquarePen className="h-3.5 w-3.5" />
+                                Edit
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </>
         ) : (
             <TableRow>
                 <TableCell

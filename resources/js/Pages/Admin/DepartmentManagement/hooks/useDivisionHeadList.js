@@ -16,6 +16,7 @@ const useDivisionHeadList = ({
     const endIndex = divisionHeadRows?.to || 0;
 
     const handlePageChange = (page) => {
+        if (isLoading) return;
         if (page < 1 || page > totalPages) return;
 
         const query = new URLSearchParams(window.location.search);

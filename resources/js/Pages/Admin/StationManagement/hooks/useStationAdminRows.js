@@ -68,6 +68,8 @@ const useStationAdminRows = ({
     }, []);
 
     const loadAdminRows = (overrides = {}) => {
+        if (isLoading) return;
+
         const params = new URLSearchParams(window.location.search);
 
         params.set("admin_page", overrides.admin_page || activePage);
@@ -121,12 +123,15 @@ const useStationAdminRows = ({
     };
 
     const handlePageChange = (page) => {
+        if (isLoading) return;
         if (page < 1 || page > totalPages) return;
 
         loadAdminRows({ admin_page: page });
     };
 
     const submitSearch = (value) => {
+        if (isLoading) return;
+
         loadAdminRows({
             admin_page: 1,
             search: value?.trim() || "",

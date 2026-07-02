@@ -83,20 +83,27 @@ const EmployeeList = ({
                             name="search"
                             value={searchInput}
                             onChange={(event) => {
+                                if (isLoading) return;
+
                                 setSearchInput(event.target.value);
                                 setShowSuggestions(true);
                             }}
-                            onFocus={() => setShowSuggestions(true)}
+                            onFocus={() => {
+                                if (!isLoading) setShowSuggestions(true);
+                            }}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") {
                                     event.preventDefault();
+                                    if (isLoading) return;
+
                                     applySearch(searchInput);
                                     setShowSuggestions(false);
                                 }
                             }}
+                            disabled={isLoading}
                         />
 
-                        {showSuggestions && searchInput.trim() ? (
+                        {showSuggestions && searchInput.trim() && !isLoading ? (
                             <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                 <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                     Results for "{searchInput.trim()}"
@@ -109,10 +116,13 @@ const EmployeeList = ({
                                             <button
                                                 key={employee.id}
                                                 type="button"
-                                                onMouseDown={() =>
-                                                    selectSuggestion(employee)
-                                                }
-                                                className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                disabled={isLoading}
+                                                onMouseDown={() => {
+                                                    if (isLoading) return;
+
+                                                    selectSuggestion(employee);
+                                                }}
+                                                className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-60"
                                             >
                                                 <div className="min-w-0">
                                                     <div className="truncate font-medium text-slate-800">
@@ -146,6 +156,7 @@ const EmployeeList = ({
                         items={monthList}
                         selected={selectedFirstMonth}
                         onChange={setSelectedFirstMonth}
+                        disabled={isLoading}
                         buttonVariant="outline"
                         className="h-10 w-[130px] min-w-0 truncate border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     />
@@ -157,6 +168,7 @@ const EmployeeList = ({
                         items={secondMonthList}
                         selected={selectedSecondMonth}
                         onChange={setSelectedSecondMonth}
+                        disabled={isLoading}
                         buttonVariant="outline"
                         className="h-10 w-[130px] min-w-0 truncate border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     />
@@ -166,6 +178,7 @@ const EmployeeList = ({
                         selected={selectedOffice}
                         buttonLabel={officeButtonLabel}
                         onChange={setSelectedOffice}
+                        disabled={isLoading}
                         buttonVariant="outline"
                         className="h-10 w-[180px] shrink-0 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     />
@@ -262,7 +275,8 @@ const EmployeeList = ({
                                 ),
                             )
                         ) : groupedByEmployee.length > 0 ? (
-                            groupedByEmployee.map((record, idx) => {
+                            <>
+                                {groupedByEmployee.map((record, idx) => {
                                 const employeeName = getEmployeeName(record);
 
                                 return (
@@ -321,7 +335,8 @@ const EmployeeList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -340,6 +355,7 @@ const EmployeeList = ({
                 onPageChange={onPageChange}
                 pagination={pagination}
                 totalPages={pagination?.last_page || 1}
+                disabled={isLoading}
             />
         </div>
     );

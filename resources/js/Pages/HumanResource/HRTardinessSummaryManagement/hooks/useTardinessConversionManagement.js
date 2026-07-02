@@ -44,6 +44,8 @@ const useTardinessConversionManagement = ({
     });
 
     const handleSuggestionSelect = (suggestion) => {
+        if (filters.isLoading) return;
+
         const nextValue = suggestion.search || suggestion.label || "";
 
         filters.setSearchInput(nextValue);

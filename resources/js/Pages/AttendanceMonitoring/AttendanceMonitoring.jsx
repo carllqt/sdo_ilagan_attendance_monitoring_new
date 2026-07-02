@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, router } from "@inertiajs/react";
 
+import TalaBackground from "@/Components/TalaBackground";
 import Header from "./Partials/Header";
 import EmployeeList from "./Partials/EmployeeList";
 import { getEmployeeName, sortAlphabetically } from "@/lib/utils";
@@ -36,6 +37,9 @@ const AttendanceMonitoring = ({
     employees = {},
     filters = {},
     stations = [],
+    recentLogs = [],
+    topFirstTimeIns = [],
+    travelOrders = [],
 }) => {
     const stationList = useMemo(
         () => sortAlphabetically(toArray(stations), "name"),
@@ -45,6 +49,8 @@ const AttendanceMonitoring = ({
     const [search, setSearch] = useState(filters.search || "");
     const [stationSearch, setStationSearch] = useState("");
     const [time, setTime] = useState(new Date());
+    const requestInFlightRef = useRef(false);
+    const requestIdRef = useRef(0);
     const selectedStation = filters.station_id || 1;
     const selectedStationCode = filters.station_code || "SDO";
     const selectedStationName =
@@ -69,10 +75,19 @@ const AttendanceMonitoring = ({
         if (!params.get("search")) params.delete("search");
         params.delete("station_search");
 
+        const requestId = requestIdRef.current + 1;
+        requestIdRef.current = requestId;
+        requestInFlightRef.current = true;
+
         router.get(route("attendance-monitoring"), Object.fromEntries(params), {
             preserveScroll: true,
             preserveState: true,
             replace: true,
+            onFinish: () => {
+                if (requestIdRef.current !== requestId) return;
+
+                requestInFlightRef.current = false;
+            },
         });
     };
 
@@ -81,22 +96,34 @@ const AttendanceMonitoring = ({
     }, [filters.search]);
 
     useEffect(() => {
-        console.log("Attendance employees reloaded:", employees);
-    }, [employees]);
-
-    useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
     useEffect(() => {
         const timer = setInterval(() => {
+            if (requestInFlightRef.current) return;
+
+            const requestId = requestIdRef.current + 1;
+            requestIdRef.current = requestId;
+            requestInFlightRef.current = true;
+
             router.reload({
-                only: ["employees"],
+                only: [
+                    "employees",
+                    "recentLogs",
+                    "topFirstTimeIns",
+                    "travelOrders",
+                ],
                 preserveScroll: true,
                 preserveState: true,
+                onFinish: () => {
+                    if (requestIdRef.current !== requestId) return;
+
+                    requestInFlightRef.current = false;
+                },
             });
-        }, 3000);
+        }, 5000);
 
         return () => clearInterval(timer);
     }, []);
@@ -123,8 +150,9 @@ const AttendanceMonitoring = ({
     };
 
     return (
-        <div className="min-h-screen text-[#070d3f]">
-            <Head title="Time Vault - AMS" />
+        <div className="relative min-h-screen overflow-hidden bg-[#02062f] text-[#070d3f]">
+            <Head title="Project T.A.L.A" />
+            <TalaBackground />
             <Header time={time} />
             <EmployeeList
                 employees={employees}
@@ -140,10 +168,12 @@ const AttendanceMonitoring = ({
                 submitSearch={submitSearch}
                 stationSearch={stationSearch}
                 stations={stationList}
+                recentLogs={recentLogs}
+                topFirstTimeIns={topFirstTimeIns}
+                travelOrders={travelOrders}
             />
         </div>
     );
 };
 
 export default AttendanceMonitoring;
-

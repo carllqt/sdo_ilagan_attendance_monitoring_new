@@ -74,6 +74,7 @@ const EmployeeFingerprintPanel = ({
     scanFeedbackKey = 0,
     cancelScan,
     availableFingers,
+    fingerprintEmployeeLoading = false,
     testOpen,
     setTestOpen,
     testMessage,
@@ -123,6 +124,7 @@ const EmployeeFingerprintPanel = ({
         isSchoolAdmin
             ? employee?.station?.name || "-"
             : employee?.meta || employee?.office?.name || "-";
+    const actionDisabled = !selectedEmployee || fingerprintEmployeeLoading;
 
     return (
         <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg">
@@ -156,6 +158,7 @@ const EmployeeFingerprintPanel = ({
                             }}
                             onFocus={() => setShowSuggestions(true)}
                             onClick={() => setShowSuggestions(true)}
+                            disabled={fingerprintEmployeeLoading}
                         />
 
                         {showSuggestions ? (
@@ -181,6 +184,12 @@ const EmployeeFingerprintPanel = ({
                                                         key={emp.id}
                                                         type="button"
                                                         onMouseDown={() => {
+                                                            if (
+                                                                fingerprintEmployeeLoading
+                                                            ) {
+                                                                return;
+                                                            }
+
                                                             setSelectedEmployee(
                                                                 emp.id,
                                                             );
@@ -195,7 +204,10 @@ const EmployeeFingerprintPanel = ({
                                                                 false,
                                                             );
                                                         }}
-                                                        className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                        disabled={
+                                                            fingerprintEmployeeLoading
+                                                        }
+                                                        className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-60"
                                                     >
                                                         <div className="min-w-0">
                                                             <div className="truncate font-medium text-slate-800">
@@ -241,6 +253,7 @@ const EmployeeFingerprintPanel = ({
                             setSearchValue("");
                             setShowSuggestions(false);
                         }}
+                        disabled={fingerprintEmployeeLoading}
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-200 bg-white text-red-500 shadow-sm transition hover:bg-red-100"
                         aria-label="Clear selected employee"
                     >
@@ -251,7 +264,9 @@ const EmployeeFingerprintPanel = ({
                 <div className="mt-7 grid min-h-[150px] grid-cols-[1fr_auto_1fr] items-start gap-6">
                     <div className="flex min-h-[150px] flex-col items-center text-center">
                         <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-[0_14px_30px_-18px_rgba(59,130,246,0.85)] ring-4 ring-white">
-                            {selectedEmployeeRecord?.profile_img ? (
+                            {fingerprintEmployeeLoading ? (
+                                <div className="h-full w-full animate-pulse rounded-full bg-blue-200" />
+                            ) : selectedEmployeeRecord?.profile_img ? (
                                 <img
                                     src={`/storage/${selectedEmployeeRecord.profile_img}`}
                                     alt={selectedEmployeeRecord.full_name}
@@ -262,14 +277,23 @@ const EmployeeFingerprintPanel = ({
                             )}
                         </div>
                         <div className="mt-5 flex min-h-[35px] w-full max-w-[220px] flex-col items-center justify-start gap-2">
-                            <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
-                                {selectedEmployeeRecord
-                                    ? selectedEmployeeRecord.full_name
-                                    : "Select Employee"}
-                            </p>
-                            <p className="line-clamp-2 text-sm leading-5 text-slate-500">
-                                {selectedLocationName}
-                            </p>
+                            {fingerprintEmployeeLoading ? (
+                                <>
+                                    <div className="h-4 w-36 animate-pulse rounded bg-slate-200" />
+                                    <div className="h-4 w-44 animate-pulse rounded bg-slate-100" />
+                                </>
+                            ) : (
+                                <>
+                                    <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
+                                        {selectedEmployeeRecord
+                                            ? selectedEmployeeRecord.full_name
+                                            : "Select Employee"}
+                                    </p>
+                                    <p className="line-clamp-2 text-sm leading-5 text-slate-500">
+                                        {selectedLocationName}
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -296,7 +320,9 @@ const EmployeeFingerprintPanel = ({
                                 key={scanFeedbackKey}
                                 className="text-sm leading-5 text-slate-700"
                             >
-                                {selectedEmployeeRecord
+                                {fingerprintEmployeeLoading
+                                    ? "Loading employee..."
+                                    : selectedEmployeeRecord
                                     ? panelMessage
                                     : "Choose an employee to begin"}
                             </p>
@@ -311,10 +337,12 @@ const EmployeeFingerprintPanel = ({
                             if (scanning) cancelScan();
                             else registerFingerprint();
                         }}
-                        disabled={!selectedEmployee}
+                        disabled={actionDisabled}
                         className="h-10 flex-1 rounded-xl text-sm font-semibold"
                     >
-                        {scanning
+                        {fingerprintEmployeeLoading
+                            ? "Loading Employee"
+                            : scanning
                             ? "Cancel"
                             : scanStatus === "success"
                               ? "Register Another"
@@ -327,9 +355,12 @@ const EmployeeFingerprintPanel = ({
                         <AlertDialogTrigger asChild>
                             <Button
                                 variant="blue"
+                                disabled={actionDisabled}
                                 className="h-10 flex-1 rounded-xl text-sm font-semibold"
                             >
-                                Test Fingerprint
+                                {fingerprintEmployeeLoading
+                                    ? "Loading Employee"
+                                    : "Test Fingerprint"}
                             </Button>
                         </AlertDialogTrigger>
 

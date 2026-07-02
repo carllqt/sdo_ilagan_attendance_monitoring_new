@@ -108,9 +108,14 @@ class TardinessSummaryManagementService
         return $employees
             ->map(function ($employee) use ($monthlyTotals, $filter) {
                 $months = array_fill(1, 12, 0);
+                $monthMinutes = array_fill(1, 12, 0);
 
                 foreach ($monthlyTotals->get($employee->id, collect()) as $record) {
-                    $months[(int) $record->month] = (float) $record->total;
+                    $month = (int) $record->month;
+                    $minutes = (int) $record->total_minutes;
+
+                    $monthMinutes[$month] = $minutes;
+                    $months[$month] = $this->minutesToTardyDecimal($minutes);
                 }
 
                 $yearKey = (string) $filter->year;
@@ -118,10 +123,17 @@ class TardinessSummaryManagementService
                 return [
                     'employee' => $this->employeePayload($employee),
                     'tardyPerMonths' => [$yearKey => $months],
-                    'tardyPerYear' => [$yearKey => array_sum($months)],
+                    'tardyPerYear' => [$yearKey => $this->minutesToTardyDecimal(array_sum($monthMinutes))],
                 ];
             })
             ->values();
+    }
+
+    private function minutesToTardyDecimal(int $minutes): float
+    {
+        $minutes = max($minutes, 0);
+
+        return (float) sprintf('%d.%02d', intdiv($minutes, 60), $minutes % 60);
     }
 
     private function employeePayload(Employee $employee): array

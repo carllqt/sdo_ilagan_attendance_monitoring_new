@@ -28,6 +28,9 @@ class ConvertedTardinessRecordRepository
                 'position',
                 'office_id',
             )
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->where('station_id', $filter->stationId);
+            })
             ->whereHas('tardinessConversion.batch', function ($query) use ($filter) {
                 $query->whereYear('start_month', $filter->year);
             })
@@ -69,7 +72,7 @@ class ConvertedTardinessRecordRepository
                 hr_tardiness_convertions.employee_id,
                 MONTH(hr_tardiness_batches.start_month) as start_month,
                 MAX(MONTH(hr_tardiness_batches.end_month)) as end_month,
-                SUM(COALESCE(hr_tardiness_convertions.total_tardy, 0)) as total_tardy,
+                '.$this->totalTardyMinutesExpression().' as total_tardy_minutes,
                 GROUP_CONCAT(
                     CONCAT(
                         hr_tardiness_convertions.batch_id,
@@ -90,18 +93,36 @@ class ConvertedTardinessRecordRepository
             ->groupBy('employee_id');
     }
 
-    public function batchRecords(HrTardinessBatch $batch): Collection
+    public function batchRecords(HrTardinessBatch $batch, ?int $stationId = null): Collection
     {
         return $batch->tardinessConversions()
             ->with('employee', 'tardinessRecords')
+            ->when($stationId, function ($query) use ($stationId) {
+                $query->whereHas('employee', function ($employeeQuery) use ($stationId) {
+                    $employeeQuery->where('station_id', $stationId);
+                });
+            })
             ->get();
     }
 
     public function batchHistory(ConvertedTardinessRecordFilter $filter): LengthAwarePaginator
     {
         return HrTardinessBatch::query()
-            ->withCount('tardinessConversions')
+            ->withCount([
+                'tardinessConversions' => function ($query) use ($filter) {
+                    $query->when($filter->stationId, function ($conversionQuery) use ($filter) {
+                        $conversionQuery->whereHas('employee', function ($employeeQuery) use ($filter) {
+                            $employeeQuery->where('station_id', $filter->stationId);
+                        });
+                    });
+                },
+            ])
             ->whereYear('start_month', $filter->year)
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->whereHas('tardinessConversions.employee', function ($employeeQuery) use ($filter) {
+                    $employeeQuery->where('station_id', $filter->stationId);
+                });
+            })
             ->latest()
             ->paginate(
                 $filter->batchHistoryLimit,
@@ -112,9 +133,14 @@ class ConvertedTardinessRecordRepository
             ->withQueryString();
     }
 
-    public function availableYears(): Collection
+    public function availableYears(ConvertedTardinessRecordFilter $filter): Collection
     {
         return HrTardinessBatch::query()
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->whereHas('tardinessConversions.employee', function ($employeeQuery) use ($filter) {
+                    $employeeQuery->where('station_id', $filter->stationId);
+                });
+            })
             ->selectRaw('YEAR(start_month) as year')
             ->distinct()
             ->orderByDesc('year')
@@ -131,6 +157,9 @@ class ConvertedTardinessRecordRepository
 
         return Employee::query()
             ->leftJoin('offices', 'offices.id', '=', 'employees.office_id')
+            ->when($filter->stationId, function ($query) use ($filter) {
+                $query->where('employees.station_id', $filter->stationId);
+            })
             ->whereHas('tardinessConversion.batch', function ($query) use ($filter) {
                 $query->whereYear('start_month', $filter->year);
             })
@@ -164,14 +193,31 @@ class ConvertedTardinessRecordRepository
             ->get();
     }
 
-    public function batchDetails(int $batchId): ?HrTardinessBatch
+    public function batchDetails(int $batchId, ?int $stationId = null): ?HrTardinessBatch
     {
         return HrTardinessBatch::query()
             ->with([
                 'tardinessConversions' => fn ($query) => $query
                     ->with('employee.office:id,name,division_id', 'employee.office.division:id,code,name')
+                    ->when($stationId, function ($conversionQuery) use ($stationId) {
+                        $conversionQuery->whereHas('employee', function ($employeeQuery) use ($stationId) {
+                            $employeeQuery->where('station_id', $stationId);
+                        });
+                    })
                     ->orderBy('employee_id'),
             ])
+            ->when($stationId, function ($query) use ($stationId) {
+                $query->whereHas('tardinessConversions.employee', function ($employeeQuery) use ($stationId) {
+                    $employeeQuery->where('station_id', $stationId);
+                });
+            })
             ->find($batchId);
+    }
+
+    private function totalTardyMinutesExpression(): string
+    {
+        $value = 'COALESCE(hr_tardiness_convertions.total_tardy, 0)';
+
+        return "SUM((FLOOR({$value}) * 60) + ROUND(({$value} - FLOOR({$value})) * 100))";
     }
 }

@@ -55,7 +55,12 @@ const StationVerificationList = ({
                     items={stationItems}
                     selected={selectedStationId}
                     buttonLabel={selectedStation?.name || "Select Station"}
-                    onChange={onStationChange}
+                    onChange={(stationId) => {
+                        if (isLoading) return;
+
+                        onStationChange(stationId);
+                    }}
+                    disabled={isLoading}
                     buttonVariant="outline"
                     className="h-10 w-[320px] border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                 />
@@ -116,7 +121,8 @@ const StationVerificationList = ({
                                 ),
                             )
                         ) : employees.length > 0 ? (
-                            employees.map((data, index) => {
+                            <>
+                                {employees.map((data, index) => {
                                 const employee = data.employee || {};
 
                                 return (
@@ -183,7 +189,8 @@ const StationVerificationList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -206,6 +213,7 @@ const StationVerificationList = ({
                 to={paginationTo}
                 total={totalRecords}
                 totalPages={totalPages}
+                disabled={isLoading}
             />
         </div>
     );

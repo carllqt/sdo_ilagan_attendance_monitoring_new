@@ -16,11 +16,11 @@ use App\Http\Controllers\HumanResource\{
     SickLeaveController,
 };
 use App\Http\Controllers\AttendanceMonitoringController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\EmployeeProfileImageController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -28,8 +28,7 @@ use Inertia\Inertia;
 */
 
 
-Route::get('/', fn () => Inertia::render('LandingPage'))->name('landing');
-
+Route::get('/', [AuthenticatedSessionController::class, 'create'])->name('landing');
 Route::get('/employee-profile-images/{filename}', [EmployeeProfileImageController::class, 'show'])
     ->where('filename', '[^/]+')
     ->name('employee-profile-images.show');
@@ -46,6 +45,12 @@ Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoring
 */
 
 Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(function () {
+
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
+    Route::get('/attendance/suggestions', [AttendanceController::class, 'suggestions'])->name('attendance.suggestions');
+    Route::post('/attendance/device', [AttendanceController::class, 'registerDevice'])->name('attendance.device.register');
+    Route::post('/attendance/unlock', [AttendanceController::class, 'unlock'])->name('attendance.unlock');
+    Route::post('/attendance/lock', [AttendanceController::class, 'lock'])->name('attendance.lock');
 
     //Attendance Management
     Route::get('/attendance-management', [AttendanceManagementController::class, 'index'])->name('attendance-management');
@@ -121,6 +126,7 @@ Route::middleware(['role:sdo_admin'])->group(function () {
     Route::get('/stations/suggestions', [StationManagementController::class, 'suggestions'])->name('stations.suggestions');
     Route::get('/stations/admin/list', [StationManagementController::class, 'adminRows'])->name('stationadmin.list');
     Route::get('/stations/list', [StationManagementController::class, 'stationRows'])->name('stations.list');
+    Route::get('/stations', [StationManagementController::class, 'index'])->name('stations');
     Route::get('/station-management', [StationManagementController::class, 'index'])->name('station-management');
     Route::post('/stations', [StationManagementController::class, 'storeStation'])->name('stations.store');
     Route::get('/stations/admin/employees', [StationManagementController::class, 'adminEmployeeCandidates'])->name('stationadmin.employees');

@@ -79,20 +79,27 @@ const EmployeeList = ({
                             name="search"
                             value={searchInput}
                             onChange={(event) => {
+                                if (isLoading) return;
+
                                 setSearchInput(event.target.value);
                                 setShowSuggestions(true);
                             }}
-                            onFocus={() => setShowSuggestions(true)}
+                            onFocus={() => {
+                                if (!isLoading) setShowSuggestions(true);
+                            }}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") {
                                     event.preventDefault();
+                                    if (isLoading) return;
+
                                     applySearch(searchInput);
                                     setShowSuggestions(false);
                                 }
                             }}
+                            disabled={isLoading}
                         />
 
-                        {showSuggestions && searchInput.trim() ? (
+                        {showSuggestions && searchInput.trim() && !isLoading ? (
                             <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                 <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                     Results for "{searchInput.trim()}"
@@ -105,10 +112,13 @@ const EmployeeList = ({
                                             <button
                                                 key={employee.id}
                                                 type="button"
-                                                onMouseDown={() =>
-                                                    selectSuggestion(employee)
-                                                }
-                                                className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                disabled={isLoading}
+                                                onMouseDown={() => {
+                                                    if (isLoading) return;
+
+                                                    selectSuggestion(employee);
+                                                }}
+                                                className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-60"
                                             >
                                                 <div className="min-w-0">
                                                     <div className="truncate font-medium text-slate-800">
@@ -139,6 +149,7 @@ const EmployeeList = ({
                         items={monthOptions}
                         selected={selectedMonth}
                         onChange={setSelectedMonth}
+                        disabled={isLoading}
                         buttonVariant="outline"
                         className="h-10 w-[130px] min-w-0 truncate border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                     />
@@ -147,9 +158,12 @@ const EmployeeList = ({
                         items={years}
                         selected={selectedYear}
                         onChange={(nextYear) => {
+                            if (isLoading) return;
+
                             setSelectedYear(nextYear);
                             applyFilters({ yearValue: nextYear });
                         }}
+                        disabled={isLoading}
                         buttonVariant="outline"
                         className="h-10 w-[100px] min-w-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                     />
@@ -159,6 +173,8 @@ const EmployeeList = ({
                         selected={selectedOffice}
                         buttonLabel={officeButtonLabel}
                         onChange={(nextOffice) => {
+                            if (isLoading) return;
+
                             const officeValue =
                                 nextOffice === "all"
                                     ? "all"
@@ -167,12 +183,14 @@ const EmployeeList = ({
                             setSelectedOffice(officeValue);
                             applyFilters({ officeValue });
                         }}
+                        disabled={isLoading}
                         buttonVariant="outline"
                         className="h-10 w-[180px] shrink-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                     />
                     <Button
                         type="button"
                         onClick={onDownloadPDF}
+                        disabled={isLoading}
                         className="h-10 shrink-0 gap-2 whitespace-nowrap bg-blue-700 text-white hover:bg-blue-800"
                     >
                         <Download className="h-4 w-4" />
@@ -243,7 +261,8 @@ const EmployeeList = ({
                                 ),
                             )
                         ) : filteredSummary.length > 0 ? (
-                            filteredSummary.map((data, index) => {
+                            <>
+                                {filteredSummary.map((data, index) => {
                                 const employee = data.employee || {};
 
                                 return (
@@ -318,7 +337,8 @@ const EmployeeList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -341,6 +361,7 @@ const EmployeeList = ({
                 to={paginationTo}
                 total={totalRecords}
                 totalPages={totalPages}
+                disabled={isLoading}
             />
         </div>
     );

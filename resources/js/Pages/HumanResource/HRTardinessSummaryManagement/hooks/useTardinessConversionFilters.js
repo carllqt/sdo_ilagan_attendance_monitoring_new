@@ -83,6 +83,8 @@ const useTardinessConversionFilters = ({
         limitValue = records?.per_page || 10,
         searchValue = searchInput,
     } = {}) => {
+        if (recordsLoading) return;
+
         const selectedOfficeName =
             String(officeValue) === "all"
                 ? "all"
@@ -121,6 +123,8 @@ const useTardinessConversionFilters = ({
     };
 
     const handleOfficeChange = (value) => {
+        if (recordsLoading) return;
+
         setSelectedOffice(value);
         applyFilters({
             officeValue: value,
@@ -130,6 +134,8 @@ const useTardinessConversionFilters = ({
     };
 
     const handleFirstMonthChange = (value) => {
+        if (recordsLoading) return;
+
         const nextEndMonth = getNextEndMonth(selectedSecondMonth, value);
 
         setSelectedFirstMonth(value);
@@ -141,15 +147,23 @@ const useTardinessConversionFilters = ({
     };
 
     const handleSecondMonthChange = (value) => {
+        if (recordsLoading) return;
+
         setSelectedSecondMonth(value);
         applyFilters({ endMonthValue: value });
     };
 
     const applySearch = (value) => {
+        if (recordsLoading) return;
+
         applyFilters({ searchValue: value });
     };
 
-    const handlePageChange = (page) => applyFilters({ pageValue: page });
+    const handlePageChange = (page) => {
+        if (recordsLoading) return;
+
+        applyFilters({ pageValue: page });
+    };
 
     return {
         applySearch,

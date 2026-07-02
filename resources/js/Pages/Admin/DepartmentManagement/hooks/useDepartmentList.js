@@ -102,6 +102,8 @@ const useDepartmentList = ({
     }, []);
 
     const loadOfficeList = ({ page = officePage } = {}) => {
+        if (officeLoading) return;
+
         const query = new URLSearchParams(window.location.search);
 
         query.set("office_page", page);
@@ -119,12 +121,14 @@ const useDepartmentList = ({
     };
 
     const handleOfficePageChange = (page) => {
+        if (officeLoading) return;
         if (page < 1 || page > totalOfficePages) return;
 
         loadOfficeList({ page });
     };
 
     const handleDivisionPageChange = (page) => {
+        if (divisionLoading) return;
         if (page < 1 || page > totalDivisionPages) return;
 
         const query = new URLSearchParams(window.location.search);

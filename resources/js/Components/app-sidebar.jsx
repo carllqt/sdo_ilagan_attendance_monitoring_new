@@ -44,6 +44,7 @@ import {
 
 import ApplicationLogo from "./ApplicationLogo";
 import EmployeeAvatar from "./EmployeeAvatar";
+import BrandSubtitle from "./BrandSubtitle";
 import { getEmployeeName } from "@/lib/utils";
 
 export function AppSidebar({ active, user, ...props }) {
@@ -78,11 +79,10 @@ export function AppSidebar({ active, user, ...props }) {
                                         </div>
                                         <div className="flex flex-col gap-0.5 leading-tight text-white">
                                             <span className="text-[14px] font-semibold tracking-tight">
-                                                TimeVault
+                                                Project T.A.L.A
                                             </span>
                                             <span className="text-[9px] font-medium uppercase tracking-wide opacity-80 leading-[1rem]">
-                                                Securing Attendance and
-                                                Tardiness Data with Biometrics
+                                                <BrandSubtitle />
                                             </span>
                                         </div>
                                     </Link>

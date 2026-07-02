@@ -16,6 +16,7 @@ class TardinessConversionFilter
         public readonly int $page,
         public readonly string $search,
         public readonly ?int $employeeId = null,
+        public readonly ?int $stationId = null,
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -57,6 +58,7 @@ class TardinessConversionFilter
             page: $this->page,
             search: $this->search,
             employeeId: $this->employeeId,
+            stationId: $this->stationId,
         );
     }
 
@@ -70,6 +72,7 @@ class TardinessConversionFilter
             page: $this->page,
             search: $this->search,
             employeeId: $this->employeeId,
+            stationId: $this->stationId,
         );
     }
 
@@ -83,6 +86,7 @@ class TardinessConversionFilter
             page: $this->page,
             search: $this->search,
             employeeId: $this->employeeId,
+            stationId: $this->stationId,
         );
     }
 
@@ -96,6 +100,21 @@ class TardinessConversionFilter
             page: $this->page,
             search: $this->search,
             employeeId: $employeeId,
+            stationId: $this->stationId,
+        );
+    }
+
+    public function withStationId(?int $stationId): self
+    {
+        return new self(
+            startMonth: $this->startMonth,
+            endMonth: $this->endMonth,
+            officeId: $this->officeId,
+            limit: $this->limit,
+            page: $this->page,
+            search: $this->search,
+            employeeId: $this->employeeId,
+            stationId: $stationId,
         );
     }
 }

@@ -44,6 +44,7 @@ const EmployeeManagement = ({
         availableFingers,
         cancelScan,
         clearFingerprintEmployee,
+        fingerprintEmployeeLoading,
         handleTestFingerprintOpenChange,
         isRegistered,
         registerFingerprint,
@@ -118,6 +119,7 @@ const EmployeeManagement = ({
                         onSelectEmployee={selectFingerprintEmployee}
                         onClearEmployee={clearFingerprintEmployee}
                         availableFingers={availableFingers}
+                        fingerprintEmployeeLoading={fingerprintEmployeeLoading}
                         scanning={scanning}
                         scanStatus={scanStatus}
                         scanMessage={scanMessage}

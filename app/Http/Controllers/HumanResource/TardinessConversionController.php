@@ -37,6 +37,7 @@ class TardinessConversionController extends Controller
 
         $this->tardinessConversion->storeSummaries(
             $request->validated()['summaries'],
+            $request->user()?->employee?->station_id,
         );
 
         return redirect()

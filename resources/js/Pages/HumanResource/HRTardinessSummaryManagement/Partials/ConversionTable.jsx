@@ -44,16 +44,18 @@ const ConversionTable = ({
 
     const renderRows = (items, valueKey, emptyMessage) =>
         items.length > 0 ? (
-            items.map((item) => (
-                <TableRow key={item.id || `${valueKey}-${item[valueKey]}`}>
-                    <TableCell className="p-3 text-center font-medium text-slate-800">
-                        {item[valueKey]}
-                    </TableCell>
-                    <TableCell className="p-3 text-center text-slate-700">
-                        {Number(item.equivalent_days || 0).toFixed(3)}
-                    </TableCell>
-                </TableRow>
-            ))
+            <>
+                {items.map((item) => (
+                    <TableRow key={item.id || `${valueKey}-${item[valueKey]}`}>
+                        <TableCell className="p-3 text-center font-medium text-slate-800">
+                            {item[valueKey]}
+                        </TableCell>
+                        <TableCell className="p-3 text-center text-slate-700">
+                            {Number(item.equivalent_days || 0).toFixed(3)}
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </>
         ) : (
             <TableRow>
                 <TableCell
@@ -222,6 +224,7 @@ const ConversionTable = ({
                                 step="0.001"
                                 min="0"
                                 value={editModal.data.equivalent_days}
+                                disabled={editModal.processing}
                                 onChange={(event) =>
                                     editModal.setData(
                                         "equivalent_days",
@@ -240,6 +243,7 @@ const ConversionTable = ({
                                 type="button"
                                 variant="outline"
                                 onClick={editModal.closeEditModal}
+                                disabled={editModal.processing}
                             >
                                 Cancel
                             </Button>

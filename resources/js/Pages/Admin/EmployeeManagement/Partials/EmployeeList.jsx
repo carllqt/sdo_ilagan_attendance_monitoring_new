@@ -98,20 +98,29 @@ const EmployeeList = ({
                                 name="search"
                                 value={searchInput}
                                 onChange={(e) => {
+                                    if (isLoading) return;
+
                                     setSearchInput(e.target.value);
                                     setShowSuggestions(true);
                                 }}
-                                onFocus={() => setShowSuggestions(true)}
+                                onFocus={() => {
+                                    if (!isLoading) setShowSuggestions(true);
+                                }}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         e.preventDefault();
+                                        if (isLoading) return;
+
                                         applySearch(searchInput);
                                         setShowSuggestions(false);
                                     }
                                 }}
+                                disabled={isLoading}
                             />
 
-                            {showSuggestions && searchInput.trim() ? (
+                            {showSuggestions &&
+                            searchInput.trim() &&
+                            !isLoading ? (
                                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         Results for "{searchInput.trim()}"
@@ -125,13 +134,16 @@ const EmployeeList = ({
                                                 <button
                                                     key={emp.id}
                                                     type="button"
-                                                    onMouseDown={() =>
+                                                    disabled={isLoading}
+                                                    onMouseDown={() => {
+                                                        if (isLoading) return;
+
                                                         selectSuggestion(
                                                             emp,
                                                             applySearch,
-                                                        )
-                                                    }
-                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                        );
+                                                    }}
+                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-60"
                                                 >
                                                     <div className="min-w-0">
                                                         <div className="truncate font-medium text-slate-800">
@@ -162,9 +174,12 @@ const EmployeeList = ({
                             items={statusOptions}
                             selected={statusFilter}
                             onChange={(val) => {
+                                if (isLoading) return;
+
                                 setStatusFilter(val);
                                 applyFilters({ statusValue: val });
                             }}
+                            disabled={isLoading}
                             buttonVariant="outline"
                             className="h-10 w-32 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                         />
@@ -182,12 +197,15 @@ const EmployeeList = ({
                                     )?.name || "All Offices"
                                 }
                                 onChange={(val) => {
+                                    if (isLoading) return;
+
                                     const nextOffice =
                                         val === "all" ? "all" : Number(val);
 
                                     setSelectedOffice(nextOffice);
                                     applyFilters({ officeValue: nextOffice });
                                 }}
+                                disabled={isLoading}
                                 buttonVariant="outline"
                                 className="h-10 w-[180px] shrink-0 border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                             />
@@ -269,7 +287,8 @@ const EmployeeList = ({
                                 ),
                             )
                         ) : paginatedEmployees.length > 0 ? (
-                            paginatedEmployees.map((emp) => {
+                            <>
+                                {paginatedEmployees.map((emp) => {
                                 const hasWorkSchedule = Boolean(
                                     emp.work_schedule,
                                 );
@@ -416,6 +435,7 @@ const EmployeeList = ({
                                         <TableCell className="p-3 text-center">
                                             <Button
                                                 size="sm"
+                                                disabled={isLoading}
                                                 className="min-w-[90px] bg-white text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center gap-1"
                                                 onClick={() => handleEdit(emp)}
                                                 title="Edit Employee"
@@ -426,7 +446,8 @@ const EmployeeList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -447,6 +468,7 @@ const EmployeeList = ({
                 pageNumbers={pageNumbers}
                 pagination={pagination}
                 totalPages={totalPages}
+                disabled={isLoading}
             />
         </div>
     );

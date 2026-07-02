@@ -2,109 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Data\AttendanceMonitoring\AttendanceEmployeeData;
+use App\Data\AttendanceMonitoring\AttendanceMonitoringFilter;
+use App\Data\AttendanceMonitoring\EarliestTimeInData;
+use App\Data\AttendanceMonitoring\RecentAttendanceLogData;
+use App\Data\AttendanceMonitoring\TravelOrderData;
+use App\Http\Requests\AttendanceMonitoring\AttendanceMonitoringRequest;
+use App\Http\Requests\AttendanceMonitoring\AttendanceMonitoringSuggestionRequest;
 use App\Models\Administrator\Attendance;
 use App\Models\Administrator\Employee;
 use App\Models\Administrator\Station;
+use App\Models\EmployeeTravelOrder;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AttendanceMonitoringController extends Controller
 {
-    public function index(Request $request)
+    public function index(AttendanceMonitoringRequest $request)
     {
         $today = Carbon::today();
-        $search = trim((string) $request->query('search', ''));
-        $stationCode = trim((string) $request->query('station_code', ''));
-        $stationName = trim((string) $request->query('station_name', 'School Division Office'));
+        $filter = AttendanceMonitoringFilter::fromRequest($request);
 
-        $selectedStation = $this->resolveSelectedStation($request);
-        $stationId = $selectedStation?->id ?? 1;
-        $stationCode = $selectedStation?->code ?? ($stationCode ?: 'SDO');
-        $stationName = $selectedStation?->name ?? ($stationName ?: 'School Division Office');
-
-        if (
-            $request->query('station_id') ||
-            ! $request->query('page') ||
-            (string) $request->query('station_code') !== (string) $stationCode ||
-            (string) $request->query('station_name') !== (string) $stationName ||
-            $request->query('limit')
-        ) {
-            $query = $request->query();
-            unset($query['station_id']);
-            unset($query['limit']);
-
-            return redirect()->route('attendance-monitoring', array_merge($query, [
-                'page' => $request->query('page', 1),
-                'station_code' => $stationCode,
-                'station_name' => $stationName,
-            ]));
+        if ($filter->shouldRedirectToCanonical($request)) {
+            return redirect()->route('attendance-monitoring', $filter->canonicalQuery($request));
         }
-
-        $employees = Employee::query()
-            ->with('station:id,name,code')
-            ->leftJoin('stations', 'stations.id', '=', 'employees.station_id')
-            ->select([
-                'employees.id',
-                'employees.first_name',
-                'employees.middle_name',
-                'employees.last_name',
-                'employees.profile_img',
-                'employees.position',
-                'employees.station_id',
-            ])
-            ->where('employees.station_id', $stationId)
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('employees.id', $search)
-                        ->orWhere('employees.first_name', 'like', "%{$search}%")
-                        ->orWhere('employees.middle_name', 'like', "%{$search}%")
-                        ->orWhere('employees.last_name', 'like', "%{$search}%")
-                        ->orWhereRaw(
-                            "CONCAT_WS(' ', employees.first_name, employees.middle_name, employees.last_name) LIKE ?",
-                            ["%{$search}%"],
-                        )
-                        ->orWhere('stations.name', 'like', "%{$search}%")
-                        ->orWhere('stations.code', 'like', "%{$search}%");
-                });
-            })
-            ->orderByRaw("CASE WHEN stations.code = 'SDO' THEN 0 ELSE 1 END")
-            ->orderBy('stations.name')
-            ->orderBy('employees.first_name')
-            ->paginate(16)
-            ->withQueryString();
-
-        $employeeIds = $employees->getCollection()->pluck('id');
-
-        $attendanceByEmployee = Attendance::with(['am', 'pm'])
-            ->whereDate('date', $today)
-            ->whereIn('employee_id', $employeeIds)
-            ->latest()
-            ->get()
-            ->unique('employee_id')
-            ->keyBy('employee_id');
-
-        $employees->setCollection($employees->getCollection()
-            ->map(function ($employee) use ($attendanceByEmployee) {
-                $attendance = $attendanceByEmployee->get($employee->id);
-                $status = $this->getAttendanceStatus($attendance);
-
-                return [
-                    'id' => $employee->id,
-                    'employee_id' => $employee->id,
-                    'first_name' => $employee->first_name,
-                    'middle_name' => $employee->middle_name,
-                    'last_name' => $employee->last_name,
-                    'profile_img' => $employee->profile_img,
-                    'position' => $employee->position,
-                    'station' => $employee->station,
-                    'am_in' => $attendance?->am?->am_time_in,
-                    'am_out' => $attendance?->am?->am_time_out,
-                    'pm_in' => $attendance?->pm?->pm_time_in,
-                    'pm_out' => $attendance?->pm?->pm_time_out,
-                    'status' => $status,
-                ];
-            }));
 
         $stations = Station::query()
             ->select('id', 'name', 'code')
@@ -113,23 +35,80 @@ class AttendanceMonitoringController extends Controller
             ->limit(20)
             ->get();
 
-        if ($selectedStation && ! $stations->contains('id', $selectedStation->id)) {
-            $stations->prepend($selectedStation);
+        if ($filter->station && ! $stations->contains('id', $filter->stationId)) {
+            $stations->prepend($filter->station);
         }
 
         return Inertia::render('AttendanceMonitoring/AttendanceMonitoring', [
-            'employees' => $employees,
-            'stations' => $stations->values(),
-            'filters' => [
-                'search' => $search,
-                'station_id' => $stationId,
-                'station_code' => $stationCode,
-                'station_name' => $stationName,
-            ],
+            'employees' => fn () => $this->employees($today, $filter),
+            'stations' => fn () => $stations->values(),
+            'recentLogs' => fn () => $this->recentLogs($today, $filter),
+            'topFirstTimeIns' => fn () => $this->topFirstTimeIns($today, $filter),
+            'travelOrders' => fn () => $this->travelOrders($today, $filter),
+            'filters' => $filter->toArray(),
         ]);
     }
 
-    public function stationSuggestions(Request $request)
+    private function employees(Carbon $today, AttendanceMonitoringFilter $filter)
+    {
+        $todayAttendance = Attendance::query()
+            ->selectRaw('employee_id, MAX(id) as attendance_id')
+            ->whereDate('date', $today)
+            ->groupBy('employee_id');
+
+        $employees = Employee::query()
+            ->leftJoin('stations', 'stations.id', '=', 'employees.station_id')
+            ->leftJoinSub($todayAttendance, 'today_attendances', function ($join) {
+                $join->on('today_attendances.employee_id', '=', 'employees.id');
+            })
+            ->leftJoin('attendances', 'attendances.id', '=', 'today_attendances.attendance_id')
+            ->leftJoin('attendance_ams', 'attendance_ams.attendance_id', '=', 'attendances.id')
+            ->leftJoin('attendance_pms', 'attendance_pms.attendance_id', '=', 'attendances.id')
+            ->select([
+                'employees.id',
+                'employees.first_name',
+                'employees.middle_name',
+                'employees.last_name',
+                'employees.profile_img',
+                'employees.position',
+                'employees.station_id',
+                'stations.name as station_name',
+                'stations.code as station_code',
+                'attendance_ams.am_time_in as am_in',
+                'attendance_ams.am_time_out as am_out',
+                'attendance_pms.pm_time_in as pm_in',
+                'attendance_pms.pm_time_out as pm_out',
+            ])
+            ->where('employees.station_id', $filter->stationId)
+            ->when($filter->search !== '', function ($query) use ($filter) {
+                $query->where(function ($query) use ($filter) {
+                    $query->where('employees.id', $filter->search)
+                        ->orWhere('employees.first_name', 'like', "%{$filter->search}%")
+                        ->orWhere('employees.middle_name', 'like', "%{$filter->search}%")
+                        ->orWhere('employees.last_name', 'like', "%{$filter->search}%")
+                        ->orWhereRaw(
+                            "CONCAT_WS(' ', employees.first_name, employees.middle_name, employees.last_name) LIKE ?",
+                            ["%{$filter->search}%"],
+                        )
+                        ->orWhere('stations.name', 'like', "%{$filter->search}%")
+                        ->orWhere('stations.code', 'like', "%{$filter->search}%");
+                });
+            })
+            ->orderByRaw("CASE WHEN stations.code = 'SDO' THEN 0 ELSE 1 END")
+            ->orderBy('stations.name')
+            ->orderBy('employees.first_name')
+            ->orderBy('employees.middle_name')
+            ->orderBy('employees.last_name')
+            ->paginate($filter->employeeLimit, ['*'], 'page', $filter->page)
+            ->withQueryString();
+
+        $employees->setCollection($employees->getCollection()
+            ->map(fn ($employee) => AttendanceEmployeeData::fromRow($employee)));
+
+        return $employees;
+    }
+
+    public function stationSuggestions(AttendanceMonitoringSuggestionRequest $request)
     {
         $search = trim((string) $request->query('search', ''));
 
@@ -156,7 +135,7 @@ class AttendanceMonitoringController extends Controller
         return response()->json($stations);
     }
 
-    public function employeeSuggestions(Request $request)
+    public function employeeSuggestions(AttendanceMonitoringSuggestionRequest $request)
     {
         $search = trim((string) $request->query('search', ''));
 
@@ -164,7 +143,7 @@ class AttendanceMonitoringController extends Controller
             return response()->json([]);
         }
 
-        $selectedStation = $this->resolveSelectedStation($request);
+        $selectedStation = AttendanceMonitoringFilter::resolveSelectedStation($request);
         $stationId = $selectedStation?->id ?? 1;
 
         $employees = Employee::query()
@@ -210,53 +189,95 @@ class AttendanceMonitoringController extends Controller
         return response()->json($employees);
     }
 
-    private function resolveSelectedStation(Request $request): ?Station
+    private function topFirstTimeIns(Carbon $today, AttendanceMonitoringFilter $filter)
     {
-        $stationCode = trim((string) $request->query('station_code', ''));
-
-        if ($stationCode !== '') {
-            $station = Station::select('id', 'name', 'code')
-                ->where('code', $stationCode)
-                ->first();
-
-            if ($station) {
-                return $station;
-            }
-        }
-
-        $stationName = trim((string) $request->query('station_name', 'School Division Office'));
-
-        if ($stationName !== '') {
-            $station = Station::select('id', 'name', 'code')
-                ->where('name', $stationName)
-                ->orWhere('code', $stationName)
-                ->first();
-
-            if ($station) {
-                return $station;
-            }
-        }
-
-        return Station::select('id', 'name', 'code')
-            ->where('code', 'SDO')
-            ->orWhere('id', 1)
-            ->orderByRaw("CASE WHEN code = 'SDO' THEN 0 ELSE 1 END")
-            ->first();
+        return Attendance::query()
+            ->join('attendance_ams', 'attendance_ams.attendance_id', '=', 'attendances.id')
+            ->join('employees', 'employees.id', '=', 'attendances.employee_id')
+            ->leftJoin('stations', 'stations.id', '=', 'employees.station_id')
+            ->whereDate('attendances.date', $today)
+            ->where('employees.station_id', $filter->stationId)
+            ->whereNotNull('attendance_ams.am_time_in')
+            ->select([
+                'employees.id',
+                'employees.first_name',
+                'employees.middle_name',
+                'employees.last_name',
+                'employees.profile_img',
+                'employees.position',
+                'stations.name as station_name',
+                'attendance_ams.am_time_in',
+            ])
+            ->orderBy('attendance_ams.am_time_in')
+            ->limit($filter->sidePanelLimit)
+            ->get()
+            ->map(fn ($row) => EarliestTimeInData::fromRow($row))
+            ->values();
     }
 
-    private function getAttendanceStatus(?Attendance $attendance): string
+    private function recentLogs(Carbon $today, AttendanceMonitoringFilter $filter)
     {
-        if (! $attendance) {
-            return 'Absent';
-        }
+        $amIn = $this->recentLogQuery($today, $filter->stationId, 'attendance_ams', 'am_time_in', 'AM In');
+        $amOut = $this->recentLogQuery($today, $filter->stationId, 'attendance_ams', 'am_time_out', 'AM Out');
+        $pmIn = $this->recentLogQuery($today, $filter->stationId, 'attendance_pms', 'pm_time_in', 'PM In');
+        $pmOut = $this->recentLogQuery($today, $filter->stationId, 'attendance_pms', 'pm_time_out', 'PM Out');
 
-        if (
-            $attendance->am?->am_time_in &&
-            Carbon::parse($attendance->am->am_time_in)->format('H:i:s') > '08:00:00'
-        ) {
-            return 'Late';
-        }
+        return DB::query()
+            ->fromSub(
+                $amIn
+                    ->unionAll($amOut)
+                    ->unionAll($pmIn)
+                    ->unionAll($pmOut),
+                'recent_logs',
+            )
+            ->orderByDesc('time')
+            ->limit($filter->sidePanelLimit)
+            ->get()
+            ->map(fn ($row) => RecentAttendanceLogData::fromRow($row))
+            ->values();
+    }
 
-        return 'Present';
+    private function recentLogQuery(
+        Carbon $today,
+        int $stationId,
+        string $attendanceTable,
+        string $timeColumn,
+        string $label,
+    ) {
+        return Attendance::query()
+            ->join('employees', 'employees.id', '=', 'attendances.employee_id')
+            ->join($attendanceTable, "{$attendanceTable}.attendance_id", '=', 'attendances.id')
+            ->whereDate('attendances.date', $today)
+            ->where('employees.station_id', $stationId)
+            ->whereNotNull("{$attendanceTable}.{$timeColumn}")
+            ->select([
+                'employees.id as employee_id',
+                'employees.first_name',
+                'employees.middle_name',
+                'employees.last_name',
+                'employees.profile_img',
+                'employees.position',
+            ])
+            ->selectRaw('? as label', [$label])
+            ->selectRaw("{$attendanceTable}.{$timeColumn} as time");
+    }
+
+    private function travelOrders(Carbon $today, AttendanceMonitoringFilter $filter)
+    {
+        return EmployeeTravelOrder::query()
+            ->select('employee_travel_orders.*')
+            ->join('employees', 'employees.id', '=', 'employee_travel_orders.employee_id')
+            ->with('employee:id,first_name,middle_name,last_name,profile_img,position,station_id')
+            ->where('employees.station_id', $filter->stationId)
+            ->where('employees.active_status', 1)
+            ->whereDate('employee_travel_orders.start_date', '<=', $today)
+            ->whereDate('employee_travel_orders.end_date', '>=', $today)
+            ->orderBy('employee_travel_orders.start_date')
+            ->orderBy('employee_travel_orders.end_date')
+            ->orderBy('employees.first_name')
+            ->limit($filter->sidePanelLimit)
+            ->get()
+            ->map(fn (EmployeeTravelOrder $travelOrder) => TravelOrderData::fromModel($travelOrder))
+            ->values();
     }
 }

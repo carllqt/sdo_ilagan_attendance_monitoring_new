@@ -79,6 +79,7 @@ const StationAdminList = ({
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
+                            if (isLoading) return;
                             submitSearch(searchTerm);
                             setShowSuggestions(false);
                         }}
@@ -90,20 +91,24 @@ const StationAdminList = ({
                             name="station-admin-search"
                             value={searchTerm}
                             onChange={(e) => {
+                                if (isLoading) return;
+
                                 setSearchTerm(e.target.value);
                                 setShowSuggestions(true);
                             }}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     e.preventDefault();
+                                    if (isLoading) return;
                                     submitSearch(searchTerm);
                                     setShowSuggestions(false);
                                 }
                             }}
+                            disabled={isLoading}
                         />
                     </form>
 
-                    {showSuggestions && searchTerm.trim() ? (
+                    {showSuggestions && searchTerm.trim() && !isLoading ? (
                         <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                             <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 Results for "{searchTerm.trim()}"
@@ -117,10 +122,12 @@ const StationAdminList = ({
                                         <button
                                             key={suggestion.id}
                                             type="button"
-                                            onMouseDown={() =>
-                                                selectSuggestion(suggestion)
-                                            }
-                                            className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                            disabled={isLoading}
+                                            onMouseDown={() => {
+                                                if (isLoading) return;
+                                                selectSuggestion(suggestion);
+                                            }}
+                                            className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-60"
                                         >
                                             <div className="min-w-0">
                                                 <div className="truncate font-medium text-slate-800">
@@ -214,7 +221,8 @@ const StationAdminList = ({
                                 ),
                             )
                         ) : paginatedRows.length > 0 ? (
-                            paginatedRows.map(({ station, admin }) => {
+                            <>
+                                {paginatedRows.map(({ station, admin }) => {
                                 const emp = admin?.employee;
                                 const isHighlighted =
                                     String(getStationHighlightKey(station)) ===
@@ -310,6 +318,7 @@ const StationAdminList = ({
                                             {admin ? (
                                                 <Button
                                                     size="icon"
+                                                    disabled={isLoading}
                                                     onClick={() =>
                                                         openRemoveAdminModal(
                                                             admin,
@@ -323,6 +332,7 @@ const StationAdminList = ({
                                             ) : (
                                                 <Button
                                                     size="sm"
+                                                    disabled={isLoading}
                                                     className={`bg-white text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white ${
                                                         isHighlighted
                                                             ? "animate-bounce bg-blue-600 font-semibold text-white shadow-lg shadow-blue-200"
@@ -339,7 +349,8 @@ const StationAdminList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -362,6 +373,7 @@ const StationAdminList = ({
                 to={endIndex}
                 total={totalEntries}
                 totalPages={totalPages}
+                disabled={isLoading}
             />
 
             <AssignStationAdminModal

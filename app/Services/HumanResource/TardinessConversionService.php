@@ -22,8 +22,10 @@ class TardinessConversionService
 
     public function pageData(Request $request): array
     {
-        $filter = TardinessConversionFilter::fromRequest($request);
-        $officeOptions = $this->repository->officeOptions();
+        $stationId = $this->stationId($request);
+        $filter = TardinessConversionFilter::fromRequest($request)
+            ->withStationId($stationId);
+        $officeOptions = $this->repository->officeOptions($stationId);
         $filter = $this->resolveOfficeFilter($filter, $officeOptions);
         $monthList = $this->monthList($filter);
         $defaultStartMonth = $monthList->first() ?: now()->format('F Y');
@@ -71,10 +73,12 @@ class TardinessConversionService
 
     public function suggestions(Request $request): array
     {
-        $filter = TardinessConversionFilter::fromRequest($request);
+        $stationId = $this->stationId($request);
+        $filter = TardinessConversionFilter::fromRequest($request)
+            ->withStationId($stationId);
         $filter = $this->resolveOfficeFilter(
             $filter,
-            $this->repository->officeOptions(),
+            $this->repository->officeOptions($stationId),
         );
         $monthList = $this->monthList($filter);
         $filter = $filter->withDefaults(
@@ -103,22 +107,37 @@ class TardinessConversionService
             ->all();
     }
 
-    public function storeSummaries(array $summaries): void
+    public function storeSummaries(array $summaries, ?int $stationId = null): void
     {
-        DB::transaction(function () use ($summaries) {
+        DB::transaction(function () use ($summaries, $stationId) {
             $batch = $this->createBatch($summaries[0]);
 
             foreach ($summaries as $summary) {
+                if (
+                    $stationId &&
+                    ! $this->repository->employeeBelongsToStation(
+                        (int) $summary['employee_id'],
+                        $stationId,
+                    )
+                ) {
+                    abort(403, 'Employee does not belong to your station.');
+                }
+
                 $conversion = HrTardinessConversion::create([
                     ...$summary,
                     'batch_id' => $batch->id,
                 ]);
 
                 $conversion->tardinessRecords()->attach(
-                    $this->repository->recordIdsForSummary($summary),
+                    $this->repository->recordIdsForSummary($summary, $stationId),
                 );
             }
         });
+    }
+
+    private function stationId(Request $request): ?int
+    {
+        return $request->user()?->employee?->station_id;
     }
 
     public function updateConversion(string $type, int $id, float $equivalentDays): void

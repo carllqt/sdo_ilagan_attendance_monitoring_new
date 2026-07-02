@@ -64,12 +64,14 @@ const useTardinessSummaryManagement = ({
     };
 
     const handleSummaryPageChange = (page) => {
+        if (filters.summaryLoading) return;
         if (page < 1 || page > pageData.summaryPagination.totalPages) return;
 
         filters.applyFilters({ pageValue: page, includePrint: false });
     };
 
     const handleVerificationPageChange = (page) => {
+        if (filters.verificationLoading) return;
         if (page < 1 || page > pageData.verificationPagination.totalPages) {
             return;
         }
@@ -78,6 +80,8 @@ const useTardinessSummaryManagement = ({
     };
 
     const handleVerificationStationChange = (stationId) => {
+        if (filters.verificationLoading) return;
+
         filters.applyVerificationFilters({
             stationValue: stationId,
             pageValue: 1,
@@ -85,6 +89,8 @@ const useTardinessSummaryManagement = ({
     };
 
     const handleSuggestionSelect = (suggestion) => {
+        if (filters.summaryLoading) return;
+
         const nextValue = suggestion.search || suggestion.label || "";
 
         filters.setSearchInput(nextValue);
@@ -93,6 +99,8 @@ const useTardinessSummaryManagement = ({
     };
 
     const handleDownloadPDF = () => {
+        if (filters.summaryLoading) return;
+
         filters.loadPrintSummary({
             onSuccess: downloadAfterPrintSummaryRender,
         });

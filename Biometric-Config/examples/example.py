@@ -83,10 +83,10 @@ async def bio_register_sse(emp_id: int, request: Request):
 
     
 @app.get("/bioLogin")
-async def bio_login():
+async def bio_login(station_id: int | None = None):
     """SSE endpoint for fingerprint login"""
     async def event_stream():
-        async for msg in login_with_fingerprint(service):
+        async for msg in login_with_fingerprint(service, station_id):
             yield msg
             # No need for sys.stdout.flush() here; StreamingResponse handles it
 
@@ -102,9 +102,9 @@ async def bio_test_sse():
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 @app.get("/bioFingerprintChoice/{employee_id}/{choice}")
-async def bio_fingerprint_choice_sse(employee_id: int, choice: str):
+async def bio_fingerprint_choice_sse(employee_id: int, choice: str, station_id: int | None = None):
     """SSE endpoint for recording AM Time-Out or PM Time-In choice"""
     async def event_stream():
-        async for msg in fingerprint_choice(service, employee_id, choice):
+        async for msg in fingerprint_choice(service, employee_id, choice, station_id):
             yield msg
     return StreamingResponse(event_stream(), media_type="text/event-stream")

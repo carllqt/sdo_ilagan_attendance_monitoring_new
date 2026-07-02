@@ -353,7 +353,8 @@ const EmployeeList = ({
                                 </TableCell>
                             </TableRow>
                         ) : displayedEmployees.length > 0 ? (
-                            displayedEmployees.map((emp) => {
+                            <>
+                                {displayedEmployees.map((emp) => {
                                 const fullName = getEmployeeName(emp) || "-";
                                 const hasWorkType = Boolean(
                                     emp.work_type ||
@@ -527,7 +528,8 @@ const EmployeeList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell

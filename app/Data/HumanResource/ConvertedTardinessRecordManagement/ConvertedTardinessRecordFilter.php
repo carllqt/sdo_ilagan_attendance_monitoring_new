@@ -15,6 +15,7 @@ class ConvertedTardinessRecordFilter
         public readonly int $batchHistoryPage,
         public readonly int $year,
         public readonly string $search,
+        public readonly ?int $stationId = null,
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -28,6 +29,19 @@ class ConvertedTardinessRecordFilter
             batchHistoryPage: max((int) $request->query('batch_page', 1), 1),
             year: self::yearFromRequest($request, $defaultYear),
             search: trim((string) $request->query('search', '')),
+        );
+    }
+
+    public function withStationId(?int $stationId): self
+    {
+        return new self(
+            limit: $this->limit,
+            page: $this->page,
+            batchHistoryLimit: $this->batchHistoryLimit,
+            batchHistoryPage: $this->batchHistoryPage,
+            year: $this->year,
+            search: $this->search,
+            stationId: $stationId,
         );
     }
 

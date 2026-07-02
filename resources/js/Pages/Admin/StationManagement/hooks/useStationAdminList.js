@@ -23,6 +23,8 @@ const useStationAdminList = ({
     const modalActions = useStationAdminModalActions();
 
     const selectSuggestion = (suggestion) => {
+        if (rowControls.isLoading) return;
+
         const nextValue = suggestion.search || suggestion.label || "";
         rowControls.setSearchTerm(nextValue);
         suggestionControls.setShowSuggestions(false);

@@ -27,6 +27,8 @@ const useFingerprintPanel = ({
     const [testMessage, setTestMessage] = useState("Waiting for scan...");
     const [testStatus, setTestStatus] = useState("idle");
     const [testSource, setTestSource] = useState(null);
+    const [fingerprintEmployeeLoading, setFingerprintEmployeeLoading] =
+        useState(false);
 
     useEffect(() => {
         setSelectedEmployee(selectedFingerprintEmployeeProp?.id || "");
@@ -65,6 +67,7 @@ const useFingerprintPanel = ({
     };
 
     const clearFingerprintEmployee = () => {
+        setFingerprintEmployeeLoading(true);
         setSelectedEmployee("");
         setSelectedFingerprintEmployee(null);
 
@@ -76,6 +79,7 @@ const useFingerprintPanel = ({
             preserveState: false,
             preserveScroll: true,
             replace: true,
+            onFinish: () => setFingerprintEmployeeLoading(false),
         });
     };
 
@@ -243,6 +247,7 @@ const useFingerprintPanel = ({
     };
 
     const selectFingerprintEmployee = (employee) => {
+        setFingerprintEmployeeLoading(true);
         setSelectedEmployee(employee.id);
         setSelectedFingerprintEmployee(employee);
 
@@ -257,6 +262,7 @@ const useFingerprintPanel = ({
             preserveState: false,
             preserveScroll: true,
             replace: true,
+            onFinish: () => setFingerprintEmployeeLoading(false),
         });
     };
 
@@ -290,6 +296,7 @@ const useFingerprintPanel = ({
         cancelScan,
         clearFingerprintEmployee,
         handleTestFingerprintOpenChange,
+        fingerprintEmployeeLoading,
         isRegistered,
         registerFingerprint,
         scanFeedbackKey,

@@ -96,6 +96,7 @@ const StationList = ({
 
                     <Button
                         onClick={openAddStationModal}
+                        disabled={isLoading}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                         + Add Station
@@ -145,7 +146,8 @@ const StationList = ({
                                     ),
                                 )
                             ) : paginatedStations.length > 0 ? (
-                                paginatedStations.map(({ station }) => {
+                                <>
+                                    {paginatedStations.map(({ station }) => {
                                     const isSdoAssignment =
                                         station.source === "sdo";
 
@@ -177,6 +179,7 @@ const StationList = ({
                                             <TableCell className="p-3 text-center">
                                                 <div className="flex justify-center gap-5">
                                                     <Button
+                                                        disabled={isLoading}
                                                         onClick={() =>
                                                             openStationModal(
                                                                 "edit-station",
@@ -190,6 +193,7 @@ const StationList = ({
                                                     </Button>
 
                                                     <Button
+                                                        disabled={isLoading}
                                                         onClick={() =>
                                                             openStationModal(
                                                                 "delete-station",
@@ -205,7 +209,8 @@ const StationList = ({
                                             </TableCell>
                                         </TableRow>
                                     );
-                                })
+                                    })}
+                                </>
                             ) : (
                                 <TableRow>
                                     <TableCell
@@ -230,6 +235,7 @@ const StationList = ({
                     to={endIndex}
                     total={totalEntries}
                     totalPages={totalPages}
+                    disabled={isLoading}
                 />
             </div>
 
@@ -378,13 +384,14 @@ const StationList = ({
                             <button
                                 key={station.id}
                                 type="button"
+                                disabled={isLoading}
                                 onClick={() =>
                                     onAssignNow?.(
                                         getStationHighlightKey(station),
                                         station.admin_page,
                                     )
                                 }
-                                className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-600 hover:text-white"
+                                className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-600 hover:text-white disabled:pointer-events-none disabled:opacity-60"
                             >
                                 {station.name}
                             </button>
@@ -393,6 +400,7 @@ const StationList = ({
                         {remainingMissingStations > 0 && (
                             <button
                                 type="button"
+                                disabled={isLoading}
                                 onClick={() =>
                                     onAssignNow?.(
                                         getStationHighlightKey(
@@ -401,7 +409,7 @@ const StationList = ({
                                         visibleMissingStations[0]?.admin_page,
                                     )
                                 }
-                                className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-600 hover:text-white"
+                                className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-600 shadow-sm transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-600 hover:text-white disabled:pointer-events-none disabled:opacity-60"
                             >
                                 +{remainingMissingStations} more
                             </button>
@@ -411,6 +419,7 @@ const StationList = ({
                     <div className="mt-auto flex justify-end">
                         {missingCount > 0 && (
                             <Button
+                                disabled={isLoading}
                                 onClick={() =>
                                     onAssignNow?.(
                                         getStationHighlightKey(

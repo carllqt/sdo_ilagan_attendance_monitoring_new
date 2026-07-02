@@ -30,11 +30,11 @@ class ConvertedTardinessRecordManagementController extends Controller
         );
     }
 
-    public function show(HrTardinessBatch $batch)
+    public function show(Request $request, HrTardinessBatch $batch)
     {
         return Inertia::render(
             'HumanResource/ConvertedTardinessRecordManagement/ConvertedTardinessRecordBatch',
-            $this->convertedTardinessRecords->batchData($batch),
+            $this->convertedTardinessRecords->batchData($request, $batch),
         );
     }
 }

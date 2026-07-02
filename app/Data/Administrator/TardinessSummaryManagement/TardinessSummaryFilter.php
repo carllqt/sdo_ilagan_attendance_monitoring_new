@@ -18,7 +18,7 @@ class TardinessSummaryFilter
         public readonly int $verificationPage,
         public readonly string $verificationStation,
         public readonly bool $isSchoolAdmin,
-        public readonly ?int $schoolStationId,
+        public readonly ?int $userStationId,
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -43,7 +43,7 @@ class TardinessSummaryFilter
             verificationPage: max((int) $request->query('verification_page', 1), 1),
             verificationStation: trim((string) $request->query('verification_station', '')),
             isSchoolAdmin: (bool) $isSchoolAdmin,
-            schoolStationId: $user?->employee?->station_id ? (int) $user->employee->station_id : null,
+            userStationId: $user?->employee?->station_id ? (int) $user->employee->station_id : null,
         );
     }
 
@@ -73,7 +73,7 @@ class TardinessSummaryFilter
             verificationPage: $this->verificationPage,
             verificationStation: $stationName,
             isSchoolAdmin: $this->isSchoolAdmin,
-            schoolStationId: $this->schoolStationId,
+            userStationId: $this->userStationId,
         );
     }
 }

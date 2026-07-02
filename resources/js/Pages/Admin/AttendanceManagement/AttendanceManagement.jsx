@@ -26,6 +26,8 @@ const AttendanceManagement = ({
     const [currentTravelOrderFilters, setCurrentTravelOrderFilters] =
         useState(travel_order_filters);
     const [addTravelOrderOpen, setAddTravelOrderOpen] = useState(false);
+    const [incompleteLoading, setIncompleteLoading] = useState(false);
+    const [travelOrderLoading, setTravelOrderLoading] = useState(false);
     const filtersRef = useRef(filters);
     const travelOrderFiltersRef = useRef(travel_order_filters);
 
@@ -75,43 +77,55 @@ const AttendanceManagement = ({
     });
 
     const updateIncomplete = (values = {}) => {
+        if (incompleteLoading) return;
+
         const next = { ...filtersRef.current, ...values };
         const query = buildQuery(next, travelOrderFiltersRef.current);
 
         filtersRef.current = next;
         setCurrentFilters(next);
+        setIncompleteLoading(true);
 
         router.visit(route("attendance-management", query), {
             only: ["incomplete_attendances", "filters"],
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            onFinish: () => setIncompleteLoading(false),
         });
     };
 
     const updateTravelOrders = (values = {}) => {
+        if (travelOrderLoading) return;
+
         const next = { ...travelOrderFiltersRef.current, ...values };
         const query = buildQuery(filtersRef.current, next);
 
         travelOrderFiltersRef.current = next;
         setCurrentTravelOrderFilters(next);
+        setTravelOrderLoading(true);
 
         router.visit(route("attendance-management", query), {
             only: ["employee_travel_orders", "travel_order_filters"],
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            onFinish: () => setTravelOrderLoading(false),
         });
     };
 
     const reloadTravelOrders = () => {
+        if (travelOrderLoading) return;
+
         const query = buildQuery(filtersRef.current, travelOrderFiltersRef.current);
+        setTravelOrderLoading(true);
 
         router.visit(route("attendance-management", query), {
             only: ["employee_travel_orders", "travel_order_filters"],
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            onFinish: () => setTravelOrderLoading(false),
         });
     };
 
@@ -140,6 +154,7 @@ const AttendanceManagement = ({
                     years={yearOptions}
                     onFilterChange={updateIncomplete}
                     handleEdit={handleEdit}
+                    isLoading={incompleteLoading}
                 />
 
                 <TravelOrderTable
@@ -149,6 +164,7 @@ const AttendanceManagement = ({
                     years={yearOptions}
                     onAddTravelOrder={() => setAddTravelOrderOpen(true)}
                     onFilterChange={updateTravelOrders}
+                    isLoading={travelOrderLoading}
                 />
 
                 <AddTravelOrderDialog

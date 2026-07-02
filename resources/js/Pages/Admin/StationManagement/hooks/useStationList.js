@@ -26,6 +26,7 @@ const useStationList = ({ stations, stationLimit }) => {
     const paginationItems = getStationPagination(activePage, totalPages);
 
     const handlePageChange = (page) => {
+        if (isLoading) return;
         if (page < 1 || page > totalPages) return;
 
         const params = new URLSearchParams(window.location.search);
@@ -66,6 +67,8 @@ const useStationList = ({ stations, stationLimit }) => {
     };
 
     const openAddStationModal = () => {
+        if (isLoading) return;
+
         const params = new URLSearchParams(window.location.search);
 
         params.delete("admin_id");
@@ -82,6 +85,8 @@ const useStationList = ({ stations, stationLimit }) => {
     };
 
     const openStationModal = (modal, station) => {
+        if (isLoading) return;
+
         const params = new URLSearchParams(window.location.search);
 
         params.delete("admin_id");

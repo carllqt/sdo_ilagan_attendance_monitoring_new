@@ -31,6 +31,7 @@ const IncompleteAttendanceTable = ({
     years = [],
     onFilterChange,
     handleEdit,
+    isLoading = false,
 }) => {
     const items = records.data || [];
     const [searchInput, setSearchInput] = useState(filters.search || "");
@@ -82,7 +83,7 @@ const IncompleteAttendanceTable = ({
         suggestionMatches,
         suggestionsLoading,
     } = useEmployeeSearchSuggestions({
-        enabled: Boolean(searchInput.trim()),
+        enabled: !isLoading && Boolean(searchInput.trim()),
         query: searchInput,
     });
 
@@ -91,6 +92,8 @@ const IncompleteAttendanceTable = ({
     }, [filters.search]);
 
     const applySearch = (value = searchInput) => {
+        if (isLoading) return;
+
         onFilterChange({
             search: String(value || "").trim(),
             page: 1,
@@ -99,6 +102,8 @@ const IncompleteAttendanceTable = ({
     };
 
     const selectSuggestion = (employee) => {
+        if (isLoading) return;
+
         setSearchInput(employee.label);
         applySearch(`${employee.id} ${employee.label}`);
     };
@@ -125,6 +130,7 @@ const IncompleteAttendanceTable = ({
                                 icon={Search}
                                 name="search"
                                 value={searchInput}
+                                disabled={isLoading}
                                 onChange={(event) => {
                                     setSearchInput(event.target.value);
                                     setShowSuggestions(true);
@@ -191,6 +197,7 @@ const IncompleteAttendanceTable = ({
                             label="Select Day"
                             items={days}
                             selected={selectedDay}
+                            disabled={isLoading}
                             onChange={(day) =>
                                 onFilterChange({ day: Number(day), page: 1 })
                             }
@@ -201,6 +208,7 @@ const IncompleteAttendanceTable = ({
                             label="Select Month"
                             items={months}
                             selected={selectedMonth}
+                            disabled={isLoading}
                             onChange={(month) =>
                                 onFilterChange({
                                     month,
@@ -219,6 +227,7 @@ const IncompleteAttendanceTable = ({
                             label="Select Year"
                             items={years}
                             selected={selectedYear}
+                            disabled={isLoading}
                             onChange={(year) =>
                                 onFilterChange({
                                     year,
@@ -238,6 +247,7 @@ const IncompleteAttendanceTable = ({
                             items={officeItems}
                             selected={selectedOffice.id}
                             buttonLabel={officeButtonLabel}
+                            disabled={isLoading}
                             onChange={(officeId) =>
                                 onFilterChange({
                                     office:
@@ -285,7 +295,8 @@ const IncompleteAttendanceTable = ({
                     </TableHeader>
                     <TableBody>
                         {items.length > 0 ? (
-                            items.map((attendance) => {
+                            <>
+                                {items.map((attendance) => {
                                 const employee = attendance.employee || {};
                                 const employeeName = getEmployeeName(employee);
 
@@ -334,6 +345,7 @@ const IncompleteAttendanceTable = ({
                                                 <Button
                                                     size="sm"
                                                     className="flex min-w-[90px] items-center justify-center gap-1 border border-blue-600 bg-white text-blue-600 hover:bg-blue-600 hover:text-white"
+                                                    disabled={isLoading}
                                                     onClick={() =>
                                                         handleEdit(attendance)
                                                     }
@@ -346,7 +358,8 @@ const IncompleteAttendanceTable = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -364,6 +377,7 @@ const IncompleteAttendanceTable = ({
             <PaginationMain
                 pagination={records}
                 entryLabel="records"
+                disabled={isLoading}
                 onPageChange={(page) => onFilterChange({ page })}
             />
         </div>

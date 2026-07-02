@@ -78,7 +78,9 @@ const DepartmentHeadList = ({
                             name="office-search"
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
-                            onFocus={() => setIsSearchFocused(true)}
+                            onFocus={() => {
+                                if (!isLoading) setIsSearchFocused(true);
+                            }}
                             onBlur={() => {
                                 window.setTimeout(() => {
                                     setIsSearchFocused(false);
@@ -87,13 +89,15 @@ const DepartmentHeadList = ({
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     e.preventDefault();
+                                    if (isLoading) return;
                                     runSearch(searchInput);
                                     setIsSearchFocused(false);
                                 }
                             }}
+                            disabled={isLoading}
                         />
 
-                        {isSearchFocused && searchInput.trim() && (
+                        {isSearchFocused && searchInput.trim() && !isLoading && (
                                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         Offices
@@ -107,9 +111,11 @@ const DepartmentHeadList = ({
                                                 <button
                                                     key={`${item.officeId}-${item.officeName}-${item.value}`}
                                                     type="button"
-                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
+                                                    disabled={isLoading}
+                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-60"
                                                     onMouseDown={(event) => {
                                                         event.preventDefault();
+                                                        if (isLoading) return;
                                                         setSearchInput(
                                                             item.value,
                                                         );
@@ -225,7 +231,8 @@ const DepartmentHeadList = ({
                                 ),
                             )
                         ) : paginatedRows.length > 0 ? (
-                            paginatedRows.map((row) => {
+                            <>
+                                {paginatedRows.map((row) => {
                                 const emp = row.head?.employee;
                                 const fullName = getEmployeeName(emp);
 
@@ -309,6 +316,7 @@ const DepartmentHeadList = ({
                                             {row.head ? (
                                                 <Button
                                                     size="icon"
+                                                    disabled={isLoading}
                                                     onClick={() =>
                                                         openDepartmentModal(
                                                             "delete-office-head",
@@ -326,6 +334,7 @@ const DepartmentHeadList = ({
                                             ) : (
                                                 <Button
                                                     size="sm"
+                                                    disabled={isLoading}
                                                     className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-600 hover:text-white"
                                                     onClick={() => {
                                                         openDepartmentModal(
@@ -345,7 +354,8 @@ const DepartmentHeadList = ({
                                         </TableCell>
                                     </TableRow>
                                 );
-                            })
+                                })}
+                            </>
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -367,6 +377,7 @@ const DepartmentHeadList = ({
                 to={endIndex}
                 total={totalEntries}
                 totalPages={totalPages}
+                disabled={isLoading}
             />
 
             <ConfirmPasswordDialog
