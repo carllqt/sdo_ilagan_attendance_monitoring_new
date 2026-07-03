@@ -22,7 +22,7 @@ class AttendanceRepository
         $query = Attendance::query()
             ->select('attendances.*')
             ->with([
-                'employee:id,first_name,middle_name,last_name,position,office_id,station_id,active_status',
+                'employee:id,first_name,middle_name,last_name,profile_img,position,office_id,station_id,active_status',
                 'employee.office:id,name',
                 'am',
                 'pm',

@@ -9,7 +9,14 @@ const profileImageUrl = (profileImage) => {
     return `/employee-profile-images/${encodeURIComponent(filename)}`;
 };
 
-const EmployeeAvatar = ({ employee, name, className = "h-9 w-9" }) => {
+const EmployeeAvatar = ({
+    employee,
+    name,
+    className = "h-9 w-9",
+    fallbackClassName = "bg-gradient-to-br from-blue-500 via-sky-400 to-blue-300",
+    glowClassName = "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.45),transparent_55%)]",
+    iconClassName = "text-white/90",
+}) => {
     const avatarUrl = profileImageUrl(employee?.profile_img);
 
     return (
@@ -24,9 +31,13 @@ const EmployeeAvatar = ({ employee, name, className = "h-9 w-9" }) => {
                 />
             ) : (
                 <>
-                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-blue-500 via-sky-400 to-blue-300" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.45),transparent_55%)]" />
-                    <User className="relative z-10 h-4 w-4 text-white/90" />
+                    <div
+                        className={`absolute inset-0 animate-pulse ${fallbackClassName}`}
+                    />
+                    <div className={`absolute inset-0 ${glowClassName}`} />
+                    <User
+                        className={`relative z-10 h-1/2 w-1/2 max-h-16 max-w-16 ${iconClassName}`}
+                    />
                 </>
             )}
         </div>

@@ -15,6 +15,7 @@ import FloatingInput from "@/components/floating-input";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import PaginationMain from "@/Components/PaginationMain";
 import SchoolList from "./SchoolList";
+import { Skeleton } from "@/components/ui/skeleton";
 import useSearchSuggestions from "../hooks/useSearchSuggestions";
 
 const formatTime = (time) => {
@@ -129,13 +130,68 @@ const EmployeeCard = ({ row }) => {
     );
 };
 
+const EmployeeCardSkeleton = () => (
+    <div className="rounded-xl border border-white/70 bg-white/90 p-4 shadow-lg shadow-blue-950/10">
+        <div className="flex items-start gap-4">
+            <Skeleton className="h-16 w-16 shrink-0 rounded-full bg-[#0b1b5f]/25" />
+            <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-4/5 bg-[#0b1b5f]/25" />
+                <Skeleton className="h-3 w-3/5 bg-[#0b1b5f]/20" />
+                <Skeleton className="h-3 w-1/2 bg-[#0b1b5f]/20" />
+            </div>
+            <Skeleton className="h-6 w-16 shrink-0 rounded-full bg-[#0b1b5f]/25" />
+        </div>
+
+        <div className="mt-5 grid grid-cols-4 gap-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="space-y-2">
+                    <Skeleton className="mx-auto h-3 w-12 bg-[#0b1b5f]/25" />
+                    <Skeleton className="mx-auto h-3 w-10 bg-[#0b1b5f]/20" />
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const EmployeeCardSkeletonGrid = ({ count = 16 }) => (
+    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+        {Array.from({ length: count }).map((_, index) => (
+            <EmployeeCardSkeleton key={index} />
+        ))}
+    </div>
+);
+
 const personName = (item = {}) =>
     item.full_name ||
     [item.first_name, item.middle_name, item.last_name]
         .filter(Boolean)
         .join(" ");
 
-const RecentLogsPanel = ({ items = [] }) => (
+const SidePanelSkeletonItems = ({ count = 4, showRank = false }) => (
+    <>
+        {Array.from({ length: count }).map((_, index) => (
+            <div
+                key={index}
+                className="flex items-center gap-2.5 rounded-lg bg-white/90 p-2 shadow-sm"
+            >
+                {showRank ? (
+                    <Skeleton className="h-4 w-4 shrink-0 bg-[#0b1b5f]/25" />
+                ) : null}
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-[#0b1b5f]/25" />
+                <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-3 w-3/4 bg-[#0b1b5f]/25" />
+                    <Skeleton className="h-3 w-1/2 bg-[#0b1b5f]/20" />
+                </div>
+                <div className="shrink-0 space-y-2">
+                    <Skeleton className="h-3 w-12 bg-[#0b1b5f]/25" />
+                    <Skeleton className="h-3 w-10 bg-[#0b1b5f]/20" />
+                </div>
+            </div>
+        ))}
+    </>
+);
+
+const RecentLogsPanel = ({ isLoading = false, items = [] }) => (
     <aside className="rounded-2xl border border-white/18 bg-white/[0.045] p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-blue-950/35">
         <div className="mb-2 flex items-start gap-2.5">
             <ListChecks className="h-5 w-5 shrink-0 text-cyan-200" />
@@ -150,7 +206,9 @@ const RecentLogsPanel = ({ items = [] }) => (
         </div>
 
         <div className="space-y-1 border-t border-white/20 pt-2">
-            {items.length > 0 ? (
+            {isLoading ? (
+                <SidePanelSkeletonItems count={4} />
+            ) : items.length > 0 ? (
                 items.map((item) => (
                     <div
                         key={item.id}
@@ -184,7 +242,7 @@ const RecentLogsPanel = ({ items = [] }) => (
     </aside>
 );
 
-const RankingPanel = ({ items = [] }) => (
+const RankingPanel = ({ isLoading = false, items = [] }) => (
     <aside className="rounded-2xl border border-white/18 bg-white/[0.045] p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-blue-950/35">
         <div className="mb-2 flex items-start gap-2.5">
             <Trophy className="h-5 w-5 shrink-0 text-amber-200" />
@@ -199,7 +257,9 @@ const RankingPanel = ({ items = [] }) => (
         </div>
 
         <div className="space-y-1 border-t border-white/20 pt-2">
-            {items.length > 0 ? (
+            {isLoading ? (
+                <SidePanelSkeletonItems count={4} showRank />
+            ) : items.length > 0 ? (
                 items.map((item, index) => {
                     const rankClass =
                         index === 0
@@ -245,7 +305,7 @@ const RankingPanel = ({ items = [] }) => (
     </aside>
 );
 
-const TravelPanel = ({ items = [] }) => (
+const TravelPanel = ({ isLoading = false, items = [] }) => (
     <aside className="rounded-2xl border border-white/18 bg-white/[0.045] p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-blue-950/35">
         <div className="mb-2 flex items-start justify-between gap-2.5">
             <div className="flex min-w-0 items-start gap-2.5">
@@ -257,13 +317,19 @@ const TravelPanel = ({ items = [] }) => (
                     </p>
                 </div>
             </div>
-            <span className="flex h-6 min-w-6 items-center justify-center rounded-full border border-white/30 bg-white/20 px-2 text-xs font-black text-white">
-                {items.length}
-            </span>
+            {isLoading ? (
+                <Skeleton className="h-6 w-8 rounded-full bg-[#0b1b5f]/25" />
+            ) : (
+                <span className="flex h-6 min-w-6 items-center justify-center rounded-full border border-white/30 bg-white/20 px-2 text-xs font-black text-white">
+                    {items.length}
+                </span>
+            )}
         </div>
 
         <div className="space-y-2 border-t border-white/20 pt-3">
-            {items.length > 0 ? (
+            {isLoading ? (
+                <SidePanelSkeletonItems count={3} />
+            ) : items.length > 0 ? (
                 items.map((item) => {
                     const employee = item.employee || {};
 
@@ -302,6 +368,8 @@ const TravelPanel = ({ items = [] }) => (
 const EmployeeList = ({
     employees,
     goToPage,
+    isFiltering = false,
+    isStationFiltering = false,
     rows,
     search,
     selectedStation,
@@ -500,16 +568,20 @@ const EmployeeList = ({
                                 </div>
                             </div>
 
-                            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-                                {rows.map((row) => (
-                                    <EmployeeCard
-                                        key={row.employee_id}
-                                        row={row}
-                                    />
-                                ))}
-                            </div>
+                            {isFiltering ? (
+                                <EmployeeCardSkeletonGrid />
+                            ) : (
+                                <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                                    {rows.map((row) => (
+                                        <EmployeeCard
+                                            key={row.employee_id}
+                                            row={row}
+                                        />
+                                    ))}
+                                </div>
+                            )}
 
-                            {rows.length === 0 && (
+                            {!isFiltering && rows.length === 0 && (
                                 <div className="py-16 text-center text-sm font-semibold text-slate-500">
                                     No attendance records found.
                                 </div>
@@ -524,14 +596,24 @@ const EmployeeList = ({
                                 to={endIndex}
                                 total={total}
                                 totalPages={pageCount}
+                                disabled={isFiltering}
                                 variant="glass"
                             />
                         </div>
 
                         <div className="space-y-3">
-                            <RecentLogsPanel items={recentLogs} />
-                            <RankingPanel items={topFirstTimeIns} />
-                            <TravelPanel items={travelOrders} />
+                            <RecentLogsPanel
+                                isLoading={isStationFiltering}
+                                items={recentLogs}
+                            />
+                            <RankingPanel
+                                isLoading={isStationFiltering}
+                                items={topFirstTimeIns}
+                            />
+                            <TravelPanel
+                                isLoading={isStationFiltering}
+                                items={travelOrders}
+                            />
                         </div>
                     </div>
                 </div>

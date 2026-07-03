@@ -49,6 +49,7 @@ const AttendanceMonitoring = ({
     const [search, setSearch] = useState(filters.search || "");
     const [stationSearch, setStationSearch] = useState("");
     const [time, setTime] = useState(new Date());
+    const [filterScope, setFilterScope] = useState(null);
     const requestInFlightRef = useRef(false);
     const requestIdRef = useRef(0);
     const selectedStation = filters.station_id || 1;
@@ -56,7 +57,7 @@ const AttendanceMonitoring = ({
     const selectedStationName =
         filters.station_name || "School Division Office";
 
-    const visit = (overrides = {}) => {
+    const visit = (overrides = {}, scope = "employees") => {
         const params = new URLSearchParams(window.location.search);
 
         params.set("station_code", selectedStationCode);
@@ -78,6 +79,7 @@ const AttendanceMonitoring = ({
         const requestId = requestIdRef.current + 1;
         requestIdRef.current = requestId;
         requestInFlightRef.current = true;
+        setFilterScope(scope);
 
         router.get(route("attendance-monitoring"), Object.fromEntries(params), {
             preserveScroll: true,
@@ -87,6 +89,7 @@ const AttendanceMonitoring = ({
                 if (requestIdRef.current !== requestId) return;
 
                 requestInFlightRef.current = false;
+                setFilterScope(null);
             },
         });
     };
@@ -134,19 +137,22 @@ const AttendanceMonitoring = ({
             station?.name || "School Division Office",
         ).trim();
 
-        visit({
-            station_code: stationCode,
-            station_name: stationName,
-            page: 1,
-        });
+        visit(
+            {
+                station_code: stationCode,
+                station_name: stationName,
+                page: 1,
+            },
+            "station",
+        );
     };
 
     const goToPage = (page) => {
-        visit({ page });
+        visit({ page }, "employees");
     };
 
     const submitSearch = (value) => {
-        visit({ search: value?.trim() || "", page: 1 });
+        visit({ search: value?.trim() || "", page: 1 }, "employees");
     };
 
     return (
@@ -158,6 +164,8 @@ const AttendanceMonitoring = ({
                 employees={employees}
                 goToPage={goToPage}
                 rows={rows}
+                isFiltering={Boolean(filterScope)}
+                isStationFiltering={filterScope === "station"}
                 search={search}
                 selectedStation={selectedStation}
                 selectedStationCode={selectedStationCode}
