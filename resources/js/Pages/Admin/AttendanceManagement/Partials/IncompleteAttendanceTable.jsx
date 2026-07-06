@@ -108,6 +108,13 @@ const IncompleteAttendanceTable = ({
         applySearch(`${employee.id} ${employee.label}`);
     };
 
+    const clearSearch = () => {
+        if (isLoading) return;
+
+        setSearchInput("");
+        applySearch("");
+    };
+
     return (
         <div className="rounded-2xl border border-blue-100 p-4 shadow-lg">
             <div className="rounded-xl">
@@ -131,6 +138,9 @@ const IncompleteAttendanceTable = ({
                                 name="search"
                                 value={searchInput}
                                 disabled={isLoading}
+                                clearable
+                                onClear={clearSearch}
+                                clearAriaLabel="Clear employee search"
                                 onChange={(event) => {
                                     setSearchInput(event.target.value);
                                     setShowSuggestions(true);

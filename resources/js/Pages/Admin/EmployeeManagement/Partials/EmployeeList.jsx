@@ -74,6 +74,13 @@ const EmployeeList = ({
         searchInput,
         setSearchInput,
     });
+    const clearSearch = () => {
+        if (isLoading) return;
+
+        setSearchInput("");
+        setShowSuggestions(false);
+        applySearch("");
+    };
 
     return (
         <div className="rounded-2xl p-4 mt-4 border border-blue-100 shadow-lg">
@@ -97,6 +104,9 @@ const EmployeeList = ({
                                 icon={Search}
                                 name="search"
                                 value={searchInput}
+                                clearable
+                                onClear={clearSearch}
+                                clearAriaLabel="Clear employee search"
                                 onChange={(e) => {
                                     if (isLoading) return;
 

@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Mail;
+
 use App\Http\Controllers\Administrator\{
     AttendanceController,
     DailyTimeRecordController,
@@ -7,7 +9,8 @@ use App\Http\Controllers\Administrator\{
     TardinessSummaryManagementController,
     AttendanceManagementController,
     DepartmentManagementController,
-    StationManagementController
+    StationManagementController,
+    TravelLocatorManagementController
 };
 use App\Http\Controllers\HumanResource\{
     TardinessConversionController,
@@ -17,7 +20,9 @@ use App\Http\Controllers\HumanResource\{
 };
 use App\Http\Controllers\AttendanceMonitoringController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\DocumentPdfController;
 use App\Http\Controllers\EmployeeProfileImageController;
+use App\Http\Controllers\DocumentRequestController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -34,8 +39,21 @@ Route::get('/employee-profile-images/{filename}', [EmployeeProfileImageControlle
     ->name('employee-profile-images.show');
 
 Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'index'])->name('attendance-monitoring');
+Route::get('/attendance-monitoring/stream', [AttendanceMonitoringController::class, 'stream'])
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        \App\Http\Middleware\HandleInertiaRequests::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+    ])
+    ->name('attendance-monitoring.stream');
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
+Route::post('/document-requests', [DocumentRequestController::class, 'store'])->name('document-requests.store');
+Route::post('/document-pdfs/{type}', [DocumentPdfController::class, 'store'])
+    ->whereIn('type', ['locator-slip', 'travel-order'])
+    ->name('document-pdfs.store');
 
 
 /*
@@ -57,6 +75,10 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::post('/attendance-management/{id}/update', [AttendanceManagementController::class, 'update'])->name('attendance-management.update');
     Route::post('/attendance-management/create', [AttendanceManagementController::class, 'store'])->name('attendance-management.create');
     Route::post('/attendance-management/travel-orders', [AttendanceManagementController::class, 'storeTravelOrder'])->name('attendance-management.travel-orders.store');
+
+    // Travel and Locator Requests
+    Route::get('/travel-locator-management/suggestions', [TravelLocatorManagementController::class, 'suggestions'])->name('travel-locator-management.suggestions');
+    Route::get('/travel-locator-management', [TravelLocatorManagementController::class, 'index'])->name('travel-locator-management');
 
     // Daily Time Records
     Route::controller(DailyTimeRecordController::class)
@@ -143,7 +165,14 @@ Route::get('/test-role', function () {
     dd(auth()->user()->getRoleNames());
 })->middleware('auth');
 
+Route::get('/test-mail', function () {
+    Mail::raw('This is a test email from Laravel.', function ($message) {
+        $message->to('reycarlmedico@gmail.com')
+                ->subject('Laravel SMTP Test');
+    });
 
+    return 'Mail sent.';
+});
 
 /*
 |--------------------------------------------------------------------------

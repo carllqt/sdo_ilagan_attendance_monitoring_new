@@ -63,7 +63,8 @@ const useConvertedEmployeeList = ({
     };
     const handlePageChange = (page) => applyFilters({ page });
 
-    const applySearch = () => applyFilters({ page: 1 });
+    const applySearch = (searchValue = searchInput) =>
+        applyFilters({ page: 1, searchValue });
 
     const handleYearChange = (nextYear) => {
         setSelectedYear(nextYear);

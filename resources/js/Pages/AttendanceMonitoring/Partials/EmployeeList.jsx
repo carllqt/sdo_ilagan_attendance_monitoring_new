@@ -9,7 +9,6 @@ import {
     Search,
     Trophy,
     XCircle,
-    X,
 } from "lucide-react";
 import FloatingInput from "@/components/floating-input";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
@@ -192,7 +191,7 @@ const SidePanelSkeletonItems = ({ count = 4, showRank = false }) => (
 );
 
 const RecentLogsPanel = ({ isLoading = false, items = [] }) => (
-    <aside className="rounded-2xl border border-white/18 bg-white/[0.045] p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-blue-950/35">
+    <aside className="rounded-2xl border border-white/15 bg-[#071158]/70 p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26)] transition duration-300 hover:-translate-y-1 hover:bg-[#09166a]/80 hover:shadow-2xl hover:shadow-blue-950/35">
         <div className="mb-2 flex items-start gap-2.5">
             <ListChecks className="h-5 w-5 shrink-0 text-cyan-200" />
             <div>
@@ -243,7 +242,7 @@ const RecentLogsPanel = ({ isLoading = false, items = [] }) => (
 );
 
 const RankingPanel = ({ isLoading = false, items = [] }) => (
-    <aside className="rounded-2xl border border-white/18 bg-white/[0.045] p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-blue-950/35">
+    <aside className="rounded-2xl border border-white/15 bg-[#071158]/70 p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26)] transition duration-300 hover:-translate-y-1 hover:bg-[#09166a]/80 hover:shadow-2xl hover:shadow-blue-950/35">
         <div className="mb-2 flex items-start gap-2.5">
             <Trophy className="h-5 w-5 shrink-0 text-amber-200" />
             <div>
@@ -306,7 +305,7 @@ const RankingPanel = ({ isLoading = false, items = [] }) => (
 );
 
 const TravelPanel = ({ isLoading = false, items = [] }) => (
-    <aside className="rounded-2xl border border-white/18 bg-white/[0.045] p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:bg-white/[0.07] hover:shadow-2xl hover:shadow-blue-950/35">
+    <aside className="rounded-2xl border border-white/15 bg-[#071158]/70 p-4 text-white shadow-[0_16px_44px_rgba(2,6,47,0.26)] transition duration-300 hover:-translate-y-1 hover:bg-[#09166a]/80 hover:shadow-2xl hover:shadow-blue-950/35">
         <div className="mb-2 flex items-start justify-between gap-2.5">
             <div className="flex min-w-0 items-start gap-2.5">
                 <Plane className="h-5 w-5 shrink-0 text-cyan-200" />
@@ -423,11 +422,7 @@ const EmployeeList = ({
 
     return (
         <section className="relative z-10 mx-auto w-full max-w-[1840px] px-8 pb-7">
-            <div className="relative overflow-hidden rounded-[1.6rem] border border-white/25 bg-[linear-gradient(135deg,rgba(255,255,255,0.09),rgba(120,119,255,0.15))] p-5 shadow-[0_0_28px_rgba(167,139,250,0.20),0_24px_80px_rgba(2,6,47,0.42),inset_0_1px_0_rgba(255,255,255,0.22)] ring-1 ring-violet-200/10 backdrop-blur-[2px]">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.12),transparent_31%),radial-gradient(circle_at_86%_94%,rgba(167,139,250,0.16),transparent_38%)]" />
-                <div className="pointer-events-none absolute -left-10 top-0 h-44 w-2/3 rounded-full bg-white/[0.05] blur-3xl" />
-                <div className="pointer-events-none absolute bottom-[-5rem] left-24 h-56 w-3/4 rounded-full bg-violet-300/[0.08] blur-3xl" />
-                <div className="pointer-events-none absolute -right-12 top-12 h-72 w-52 rounded-full bg-blue-300/[0.06] blur-3xl" />
+            <div className="relative overflow-hidden rounded-[1.6rem] border border-white/15 bg-[#050d49]/80 p-5 shadow-[0_24px_80px_rgba(2,6,47,0.42)] ring-1 ring-violet-200/10">
 
                 <div className="relative z-10">
                     <SchoolList
@@ -439,7 +434,7 @@ const EmployeeList = ({
                     />
 
                     <div className="grid w-full gap-5 xl:grid-cols-[minmax(0,1fr)_25%]">
-                        <div className="rounded-2xl border border-white/25 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(120,119,255,0.12))] p-5 shadow-[0_0_22px_rgba(167,139,250,0.16),0_18px_48px_rgba(2,6,47,0.20),inset_0_1px_0_rgba(255,255,255,0.15)] ring-1 ring-violet-200/10 backdrop-blur-[2px]">
+                        <div className="rounded-2xl border border-white/15 bg-[#071158]/65 p-5 shadow-[0_18px_48px_rgba(2,6,47,0.20)] ring-1 ring-violet-200/10">
                             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-400 to-violet-500 text-white shadow-lg shadow-blue-950/20 ring-1 ring-white/30">
@@ -469,6 +464,9 @@ const EmployeeList = ({
                                                 name="attendance_employee_search"
                                                 value={search}
                                                 variant="glass"
+                                                clearable
+                                                onClear={clearSearch}
+                                                clearAriaLabel="Clear employee search"
                                                 onChange={(event) => {
                                                     setSearch(
                                                         event.target.value,
@@ -485,16 +483,6 @@ const EmployeeList = ({
                                                     }
                                                 }}
                                             />
-                                            {search ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={clearSearch}
-                                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-[#141b6d] hover:text-white"
-                                                    aria-label="Clear employee search"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            ) : null}
                                         </form>
 
                                         {showSuggestions && search.trim() ? (

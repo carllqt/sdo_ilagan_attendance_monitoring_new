@@ -130,6 +130,13 @@ const ConvertedEmployeeList = ({
         suggestionMatches,
         suggestionsLoading,
     } = useConvertedEmployeeSuggestions({ searchInput, selectedYear });
+    const clearSearch = () => {
+        if (isLoading) return;
+
+        setSearchInput("");
+        setShowSuggestions(false);
+        applySearch("");
+    };
 
     return (
         <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
@@ -154,6 +161,9 @@ const ConvertedEmployeeList = ({
                                 icon={Search}
                                 name="search"
                                 value={searchInput}
+                                clearable
+                                onClear={clearSearch}
+                                clearAriaLabel="Clear employee search"
                                 onChange={(event) => {
                                     setSearchInput(event.target.value);
                                     setShowSuggestions(true);

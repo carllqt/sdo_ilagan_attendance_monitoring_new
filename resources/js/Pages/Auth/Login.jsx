@@ -1,20 +1,79 @@
 import InputError from "@/Components/InputError";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/Components/ui/dialog";
 import TextInput from "@/Components/TextInput";
+import { CustomDropdownCheckboxObject } from "@/components/dropdown-menu-main";
 import { Head, Link, useForm } from "@inertiajs/react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import TalaBackground from "@/Components/TalaBackground";
-import { Eye, EyeOff, FileText, Lock, LogIn, Mail, Plane } from "lucide-react";
+import {
+    Briefcase,
+    CalendarDays,
+    Eye,
+    EyeOff,
+    FileText,
+    Lock,
+    LogIn,
+    Mail,
+    MapPin,
+    Plane,
+    User,
+    Users,
+    Wallet,
+} from "lucide-react";
 import { useState } from "react";
 
-const Login = ({ status, canResetPassword }) => {
+const defaultDocumentRequestData = {
+    request_type: "locator_slip",
+    employee_name: "",
+    email: "",
+    position: "",
+    station_id: "",
+    purpose_of_travel: "",
+    destination: "",
+    travel_datetime: "",
+    travel_type: "",
+    host_of_activity: "",
+    inclusive_dates: "",
+    fund_source: "",
+};
+
+const requestLabels = {
+    locator_slip: {
+        title: "Locator Slip",
+        description: "Fill out the details for your locator slip request.",
+    },
+    travel_order: {
+        title: "Travel Order",
+        description: "Fill out the details for your travel order request.",
+    },
+};
+
+const Login = ({ status, canResetPassword, flash = {}, stations = [] }) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [requestModalType, setRequestModalType] = useState(null);
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
         remember: false,
     });
+    const {
+        data: requestData,
+        setData: setRequestData,
+        post: postRequest,
+        processing: requestProcessing,
+        errors: requestErrors,
+        reset: resetRequest,
+        clearErrors: clearRequestErrors,
+    } = useForm(defaultDocumentRequestData);
 
     const submit = (e) => {
         e.preventDefault();
@@ -22,6 +81,42 @@ const Login = ({ status, canResetPassword }) => {
             onFinish: () => reset("password"),
         });
     };
+
+    const openDocumentRequest = (type) => {
+        clearRequestErrors();
+        setRequestData({
+            ...defaultDocumentRequestData,
+            request_type: type,
+            station_id: stations[0]?.id || "",
+        });
+        setRequestModalType(type);
+    };
+
+    const closeDocumentRequest = () => {
+        setRequestModalType(null);
+        resetRequest();
+        clearRequestErrors();
+    };
+
+    const submitDocumentRequest = (e) => {
+        e.preventDefault();
+
+        postRequest("/document-requests", {
+            preserveScroll: true,
+            onSuccess: closeDocumentRequest,
+        });
+    };
+
+    const requestLabel =
+        requestLabels[requestModalType] || requestLabels.locator_slip;
+    const isLocatorSlip = requestModalType === "locator_slip";
+    const stationItems = stations.map((station) => ({
+        ...station,
+        division: station.code ? { name: station.code } : null,
+    }));
+    const selectedStation = stationItems.find(
+        (station) => Number(station.id) === Number(requestData.station_id),
+    );
 
     return (
         <>
@@ -87,6 +182,9 @@ const Login = ({ status, canResetPassword }) => {
                             <div className="mt-9 grid w-full max-w-sm grid-cols-2 gap-3">
                                 <button
                                     type="button"
+                                    onClick={() =>
+                                        openDocumentRequest("locator_slip")
+                                    }
                                     className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(5,10,70,0.16)] backdrop-blur-md transition hover:bg-white/15"
                                 >
                                     <FileText className="h-4 w-4" />
@@ -94,6 +192,9 @@ const Login = ({ status, canResetPassword }) => {
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={() =>
+                                        openDocumentRequest("travel_order")
+                                    }
                                     className="flex h-11 items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(5,10,70,0.16)] backdrop-blur-md transition hover:bg-white/15"
                                 >
                                     <Plane className="h-4 w-4" />
@@ -156,6 +257,9 @@ const Login = ({ status, canResetPassword }) => {
                                 <div className="relative z-10 mt-5 grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
+                                        onClick={() =>
+                                            openDocumentRequest("locator_slip")
+                                        }
                                         className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-2 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/15"
                                     >
                                         <FileText className="h-3.5 w-3.5" />
@@ -163,6 +267,9 @@ const Login = ({ status, canResetPassword }) => {
                                     </button>
                                     <button
                                         type="button"
+                                        onClick={() =>
+                                            openDocumentRequest("travel_order")
+                                        }
                                         className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-2 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/15"
                                     >
                                         <Plane className="h-3.5 w-3.5" />
@@ -185,6 +292,16 @@ const Login = ({ status, canResetPassword }) => {
                             {status && (
                                 <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700">
                                     {status}
+                                </div>
+                            )}
+                            {flash.success && (
+                                <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700">
+                                    {flash.success}
+                                </div>
+                            )}
+                            {flash.error && (
+                                <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700">
+                                    {flash.error}
                                 </div>
                             )}
 
@@ -322,8 +439,274 @@ const Login = ({ status, canResetPassword }) => {
                     </div>
                 </div>
             </div>
+
+            <Dialog
+                open={Boolean(requestModalType)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeDocumentRequest();
+                    }
+                }}
+            >
+                <DialogContent className="max-h-[92vh] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-2xl border-0 bg-white p-5 shadow-2xl sm:p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-black text-slate-900">
+                            {requestLabel.title}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {requestLabel.description}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form
+                        onSubmit={submitDocumentRequest}
+                        className="mt-2 space-y-4"
+                    >
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <RequestTextField
+                                id="request_employee_name"
+                                label="Name"
+                                icon={User}
+                                value={requestData.employee_name}
+                                error={requestErrors.employee_name}
+                                onChange={(value) =>
+                                    setRequestData("employee_name", value)
+                                }
+                            />
+                            <RequestTextField
+                                id="request_email"
+                                label="Email Address"
+                                type="email"
+                                icon={Mail}
+                                value={requestData.email}
+                                error={requestErrors.email}
+                                onChange={(value) =>
+                                    setRequestData("email", value)
+                                }
+                            />
+                            <RequestTextField
+                                id="request_position"
+                                label="Position / Designation"
+                                icon={Briefcase}
+                                value={requestData.position}
+                                error={requestErrors.position}
+                                onChange={(value) =>
+                                    setRequestData("position", value)
+                                }
+                            />
+                            <div>
+                                <label
+                                    htmlFor="request_station_id"
+                                    className="text-sm font-bold text-slate-800"
+                                >
+                                    Permanent Station
+                                </label>
+                                <CustomDropdownCheckboxObject
+                                    label="Select Station"
+                                    items={stationItems}
+                                    selected={requestData.station_id}
+                                    buttonLabel={
+                                        selectedStation?.name ||
+                                        "Select Station"
+                                    }
+                                    onChange={(stationId) =>
+                                        setRequestData("station_id", stationId)
+                                    }
+                                    buttonVariant="outline"
+                                    className="mt-2 h-11 w-full border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                                />
+                                <InputError
+                                    message={requestErrors.station_id}
+                                    className="mt-2"
+                                />
+                            </div>
+                        </div>
+
+                        <RequestTextField
+                            id="request_purpose_of_travel"
+                            label="Purpose of Travel"
+                            icon={FileText}
+                            value={requestData.purpose_of_travel}
+                            error={requestErrors.purpose_of_travel}
+                            onChange={(value) =>
+                                setRequestData("purpose_of_travel", value)
+                            }
+                        />
+
+                        <RequestTextField
+                            id="request_destination"
+                            label="Destination"
+                            icon={MapPin}
+                            value={requestData.destination}
+                            error={requestErrors.destination}
+                            onChange={(value) =>
+                                setRequestData("destination", value)
+                            }
+                        />
+
+                        {isLocatorSlip ? (
+                            <>
+                                <RequestTextField
+                                    id="request_travel_datetime"
+                                    label="Date and Time"
+                                    type="datetime-local"
+                                    icon={CalendarDays}
+                                    value={requestData.travel_datetime}
+                                    error={requestErrors.travel_datetime}
+                                    onChange={(value) =>
+                                        setRequestData(
+                                            "travel_datetime",
+                                            value,
+                                        )
+                                    }
+                                />
+
+                                <div>
+                                    <p className="text-sm font-bold text-slate-800">
+                                        Travel Type
+                                    </p>
+                                    <div className="mt-2 grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+                                        <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                                            <input
+                                                type="radio"
+                                                name="travel_type"
+                                                value="official_business"
+                                                checked={
+                                                    requestData.travel_type ===
+                                                    "official_business"
+                                                }
+                                                onChange={(e) =>
+                                                    setRequestData(
+                                                        "travel_type",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                            Official Business
+                                        </label>
+                                        <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                                            <input
+                                                type="radio"
+                                                name="travel_type"
+                                                value="official_time"
+                                                checked={
+                                                    requestData.travel_type ===
+                                                    "official_time"
+                                                }
+                                                onChange={(e) =>
+                                                    setRequestData(
+                                                        "travel_type",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                            Official Time
+                                        </label>
+                                    </div>
+                                    <InputError
+                                        message={requestErrors.travel_type}
+                                        className="mt-2"
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <RequestTextField
+                                    id="request_host_of_activity"
+                                    label="Host of Activity"
+                                    icon={Users}
+                                    value={requestData.host_of_activity}
+                                    error={requestErrors.host_of_activity}
+                                    onChange={(value) =>
+                                        setRequestData(
+                                            "host_of_activity",
+                                            value,
+                                        )
+                                    }
+                                />
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <RequestTextField
+                                        id="request_inclusive_dates"
+                                        label="Inclusive Dates"
+                                        type="date"
+                                        icon={CalendarDays}
+                                        value={requestData.inclusive_dates}
+                                        error={requestErrors.inclusive_dates}
+                                        onChange={(value) =>
+                                            setRequestData(
+                                                "inclusive_dates",
+                                                value,
+                                            )
+                                        }
+                                    />
+                                    <RequestTextField
+                                        id="request_fund_source"
+                                        label="Fund Source"
+                                        icon={Wallet}
+                                        value={requestData.fund_source}
+                                        error={requestErrors.fund_source}
+                                        onChange={(value) =>
+                                            setRequestData(
+                                                "fund_source",
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        <DialogFooter className="gap-2 pt-2 sm:space-x-0">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={closeDocumentRequest}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="blue"
+                                disabled={requestProcessing}
+                                className="bg-[linear-gradient(135deg,#075fff,#3024df)] font-black"
+                            >
+                                {requestProcessing
+                                    ? "Submitting..."
+                                    : "Submit Request"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };
+
+const RequestTextField = ({
+    id,
+    label,
+    icon: Icon,
+    type = "text",
+    value,
+    error,
+    onChange,
+}) => (
+    <div>
+        <label htmlFor={id} className="text-sm font-bold text-slate-800">
+            {label}
+        </label>
+        <div className="relative mt-2">
+            <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <TextInput
+                id={id}
+                type={type}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="block h-11 w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-700 shadow-sm placeholder:text-slate-400 focus:border-[#1f55ff] focus:ring-4 focus:ring-blue-100"
+            />
+        </div>
+        <InputError message={error} className="mt-2" />
+    </div>
+);
 
 export default Login;

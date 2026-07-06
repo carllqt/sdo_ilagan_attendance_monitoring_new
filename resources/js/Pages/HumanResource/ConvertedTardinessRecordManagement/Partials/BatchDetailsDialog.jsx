@@ -3,7 +3,7 @@ import { Hash, Printer } from "lucide-react";
 
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import { Button } from "@/components/ui/button";
-import HrSummaryofTardinessReport from "@/Pages/DocumentsFormats/HrSummaryofTardinessReport";
+import HrSummaryofTardinessReport from "@/Components/Reports/HrSummaryofTardinessReport";
 import {
     Dialog,
     DialogContent,

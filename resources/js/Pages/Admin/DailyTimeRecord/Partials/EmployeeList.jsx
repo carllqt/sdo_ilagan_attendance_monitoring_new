@@ -93,6 +93,13 @@ const EmployeeList = ({
         setSearch,
         years,
     });
+    const clearSearch = () => {
+        if (controlsDisabled) return;
+
+        setSearch("");
+        setShowSuggestions(false);
+        submitSearch("");
+    };
 
     return (
         <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-4 shadow-lg">
@@ -118,6 +125,9 @@ const EmployeeList = ({
                                 name="search"
                                 value={search}
                                 disabled={controlsDisabled}
+                                clearable
+                                onClear={clearSearch}
+                                clearAriaLabel="Clear employee search"
                                 onChange={(e) => {
                                     if (controlsDisabled) return;
 

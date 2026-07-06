@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/Components/ui/button";
 import { Briefcase, FileText, Printer, User } from "lucide-react";
-import ApplicationLeaveReport from "@/Pages/DocumentsFormats/ApplicationLeaveReport";
+import ApplicationLeaveReport from "@/Components/Reports/ApplicationLeaveReport";
 import FloatingInput from "@/components/floating-input";
 
 const paperSizeOptions = {
@@ -244,4 +244,3 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
 };
 
 export default ApplicationLeavePrintDialog;
-

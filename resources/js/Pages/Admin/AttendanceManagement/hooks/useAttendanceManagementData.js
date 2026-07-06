@@ -11,18 +11,7 @@ const attendanceEmployeeSortName = (attendance) =>
         .filter(Boolean)
         .join(" ");
 
-const travelOrderEmployeeSortName = (travelOrder) =>
-    [
-        travelOrder.employee?.first_name,
-        travelOrder.employee?.middle_name,
-        travelOrder.employee?.last_name,
-        travelOrder.employee?.id,
-    ]
-        .filter(Boolean)
-        .join(" ");
-
 const useAttendanceManagementData = ({
-    employeeTravelOrders = {},
     incompleteAttendances = {},
     offices = [],
     years = [],
@@ -38,17 +27,6 @@ const useAttendanceManagementData = ({
         [incompleteAttendances],
     );
 
-    const sortedEmployeeTravelOrders = useMemo(
-        () => ({
-            ...employeeTravelOrders,
-            data: sortAlphabetically(
-                employeeTravelOrders.data || [],
-                travelOrderEmployeeSortName,
-            ),
-        }),
-        [employeeTravelOrders],
-    );
-
     const sortedOffices = useMemo(
         () => sortAlphabetically(offices, "name"),
         [offices],
@@ -57,7 +35,6 @@ const useAttendanceManagementData = ({
     const yearOptions = useMemo(() => years.map(String), [years]);
 
     return {
-        sortedEmployeeTravelOrders,
         sortedIncompleteAttendances,
         sortedOffices,
         yearOptions,

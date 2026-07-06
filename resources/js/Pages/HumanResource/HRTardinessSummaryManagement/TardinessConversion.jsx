@@ -2,7 +2,7 @@ import React from "react";
 import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Calculator } from "lucide-react";
-import HrSummaryofTardinessReport from "@/Pages/DocumentsFormats/HrSummaryofTardinessReport";
+import HrSummaryofTardinessReport from "@/Components/Reports/HrSummaryofTardinessReport";
 import ConversionTable from "./Partials/ConversionTable";
 import EmployeeList from "./Partials/EmployeeList";
 import useTardinessConversionManagement from "./hooks/useTardinessConversionManagement";

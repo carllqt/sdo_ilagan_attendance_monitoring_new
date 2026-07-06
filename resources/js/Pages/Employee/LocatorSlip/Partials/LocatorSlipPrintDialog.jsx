@@ -1,8 +1,6 @@
-﻿"use client";
+"use client";
 
-import React, { useRef, useState } from "react";
-import html2pdf from "html2pdf.js";
-import dayjs from "dayjs";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -13,72 +11,99 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/Components/ui/button";
 import { Printer } from "lucide-react";
-import LocatorSlipReport from "@/Pages/DocumentsFormats/LocatorSlipReport";
 import { getRecordEmployeeName } from "@/lib/utils";
 
+const csrfToken = () =>
+    document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content") || "";
+
+const filename = (name) =>
+    `Locator_Slip_${(name || "Employee").replace(/\s+/g, "_")}.pdf`;
+
 const LocatorSlipPrintDialog = ({ open, onClose, slip }) => {
-    const previewRef = useRef(null);
-    const pdfRef = useRef(null);
+    const [pdfUrl, setPdfUrl] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleDownloadPDF = async () => {
-        if (!pdfRef.current || !slip) return;
+    const payload = useMemo(() => {
+        if (!slip) return null;
 
-        setIsGenerating(true);
+        return {
+            employee_name: getRecordEmployeeName(slip) || "",
+            position: slip.position || slip.employee?.position || "",
+            permanent_station:
+                slip.permanent_station ||
+                slip.employee?.station?.name ||
+                slip.employee?.permanent_station ||
+                "",
+            purpose_of_travel: slip.purpose_of_travel || "",
+            destination: slip.destination || "",
+            travel_datetime: slip.travel_datetime || "",
+            travel_type: slip.travel_type || "",
+        };
+    }, [slip]);
 
-        await new Promise((resolve) => setTimeout(resolve, 150));
+    useEffect(() => {
+        if (!open || !payload) {
+            return;
+        }
 
-        await html2pdf()
-            .set({
-                margin: 0,
-                filename: `Locator_Slip_${(
-                    getRecordEmployeeName(slip) || "Employee"
-                ).replace(/\s+/g, "_")}.pdf`,
-                image: { type: "jpeg", quality: 1 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    scrollX: 0,
-                    scrollY: 0,
-                },
-                jsPDF: {
-                    unit: "px",
-                    format: [794, 1123],
-                    orientation: "portrait",
-                },
-            })
-            .from(pdfRef.current)
-            .save();
+        let objectUrl = "";
+        const controller = new AbortController();
 
-        setIsGenerating(false);
-        onClose();
-    };
+        const loadPdf = async () => {
+            setIsGenerating(true);
+            setError("");
+            setPdfUrl("");
+
+            try {
+                const response = await fetch("/document-pdfs/locator-slip", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/pdf",
+                        "X-CSRF-TOKEN": csrfToken(),
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error("Unable to generate locator slip PDF.");
+                }
+
+                objectUrl = URL.createObjectURL(await response.blob());
+                setPdfUrl(objectUrl);
+            } catch (err) {
+                if (err.name !== "AbortError") {
+                    setError(err.message);
+                }
+            } finally {
+                setIsGenerating(false);
+            }
+        };
+
+        loadPdf();
+
+        return () => {
+            controller.abort();
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+        };
+    }, [open, payload]);
 
     if (!open || !slip) return null;
 
-    const toCaps = (value) => String(value || "").toUpperCase();
+    const handleDownloadPDF = () => {
+        if (!pdfUrl) return;
 
-    const reportProps = {
-        name: toCaps(getRecordEmployeeName(slip)),
-        position: toCaps(slip.position || slip.employee?.position),
-        station: toCaps(
-            slip.permanent_station ||
-                slip.employee?.station?.name ||
-                slip.employee?.permanent_station,
-        ),
-        purpose: toCaps(slip.purpose_of_travel),
-        check_type:
-            slip.travel_type === "official_business"
-                ? "Official Business"
-                : slip.travel_type === "official_time"
-                  ? "Official Time"
-                  : "",
-        date_time: toCaps(
-            slip.travel_datetime
-                ? dayjs(slip.travel_datetime).format("MMMM D, YYYY hh:mm A")
-                : "",
-        ),
-        destination: toCaps(slip.destination),
+        const link = document.createElement("a");
+        link.href = pdfUrl;
+        link.download = filename(payload.employee_name);
+        link.click();
+        onClose();
     };
 
     return (
@@ -91,17 +116,18 @@ const LocatorSlipPrintDialog = ({ open, onClose, slip }) => {
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="max-h-[65vh] overflow-auto rounded-md border bg-gray-100 p-3">
-                    <div className="flex justify-center">
-                        <div className="origin-top scale-[0.72] sm:scale-[0.82]">
-                            <div className="w-[794px] bg-white shadow">
-                                <LocatorSlipReport
-                                    ref={previewRef}
-                                    {...reportProps}
-                                />
-                            </div>
+                <div className="h-[65vh] overflow-hidden rounded-md border bg-gray-100">
+                    {pdfUrl ? (
+                        <iframe
+                            src={pdfUrl}
+                            title="Locator Slip PDF preview"
+                            className="h-full w-full"
+                        />
+                    ) : (
+                        <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-slate-500">
+                            {error || "Generating locator slip preview..."}
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <DialogFooter className="mt-4 flex justify-end gap-2">
@@ -116,22 +142,15 @@ const LocatorSlipPrintDialog = ({ open, onClose, slip }) => {
                     <Button
                         variant="blue"
                         onClick={handleDownloadPDF}
-                        disabled={isGenerating}
+                        disabled={isGenerating || !pdfUrl}
                     >
                         <Printer className="mr-2 h-4 w-4" />
                         {isGenerating ? "Generating..." : "Download PDF"}
                     </Button>
                 </DialogFooter>
-
-                <div className="fixed -left-[10000px] top-0 z-[-1]">
-                    <div className="w-[794px] bg-white">
-                        <LocatorSlipReport ref={pdfRef} {...reportProps} />
-                    </div>
-                </div>
             </DialogContent>
         </Dialog>
     );
 };
 
 export default LocatorSlipPrintDialog;
-

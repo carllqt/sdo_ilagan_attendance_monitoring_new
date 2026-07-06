@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { X } from "lucide-react";
+import { useRef, useState } from "react";
 
 export default function FloatingInput({
     label,
@@ -16,9 +17,14 @@ export default function FloatingInput({
     inputClassName = "",
     placeholder = " ",
     variant = "default",
+    clearable = false,
+    onClear,
+    clearAriaLabel = "Clear input",
 }) {
     const [isFocused, setIsFocused] = useState(false);
+    const inputRef = useRef(null);
     const isFloated = isFocused || Boolean(value);
+    const showClear = clearable && Boolean(value) && !disabled && !readOnly;
     const labelOffsetClasses = Icon ? "left-8" : "left-3";
     const isGlass = variant === "glass";
     const wrapperClassName = isGlass
@@ -48,6 +54,14 @@ export default function FloatingInput({
     const labelBgClassName = isGlass
         ? "bg-transparent px-1 drop-shadow-sm"
         : `bg-slate-50 px-1 ${isFocused ? "bg-white" : ""}`;
+    const clearButtonClassName = isGlass
+        ? "bg-white/90 text-slate-500 hover:bg-[#141b6d] hover:text-white"
+        : "bg-slate-100 text-slate-500 hover:bg-blue-700 hover:text-white";
+    const handleClear = () => {
+        inputRef.current?.blur();
+        setIsFocused(false);
+        onClear?.();
+    };
 
     return (
         <div className="relative w-full">
@@ -55,6 +69,7 @@ export default function FloatingInput({
                 {Icon && <Icon className={iconClassName} />}
 
                 <Input
+                    ref={inputRef}
                     type={type}
                     id={name}
                     name={name}
@@ -82,8 +97,20 @@ export default function FloatingInput({
                     readOnly={readOnly}
                     disabled={disabled}
                     placeholder={placeholder}
-                    className={`peer h-6 min-w-0 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0 ${inputTextClassName} ${inputClassName}`}
+                    className={`peer h-6 min-w-0 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0 ${showClear ? "pr-7" : ""} ${inputTextClassName} ${inputClassName}`}
                 />
+
+                {showClear ? (
+                    <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={handleClear}
+                        className={`absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full transition ${clearButtonClassName}`}
+                        aria-label={clearAriaLabel}
+                    >
+                        <X className="h-3 w-3" />
+                    </button>
+                ) : null}
 
                 <label
                     htmlFor={name}

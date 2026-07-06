@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/Components/ui/button";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
-import DTRReport from "@/Pages/DocumentsFormats/DtrReport";
+import DTRReport from "@/Components/Reports/DtrReport";
 import {
     PrintableEmployeeSkeleton,
     SignatoryChoiceSkeleton,
@@ -317,4 +317,3 @@ const PrintDialog = ({
 };
 
 export default PrintDialog;
-

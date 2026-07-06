@@ -55,6 +55,13 @@ const EmployeeList = ({
         offices.find((office) => String(office.id) === String(selectedOffice))
             ?.name || "All Offices";
     const skeletonRows = Math.max(5, Math.min(Number(totalRecords || 10), 10));
+    const clearSearch = () => {
+        if (isLoading) return;
+
+        setSearchInput("");
+        setShowSuggestions(false);
+        applySearch("");
+    };
 
     return (
         <div className="rounded-xl">
@@ -78,6 +85,9 @@ const EmployeeList = ({
                             icon={Search}
                             name="search"
                             value={searchInput}
+                            clearable
+                            onClear={clearSearch}
+                            clearAriaLabel="Clear employee search"
                             onChange={(event) => {
                                 if (isLoading) return;
 

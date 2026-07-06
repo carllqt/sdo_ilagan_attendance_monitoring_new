@@ -18,6 +18,7 @@ import {
     LandPlot,
     Building2,
     Calculator,
+    ClipboardList,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -231,6 +232,33 @@ export function AppSidebar({ active, user, ...props }) {
                                                     }`}
                                                 />
                                                 Attendance Management
+                                            </Link>
+                                        </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+
+                                    <SidebarMenuSubItem>
+                                        <SidebarMenuSubButton
+                                            asChild
+                                            isActive={
+                                                active ===
+                                                "travel-locator-management"
+                                            }
+                                        >
+                                            <Link
+                                                href={route(
+                                                    "travel-locator-management",
+                                                )}
+                                                className="flex items-center gap-2 text-xs text-white hover:bg-blue-900 hover:text-blue-100"
+                                            >
+                                                <ClipboardList
+                                                    className={`h-4 w-4 ${
+                                                        active ===
+                                                        "travel-locator-management"
+                                                            ? "!text-black"
+                                                            : "!text-white"
+                                                    }`}
+                                                />
+                                                Travel & Locator Management
                                             </Link>
                                         </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>

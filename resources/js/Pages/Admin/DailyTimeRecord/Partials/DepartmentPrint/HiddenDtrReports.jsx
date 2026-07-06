@@ -1,6 +1,6 @@
 import React from "react";
 import dayjs from "dayjs";
-import DTRReport from "@/Pages/DocumentsFormats/DtrReport";
+import DTRReport from "@/Components/Reports/DtrReport";
 import { generateLogs } from "./utils";
 
 const HiddenDtrReports = ({
@@ -54,4 +54,3 @@ const HiddenDtrReports = ({
 );
 
 export default HiddenDtrReports;
-

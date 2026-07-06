@@ -1,4 +1,5 @@
 import React from "react";
+import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import BrandSubtitle from "@/Components/BrandSubtitle";
@@ -50,7 +51,54 @@ const GlowingClockIcon = () => (
     </svg>
 );
 
-const Header = ({ time }) => {
+const LiveStatus = ({ status = "connecting", onReconnect }) => {
+    const isLive = status === "live";
+    const isConnecting = status === "connecting";
+    const isReconnecting = status === "reconnecting";
+    const Icon = isLive ? Wifi : WifiOff;
+    const title = isLive ? "Live" : isConnecting ? "Connecting" : "Reconnecting";
+    const caption = isLive
+        ? "Updates active"
+        : isConnecting
+          ? "Opening stream"
+          : "Stream paused";
+
+    return (
+        <div className="flex items-center gap-2 rounded-lg border border-white/20 bg-[#071158]/70 px-3 py-2 text-left shadow-[0_10px_24px_rgba(2,6,47,0.24)]">
+            <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    isLive
+                        ? "bg-emerald-400/18 text-emerald-200"
+                        : "bg-amber-300/18 text-amber-100"
+                }`}
+            >
+                <Icon className="h-4 w-4" />
+            </span>
+            <div className="min-w-[88px]">
+                <p className="text-xs font-black uppercase leading-tight tracking-wide text-white">
+                    {title}
+                </p>
+                <p className="text-[10px] font-semibold text-blue-50/80">
+                    {caption}
+                </p>
+            </div>
+            <button
+                type="button"
+                onClick={onReconnect}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10 text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+                title="Reconnect live updates"
+                aria-label="Reconnect live updates"
+                disabled={isConnecting || isReconnecting}
+            >
+                <RefreshCw
+                    className={`h-3.5 w-3.5 ${isReconnecting ? "animate-spin" : ""}`}
+                />
+            </button>
+        </div>
+    );
+};
+
+const Header = ({ liveStatus = "connecting", onReconnect, time }) => {
     const today = time.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -84,18 +132,25 @@ const Header = ({ time }) => {
                     </div>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-white/25 bg-[linear-gradient(135deg,rgba(42,75,205,0.58),rgba(102,82,218,0.68)_48%,rgba(49,30,139,0.62))] px-5 py-3 text-right shadow-[0_0_28px_rgba(96,165,250,0.30),0_14px_36px_rgba(2,6,47,0.32),inset_0_1px_0_rgba(255,255,255,0.32)] ring-1 ring-violet-200/20 backdrop-blur-md lg:mt-0">
-                    <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center text-cyan-200">
-                            <GlowingClockIcon />
-                        </span>
-                        <div className="text-right">
-                            <p className="text-lg font-black leading-tight tracking-wide text-white drop-shadow-sm">
-                                {clock}
-                            </p>
-                            <p className="mt-0.5 text-xs font-bold text-blue-50">
-                                {today} &bull; {dayName}
-                            </p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center lg:mt-0">
+                    <LiveStatus
+                        status={liveStatus}
+                        onReconnect={onReconnect}
+                    />
+
+                    <div className="rounded-xl border border-white/25 bg-[linear-gradient(135deg,rgba(42,75,205,0.58),rgba(102,82,218,0.68)_48%,rgba(49,30,139,0.62))] px-5 py-3 text-right shadow-[0_0_28px_rgba(96,165,250,0.30),0_14px_36px_rgba(2,6,47,0.32),inset_0_1px_0_rgba(255,255,255,0.32)] ring-1 ring-violet-200/20 backdrop-blur-md">
+                        <div className="flex items-center gap-3">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center text-cyan-200">
+                                <GlowingClockIcon />
+                            </span>
+                            <div className="text-right">
+                                <p className="text-lg font-black leading-tight tracking-wide text-white drop-shadow-sm">
+                                    {clock}
+                                </p>
+                                <p className="mt-0.5 text-xs font-bold text-blue-50">
+                                    {today} &bull; {dayName}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

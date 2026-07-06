@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronUp, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronUp, Loader2, Search, SlidersHorizontal } from "lucide-react";
 import FloatingInput from "@/components/floating-input";
 import useSearchSuggestions from "../hooks/useSearchSuggestions";
 
@@ -93,6 +93,9 @@ const SchoolList = ({
                                     name="attendance_station_search"
                                     value={stationSearch}
                                     variant="glass"
+                                    clearable
+                                    onClear={clearSearch}
+                                    clearAriaLabel="Clear station search"
                                     onChange={(event) => {
                                         const value = event.target.value;
 
@@ -114,16 +117,6 @@ const SchoolList = ({
                                         }
                                     }}
                                 />
-                                {stationSearch ? (
-                                    <button
-                                        type="button"
-                                        onClick={clearSearch}
-                                        className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-[#141b6d] hover:text-white"
-                                        aria-label="Clear station search"
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </button>
-                                ) : null}
                             </form>
 
                             {showSuggestions && stationSearch.trim() ? (
@@ -188,7 +181,7 @@ const SchoolList = ({
                     <button
                         type="button"
                         onClick={() => setShowSchoolFilter((value) => !value)}
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/35 bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(120,119,255,0.34))] text-white shadow-[0_0_16px_rgba(167,139,250,0.42),inset_0_1px_0_rgba(255,255,255,0.36)] ring-1 ring-violet-200/25 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/25"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-[#071158]/80 text-white shadow-[0_0_16px_rgba(2,6,47,0.32)] ring-1 ring-violet-200/20 transition hover:-translate-y-0.5 hover:bg-[#0b1b74]"
                         title={
                             showSchoolFilter
                                 ? "Hide school filter"
@@ -235,8 +228,8 @@ const SchoolList = ({
                                         className={`relative z-0 shrink-0 rounded-lg border px-5 py-3 text-xs font-black transition hover:z-30 hover:-translate-y-0.5 ${
                                             String(selectedStation) ===
                                             String(station.id)
-                                                ? "border-white/35 bg-[linear-gradient(135deg,rgba(255,255,255,0.34),rgba(120,119,255,0.46))] text-white shadow-[0_0_18px_rgba(167,139,250,0.58),inset_0_1px_0_rgba(255,255,255,0.42)] ring-1 ring-violet-200/45"
-                                                : "border-white/25 bg-transparent text-white shadow-sm backdrop-blur hover:bg-white/10 hover:text-white"
+                                                ? "border-white/30 bg-[#0b1b74] text-white shadow-[0_0_18px_rgba(2,6,47,0.42)] ring-1 ring-violet-200/35"
+                                                : "border-white/20 bg-[#071158]/45 text-white shadow-sm hover:bg-[#0b1b74]/70 hover:text-white"
                                         }`}
                                     >
                                         {station.name}

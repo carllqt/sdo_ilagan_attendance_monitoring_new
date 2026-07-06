@@ -33,6 +33,31 @@ const createRows = (employees) => {
     );
 };
 
+const updateEmployeeCollection = (employees, updatedEmployee) => {
+    if (!updatedEmployee?.id) return employees;
+
+    if (Array.isArray(employees)) {
+        return employees.map((employee) =>
+            Number(employee.id) === Number(updatedEmployee.id)
+                ? updatedEmployee
+                : employee,
+        );
+    }
+
+    if (Array.isArray(employees?.data)) {
+        return {
+            ...employees,
+            data: employees.data.map((employee) =>
+                Number(employee.id) === Number(updatedEmployee.id)
+                    ? updatedEmployee
+                    : employee,
+            ),
+        };
+    }
+
+    return employees;
+};
+
 const AttendanceMonitoring = ({
     employees = {},
     filters = {},
@@ -45,13 +70,23 @@ const AttendanceMonitoring = ({
         () => sortAlphabetically(toArray(stations), "name"),
         [stations],
     );
-    const rows = useMemo(() => createRows(employees), [employees]);
+    const [liveEmployees, setLiveEmployees] = useState(employees);
+    const [liveRecentLogs, setLiveRecentLogs] = useState(recentLogs);
+    const [liveTopFirstTimeIns, setLiveTopFirstTimeIns] =
+        useState(topFirstTimeIns);
+    const [liveTravelOrders, setLiveTravelOrders] = useState(travelOrders);
+    const rows = useMemo(() => createRows(liveEmployees), [liveEmployees]);
     const [search, setSearch] = useState(filters.search || "");
     const [stationSearch, setStationSearch] = useState("");
     const [time, setTime] = useState(new Date());
     const [filterScope, setFilterScope] = useState(null);
+    const [liveStatus, setLiveStatus] = useState("connecting");
+    const [streamKey, setStreamKey] = useState(0);
     const requestInFlightRef = useRef(false);
     const requestIdRef = useRef(0);
+    const eventSourceRef = useRef(null);
+    const intentionalStreamCloseRef = useRef(false);
+    const silentStreamReconnectRef = useRef(false);
     const selectedStation = filters.station_id || 1;
     const selectedStationCode = filters.station_code || "SDO";
     const selectedStationName =
@@ -79,6 +114,9 @@ const AttendanceMonitoring = ({
         const requestId = requestIdRef.current + 1;
         requestIdRef.current = requestId;
         requestInFlightRef.current = true;
+        silentStreamReconnectRef.current = true;
+        intentionalStreamCloseRef.current = true;
+        eventSourceRef.current?.close();
         setFilterScope(scope);
 
         router.get(route("attendance-monitoring"), Object.fromEntries(params), {
@@ -90,6 +128,7 @@ const AttendanceMonitoring = ({
 
                 requestInFlightRef.current = false;
                 setFilterScope(null);
+                setStreamKey((key) => key + 1);
             },
         });
     };
@@ -99,37 +138,156 @@ const AttendanceMonitoring = ({
     }, [filters.search]);
 
     useEffect(() => {
+        setLiveEmployees(employees);
+    }, [employees]);
+
+    useEffect(() => {
+        setLiveRecentLogs(recentLogs);
+    }, [recentLogs]);
+
+    useEffect(() => {
+        setLiveTopFirstTimeIns(topFirstTimeIns);
+    }, [topFirstTimeIns]);
+
+    useEffect(() => {
+        setLiveTravelOrders(travelOrders);
+    }, [travelOrders]);
+
+    useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
     useEffect(() => {
-        const timer = setInterval(() => {
+        const closeStream = () => eventSourceRef.current?.close();
+
+        window.addEventListener("pagehide", closeStream);
+        window.addEventListener("beforeunload", closeStream);
+
+        return () => {
+            window.removeEventListener("pagehide", closeStream);
+            window.removeEventListener("beforeunload", closeStream);
+        };
+    }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams();
+
+        params.set("station_code", selectedStationCode);
+        params.set("station_name", selectedStationName);
+
+        if (selectedStation) {
+            params.set("station_id", selectedStation);
+        }
+
+        const streamUrl = `${route("attendance-monitoring.stream")}?${params.toString()}`;
+        const eventSource = new EventSource(streamUrl);
+        let closedByCleanup = false;
+
+        intentionalStreamCloseRef.current = false;
+        eventSourceRef.current = eventSource;
+        const parsePayload = (event) => JSON.parse(event.data || "{}");
+
+        const keepLiveDuringNavigation = silentStreamReconnectRef.current;
+
+        setLiveStatus((current) =>
+            keepLiveDuringNavigation && current === "live"
+                ? current
+                : "connecting",
+        );
+        eventSource.onopen = () => {
+            silentStreamReconnectRef.current = false;
+            setLiveStatus("live");
+        };
+
+        eventSource.addEventListener("employee-updated", (event) => {
             if (requestInFlightRef.current) return;
 
-            const requestId = requestIdRef.current + 1;
-            requestIdRef.current = requestId;
-            requestInFlightRef.current = true;
+            try {
+                const payload = parsePayload(event);
 
-            router.reload({
-                only: [
-                    "employees",
-                    "recentLogs",
-                    "topFirstTimeIns",
-                    "travelOrders",
-                ],
-                preserveScroll: true,
-                preserveState: true,
-                onFinish: () => {
-                    if (requestIdRef.current !== requestId) return;
+                setLiveEmployees((current) =>
+                    updateEmployeeCollection(current, payload.employee),
+                );
+            } catch (error) {
+                console.error(
+                    "Attendance monitoring employee SSE parse error:",
+                    error,
+                );
+            }
+        });
 
-                    requestInFlightRef.current = false;
-                },
-            });
-        }, 5000);
+        eventSource.addEventListener("recent-logs-updated", (event) => {
+            if (requestInFlightRef.current) return;
 
-        return () => clearInterval(timer);
-    }, []);
+            try {
+                setLiveRecentLogs(parsePayload(event) || []);
+            } catch (error) {
+                console.error(
+                    "Attendance monitoring logs SSE parse error:",
+                    error,
+                );
+            }
+        });
+
+        eventSource.addEventListener("ranking-updated", (event) => {
+            if (requestInFlightRef.current) return;
+
+            try {
+                setLiveTopFirstTimeIns(parsePayload(event) || []);
+            } catch (error) {
+                console.error(
+                    "Attendance monitoring ranking SSE parse error:",
+                    error,
+                );
+            }
+        });
+
+        eventSource.addEventListener("travel-updated", (event) => {
+            if (requestInFlightRef.current) return;
+
+            try {
+                setLiveTravelOrders(parsePayload(event) || []);
+            } catch (error) {
+                console.error(
+                    "Attendance monitoring travel SSE parse error:",
+                    error,
+                );
+            }
+        });
+
+        eventSource.onerror = (error) => {
+            if (
+                closedByCleanup ||
+                intentionalStreamCloseRef.current ||
+                eventSource.readyState === EventSource.CLOSED
+            ) {
+                return;
+            }
+
+            console.error("Attendance monitoring SSE error:", error);
+            silentStreamReconnectRef.current = false;
+            setLiveStatus("reconnecting");
+        };
+
+        return () => {
+            closedByCleanup = true;
+            intentionalStreamCloseRef.current = true;
+            eventSource.close();
+
+            if (eventSourceRef.current === eventSource) {
+                eventSourceRef.current = null;
+            }
+        };
+    }, [
+        filters.station_code,
+        filters.station_id,
+        filters.station_name,
+        selectedStation,
+        selectedStationCode,
+        selectedStationName,
+        streamKey,
+    ]);
 
     const selectStation = (station) => {
         const stationCode = String(station?.code || "SDO").trim();
@@ -159,9 +317,19 @@ const AttendanceMonitoring = ({
         <div className="relative min-h-screen overflow-hidden bg-[#02062f] text-[#070d3f]">
             <Head title="Project T.A.L.A" />
             <TalaBackground />
-            <Header time={time} />
+            <Header
+                liveStatus={liveStatus}
+                onReconnect={() => {
+                    silentStreamReconnectRef.current = false;
+                    intentionalStreamCloseRef.current = true;
+                    eventSourceRef.current?.close();
+                    setLiveStatus("connecting");
+                    setStreamKey((key) => key + 1);
+                }}
+                time={time}
+            />
             <EmployeeList
-                employees={employees}
+                employees={liveEmployees}
                 goToPage={goToPage}
                 rows={rows}
                 isFiltering={Boolean(filterScope)}
@@ -176,9 +344,9 @@ const AttendanceMonitoring = ({
                 submitSearch={submitSearch}
                 stationSearch={stationSearch}
                 stations={stationList}
-                recentLogs={recentLogs}
-                topFirstTimeIns={topFirstTimeIns}
-                travelOrders={travelOrders}
+                recentLogs={liveRecentLogs}
+                topFirstTimeIns={liveTopFirstTimeIns}
+                travelOrders={liveTravelOrders}
             />
         </div>
     );

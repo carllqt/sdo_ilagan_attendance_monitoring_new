@@ -20,23 +20,15 @@ class AttendanceManagementService
     public function pageData(Request $request, int $stationId): array
     {
         $filter = AttendanceManagementFilter::fromRequest($request, $stationId);
-        $travelOrderFilter = AttendanceManagementFilter::fromRequest(
-            $request,
-            $stationId,
-            'travel_order_',
-        );
         $offices = $this->repository->offices();
 
         $filter = $this->resolveOfficeId($filter, $offices);
-        $travelOrderFilter = $this->resolveOfficeId($travelOrderFilter, $offices);
 
         return [
             'incomplete_attendances' => fn () => $this->repository->incompleteAttendances($filter),
-            'employee_travel_orders' => fn () => $this->repository->employeeTravelOrders($travelOrderFilter),
             'offices' => $offices,
             'years' => fn () => $this->repository->attendanceYears($stationId),
             'filters' => $filter->toArray(),
-            'travel_order_filters' => $travelOrderFilter->toArray(),
             'editAttendanceModal' => fn () => $this->editModal($request),
         ];
     }

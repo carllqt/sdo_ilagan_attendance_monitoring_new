@@ -4,7 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
 import EmployeeList from "./Partials/EmployeeList";
 import StationVerificationList from "./Partials/StationVerificationList";
-import SummaryofTardinessReport from "../../DocumentsFormats/AdminSummaryofTardinessReport";
+import SummaryofTardinessReport from "@/Components/Reports/AdminSummaryofTardinessReport";
 import useTardinessSummaryManagement from "./hooks/useTardinessSummaryManagement";
 import { monthList } from "./utils";
 import { ChartColumn } from "lucide-react";

@@ -62,6 +62,13 @@ const StationAdminList = ({
         stationRows,
     });
     const skeletonRows = Math.max(5, Math.min(Number(adminLimit || 10), 10));
+    const clearSearch = () => {
+        if (isLoading) return;
+
+        setSearchTerm("");
+        setShowSuggestions(false);
+        submitSearch("");
+    };
 
     return (
         <div className="rounded-xl">
@@ -90,6 +97,9 @@ const StationAdminList = ({
                             icon={Search}
                             name="station-admin-search"
                             value={searchTerm}
+                            clearable
+                            onClear={clearSearch}
+                            clearAriaLabel="Clear station search"
                             onChange={(e) => {
                                 if (isLoading) return;
 
