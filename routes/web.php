@@ -39,15 +39,6 @@ Route::get('/employee-profile-images/{filename}', [EmployeeProfileImageControlle
     ->name('employee-profile-images.show');
 
 Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'index'])->name('attendance-monitoring');
-Route::get('/attendance-monitoring/stream', [AttendanceMonitoringController::class, 'stream'])
-    ->withoutMiddleware([
-        \Illuminate\Session\Middleware\StartSession::class,
-        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
-        \App\Http\Middleware\HandleInertiaRequests::class,
-        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-    ])
-    ->name('attendance-monitoring.stream');
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
 Route::post('/document-requests', [DocumentRequestController::class, 'store'])->name('document-requests.store');
