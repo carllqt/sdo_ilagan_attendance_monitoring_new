@@ -16,7 +16,11 @@ class StoreDocumentRequest extends FormRequest
     {
         return [
             'request_type' => ['required', Rule::in(['locator_slip', 'travel_order'])],
-            'employee_name' => ['required', 'string', 'max:255'],
+            'employee_id' => ['required', 'string', 'max:50'],
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'extension_name' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
             'position' => ['required', 'string', 'max:255'],
             'station_id' => ['required', 'integer', 'exists:stations,id'],
@@ -55,10 +59,16 @@ class StoreDocumentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'employee_name' => 'name',
+            'employee_id' => 'employee id',
+            'first_name' => 'first name',
+            'middle_name' => 'middle name',
+            'last_name' => 'last name',
+            'extension_name' => 'extension name',
             'email' => 'email address',
+            'position' => 'position / designation',
             'station_id' => 'permanent station',
             'purpose_of_travel' => 'purpose of travel',
+            'destination' => 'destination',
             'travel_datetime' => 'date and time',
             'travel_type' => 'travel type',
             'host_of_activity' => 'host of activity',

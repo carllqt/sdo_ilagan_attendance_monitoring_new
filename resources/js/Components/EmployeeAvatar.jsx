@@ -16,6 +16,7 @@ const EmployeeAvatar = ({
     fallbackClassName = "bg-gradient-to-br from-blue-500 via-sky-400 to-blue-300",
     glowClassName = "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.45),transparent_55%)]",
     iconClassName = "text-white/90",
+    fallbackAnimationClassName = "animate-pulse",
 }) => {
     const avatarUrl = profileImageUrl(employee?.profile_img);
 
@@ -32,7 +33,7 @@ const EmployeeAvatar = ({
             ) : (
                 <>
                     <div
-                        className={`absolute inset-0 animate-pulse ${fallbackClassName}`}
+                        className={`absolute inset-0 ${fallbackAnimationClassName} ${fallbackClassName}`}
                     />
                     <div className={`absolute inset-0 ${glowClassName}`} />
                     <User

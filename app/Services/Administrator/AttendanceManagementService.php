@@ -5,6 +5,7 @@ namespace App\Services\Administrator;
 use App\Data\Administrator\AttendanceManagement\AttendanceManagementFilter;
 use App\Models\Administrator\Attendance;
 use App\Repositories\Administrator\AttendanceManagementRepository;
+use App\Services\AttendanceMonitoringRealtimeService;
 use App\Services\Administrator\DailyTimeRecord\FixedTardinessService;
 use App\Services\Administrator\DailyTimeRecord\FullTardinessService;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class AttendanceManagementService
         private readonly AttendanceManagementRepository $repository,
         private readonly FixedTardinessService $fixedService,
         private readonly FullTardinessService $fullService,
+        private readonly AttendanceMonitoringRealtimeService $realtime,
     ) {}
 
     public function pageData(Request $request, int $stationId): array
@@ -75,6 +77,7 @@ class AttendanceManagementService
         $this->updateMissingAttendanceTimes($attendance, $data);
         $this->repository->loadForTardiness($attendance);
         $this->computeTardiness(collect([$attendance]));
+        $this->realtime->broadcastForAttendance($attendance);
     }
 
     public function storeAttendance(array $data): void
@@ -82,6 +85,7 @@ class AttendanceManagementService
         $attendance = $this->repository->createAttendance($data);
         $this->repository->loadForTardiness($attendance);
         $this->computeTardiness(collect([$attendance]));
+        $this->realtime->broadcastForAttendance($attendance);
     }
 
     public function storeTravelOrder(array $data, int $stationId): void
@@ -90,7 +94,9 @@ class AttendanceManagementService
             abort(422, 'Selected employee does not belong to your station.');
         }
 
-        $this->repository->createEmployeeTravelOrder($data);
+        $travelOrder = $this->repository->createEmployeeTravelOrder($data);
+
+        $this->realtime->broadcastForTravelOrder($travelOrder);
     }
 
     private function updateMissingAttendanceTimes(Attendance $attendance, array $data): void

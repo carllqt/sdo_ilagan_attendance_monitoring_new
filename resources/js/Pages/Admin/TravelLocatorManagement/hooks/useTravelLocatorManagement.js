@@ -4,10 +4,8 @@ import { router } from "@inertiajs/react";
 const buildQuery = (locatorFilters, travelFilters) => ({
     locator_page: Number(locatorFilters.page ?? 1),
     locator_search: locatorFilters.search || "",
-    locator_station_id: locatorFilters.station_id || "",
     travel_page: Number(travelFilters.page ?? 1),
     travel_search: travelFilters.search || "",
-    travel_station_id: travelFilters.station_id || "",
 });
 
 const useTravelLocatorManagement = ({ locatorFilters, travelFilters }) => {

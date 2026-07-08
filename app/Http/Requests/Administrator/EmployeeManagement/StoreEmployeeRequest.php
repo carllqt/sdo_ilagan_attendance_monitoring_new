@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Administrator\Employeemanagement;
+namespace App\Http\Requests\Administrator\EmployeeManagement;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -14,8 +14,10 @@ class StoreEmployeeRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => 'required|integer|min:1|unique:employees,id',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
+            'extension_name' => 'nullable|string|max:50',
             'last_name' => 'required|string|max:255',
             'profile_img' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'position' => 'required|string|max:255',

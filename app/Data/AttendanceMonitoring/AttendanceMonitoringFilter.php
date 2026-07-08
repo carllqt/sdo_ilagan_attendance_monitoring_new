@@ -41,8 +41,11 @@ class AttendanceMonitoringFilter
 
     public function shouldRedirectToCanonical(Request $request): bool
     {
+        $hasSearch = trim((string) $request->query('search', '')) !== '';
+
         return $request->query('station_id')
-            || ! $request->query('page')
+            || ($hasSearch && ! $request->query('page'))
+            || (! $hasSearch && $request->query('page'))
             || (string) $request->query('station_code') !== (string) $this->stationCode
             || (string) $request->query('station_name') !== (string) $this->stationName
             || $request->query('limit');
@@ -53,11 +56,16 @@ class AttendanceMonitoringFilter
         $query = $request->query();
         unset($query['station_id'], $query['limit']);
 
-        return array_merge($query, [
-            'page' => $request->query('page', $this->page),
-            'station_code' => $this->stationCode,
-            'station_name' => $this->stationName,
-        ]);
+        if ($this->search !== '') {
+            $query['page'] = $request->query('page', $this->page);
+        } else {
+            unset($query['page']);
+        }
+
+        $query['station_code'] = $this->stationCode;
+        $query['station_name'] = $this->stationName;
+
+        return $query;
     }
 
     public function toArray(): array

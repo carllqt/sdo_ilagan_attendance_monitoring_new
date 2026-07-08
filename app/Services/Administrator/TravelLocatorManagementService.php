@@ -3,20 +3,19 @@
 namespace App\Services\Administrator;
 
 use App\Data\Administrator\TravelLocatorManagement\TravelLocatorRequestFilter;
-use App\Models\Administrator\Station;
 use App\Repositories\Administrator\TravelLocatorManagementRepository;
-use Illuminate\Support\Collection;
+use App\Services\AttendanceMonitoringRealtimeService;
 use Illuminate\Http\Request;
 
 class TravelLocatorManagementService
 {
     public function __construct(
         private readonly TravelLocatorManagementRepository $repository,
+        private readonly AttendanceMonitoringRealtimeService $realtime,
     ) {}
 
     public function pageData(Request $request): array
     {
-        $stationOptions = $this->stationOptions($request);
         $userStationId = $this->userStationId($request);
         $locatorFilter = TravelLocatorRequestFilter::fromRequest(
             $request,
@@ -34,7 +33,6 @@ class TravelLocatorManagementService
             'travel_order_requests' => fn () => $this->repository->travelOrderRequests($travelFilter),
             'locator_filters' => $locatorFilter->toArray(),
             'travel_filters' => $travelFilter->toArray(),
-            'station_options' => fn () => $stationOptions,
         ];
     }
 
@@ -47,26 +45,28 @@ class TravelLocatorManagementService
         );
     }
 
-    private function stationOptions(Request $request): Collection
+    public function approveTravelOrder(int $id, int $employeeId, Request $request): void
     {
         $stationId = $this->userStationId($request);
+        $travelRequest = $this->repository->travelOrderRequestForApproval($id, $stationId);
 
-        return Station::query()
-            ->select('id', 'name', 'code')
-            ->where(function ($query) use ($stationId) {
-                $stationId
-                    ? $query->where('id', $stationId)
-                    : $query->whereRaw('1 = 0');
-            })
-            ->orderByRaw("CASE WHEN code = 'SDO' THEN 0 ELSE 1 END")
-            ->orderBy('name')
-            ->get();
+        if (! $this->repository->employeeBelongsToStation($employeeId, $stationId)) {
+            abort(422, 'Selected employee does not belong to your station.');
+        }
+
+        $travelOrder = $this->repository->approveTravelOrderRequest($travelRequest, $employeeId);
+
+        $this->realtime->broadcastForTravelOrder($travelOrder);
     }
 
-    private function userStationId(Request $request): ?int
+    private function userStationId(Request $request): int
     {
         $stationId = $request->user()?->employee?->station_id;
 
-        return $stationId ? (int) $stationId : null;
+        if (! $stationId) {
+            abort(403, 'Station not assigned to this user.');
+        }
+
+        return (int) $stationId;
     }
 }

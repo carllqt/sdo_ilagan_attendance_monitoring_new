@@ -1,6 +1,15 @@
 export const defaultFingerprintServiceUrl = `http://${window.location.hostname}:5000`;
 
 export const statusOptions = ["Active", "Inactive"];
+export const extensionNameOptions = [
+    "None",
+    "Jr.",
+    "Sr.",
+    "II",
+    "III",
+    "IV",
+    "V",
+];
 
 export const formatSearchDisplay = (value) =>
     String(value || "")

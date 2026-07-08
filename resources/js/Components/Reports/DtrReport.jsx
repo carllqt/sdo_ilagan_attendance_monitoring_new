@@ -206,7 +206,7 @@ const DTRReport = React.forwardRef(
                                                 fontWeight: "bold",
                                             }}
                                         >
-                                            Travel Order
+                                            ON TRAVEL
                                         </td>
                                     ) : (
                                         <>

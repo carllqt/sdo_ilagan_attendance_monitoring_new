@@ -18,8 +18,10 @@ class Employee extends Model
     use HasFactory;
 
     protected $fillable = [
+        'id',
         'first_name',
         'middle_name',
+        'extension_name',
         'last_name',
         'profile_img',
         'position',
@@ -70,7 +72,14 @@ class Employee extends Model
         return preg_replace(
             '/\s+/',
             ' ',
-            trim("{$this->first_name} {$this->middle_name} {$this->last_name}"),
+            trim(
+                implode(' ', array_filter([
+                    $this->first_name,
+                    $this->middle_name,
+                    $this->last_name,
+                    $this->extension_name,
+                ])),
+            ),
         );
     }
 

@@ -106,11 +106,11 @@ export const AttendanceTable = ({
 
     return (
         <div className="flex h-full min-h-0 flex-col">
-            <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-white/25 bg-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur">
+            <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-blue-300/25 bg-blue-950/45">
                 <div className="h-full overflow-y-auto">
                     <Table className="w-full table-fixed">
                         <TableHeader>
-                            <TableRow className="border-white/20 bg-white/15 hover:bg-white/20">
+                            <TableRow className="border-blue-300/20 bg-blue-950/65 hover:bg-blue-950/65">
                                 <TableHead className="w-[44%] px-4 text-left text-white">
                                     Employee
                                 </TableHead>
@@ -128,7 +128,7 @@ export const AttendanceTable = ({
                                     {skeletonRows.map((_, index) => (
                                         <TableRow
                                             key={`attendance-skeleton-${index}`}
-                                            className="h-[64px] border-white/10"
+                                                className="h-[64px] border-blue-300/15"
                                         >
                                             <TableCell className="px-4 py-3">
                                                 <div className="flex min-w-0 items-center gap-3">
@@ -175,7 +175,7 @@ export const AttendanceTable = ({
                                         return (
                                             <TableRow
                                                 key={rowKey}
-                                                className="h-[64px] border-white/10 transition hover:bg-white/10"
+                                                className="h-[64px] border-blue-300/15 transition hover:bg-blue-900/35"
                                             >
                                                 <TableCell className="px-4 py-3">
                                                     <div className="flex min-w-0 items-center gap-3">

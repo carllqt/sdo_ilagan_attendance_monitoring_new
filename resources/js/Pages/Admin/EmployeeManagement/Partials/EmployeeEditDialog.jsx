@@ -20,6 +20,7 @@ import {
     Building2,
     CheckCircle,
     FileSpreadsheetIcon,
+    Hash,
     Image as ImageIcon,
     ShieldAlert,
     UploadCloud,
@@ -35,6 +36,7 @@ import {
     CustomDropdownWorkSchedule,
 } from "@/components/dropdown-menu-main";
 import { getEmployeeName } from "@/lib/utils";
+import { extensionNameOptions } from "../utils";
 
 const EmployeeEditDialog = ({
     editForm,
@@ -185,55 +187,106 @@ const EmployeeEditDialog = ({
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <FloatingInput
-                                        label="First Name"
-                                        icon={User}
-                                        value={safeForm.first_name || ""}
-                                        onChange={(event) =>
-                                            handleNameChange(
-                                                "first_name",
-                                                event.target.value,
-                                            )
-                                        }
-                                    />
+                                    <div className="md:col-span-1">
+                                        <FloatingInput
+                                            label="Employee ID"
+                                            icon={Hash}
+                                            value={safeForm.id || ""}
+                                            readOnly
+                                        />
+                                    </div>
 
-                                    <FloatingInput
-                                        label="Last Name"
-                                        icon={User}
-                                        value={safeForm.last_name || ""}
-                                        onChange={(event) =>
-                                            handleNameChange(
-                                                "last_name",
-                                                event.target.value,
-                                            )
-                                        }
-                                    />
+                                    <div className="md:col-span-1">
+                                        <FloatingInput
+                                            label="First Name"
+                                            icon={User}
+                                            value={safeForm.first_name || ""}
+                                            onChange={(event) =>
+                                                handleNameChange(
+                                                    "first_name",
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
 
-                                    <FloatingInput
-                                        label="Middle Name"
-                                        icon={User}
-                                        value={safeForm.middle_name || ""}
-                                        onChange={(event) =>
-                                            handleNameChange(
-                                                "middle_name",
-                                                event.target.value,
-                                            )
-                                        }
-                                    />
+                                    <div className="md:col-span-1">
+                                        <FloatingInput
+                                            label="Last Name"
+                                            icon={User}
+                                            value={safeForm.last_name || ""}
+                                            onChange={(event) =>
+                                                handleNameChange(
+                                                    "last_name",
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
 
-                                    <FloatingInput
-                                        label="Position"
-                                        icon={Briefcase}
-                                        value={safeForm.position || ""}
-                                        onChange={(event) =>
-                                            updateForm(
-                                                "position",
-                                                event.target.value,
-                                            )
-                                        }
-                                    />
+                                    <div className="md:col-span-1">
+                                        <FloatingInput
+                                            label="Middle Name"
+                                            icon={User}
+                                            value={safeForm.middle_name || ""}
+                                            onChange={(event) =>
+                                                handleNameChange(
+                                                    "middle_name",
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
 
-                                    <div className="relative w-full md:col-span-2">
+                                    <div className="relative w-full">
+                                        <FloatingInput
+                                            label="Extension Name"
+                                            icon={User}
+                                            value={
+                                                safeForm.extension_name ||
+                                                "None"
+                                            }
+                                            readOnly
+                                            inputClassName="truncate pr-12"
+                                        />
+
+                                        <div className="absolute right-2 top-0 flex h-full items-center">
+                                            <CustomDropdownCheckbox
+                                                label="Select Extension"
+                                                items={extensionNameOptions}
+                                                selected={
+                                                    safeForm.extension_name ||
+                                                    "None"
+                                                }
+                                                onChange={(value) =>
+                                                    updateForm(
+                                                        "extension_name",
+                                                        value === "None"
+                                                            ? ""
+                                                            : value,
+                                                    )
+                                                }
+                                                buttonVariant="white"
+                                                iconOnly
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="md:col-span-1">
+                                        <FloatingInput
+                                            label="Position"
+                                            icon={Briefcase}
+                                            value={safeForm.position || ""}
+                                            onChange={(event) =>
+                                                updateForm(
+                                                    "position",
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="relative w-full">
                                         <FloatingInput
                                             label="Station"
                                             icon={Building2}
@@ -271,7 +324,7 @@ const EmployeeEditDialog = ({
                                         </div>
                                     </div>
 
-                                    <div className="relative w-full md:col-span-2">
+                                    <div className="relative w-full">
                                         <FloatingInput
                                             label="Office"
                                             icon={Building2}

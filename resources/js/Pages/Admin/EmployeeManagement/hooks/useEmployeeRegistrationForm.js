@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 
 const emptyEmployeeForm = (stationId = "") => ({
+    id: "",
     first_name: "",
     middle_name: "",
+    extension_name: "",
     last_name: "",
     profile_img: null,
     position: "",
@@ -13,6 +15,7 @@ const emptyEmployeeForm = (stationId = "") => ({
 });
 
 const isNameValue = (value) => /^[A-Za-z\s-]*$/.test(value);
+const isExtensionValue = (value) => /^[A-Za-z0-9.\s-]*$/.test(value);
 
 const revokePreviewUrl = (url) => {
     if (url?.startsWith("blob:")) {
@@ -42,6 +45,7 @@ const useEmployeeRegistrationForm = ({
     const initials =
         `${form.first_name?.[0] || ""}${form.last_name?.[0] || ""}`.toUpperCase();
     const isFormComplete =
+        String(form.id).trim() &&
         form.first_name.trim() &&
         form.middle_name.trim() &&
         form.last_name.trim() &&
@@ -64,8 +68,16 @@ const useEmployeeRegistrationForm = ({
     const handleFormChange = (e) => {
         const { name, value } = e.target;
 
+        if (name === "id" && value !== "" && !/^\d+$/.test(value)) {
+            return;
+        }
+
         if (["first_name", "middle_name", "last_name"].includes(name)) {
             if (!isNameValue(value)) return;
+        }
+
+        if (name === "extension_name" && !isExtensionValue(value)) {
+            return;
         }
 
         setForm((prev) => ({ ...prev, [name]: value }));

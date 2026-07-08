@@ -16,10 +16,16 @@ class DocumentRequestController extends Controller
     public function store(StoreDocumentRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $employeeName = $this->composeEmployeeName($data);
 
         if ($data['request_type'] === 'locator_slip') {
             $documentRequest = LocatorSlipRequest::create([
-                'employee_name' => $data['employee_name'],
+                'employee_id' => $data['employee_id'],
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'last_name' => $data['last_name'],
+                'extension_name' => $data['extension_name'] ?? null,
+                'employee_name' => $employeeName,
                 'email' => $data['email'],
                 'position' => $data['position'],
                 'station_id' => $data['station_id'],
@@ -30,7 +36,12 @@ class DocumentRequestController extends Controller
             ]);
         } else {
             $documentRequest = TravelOrderRequest::create([
-                'employee_name' => $data['employee_name'],
+                'employee_id' => $data['employee_id'],
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'last_name' => $data['last_name'],
+                'extension_name' => $data['extension_name'] ?? null,
+                'employee_name' => $employeeName,
                 'email' => $data['email'],
                 'position' => $data['position'],
                 'station_id' => $data['station_id'],
@@ -59,5 +70,17 @@ class DocumentRequestController extends Controller
         }
 
         return back()->with('success', 'Request submitted successfully. A PDF copy has been sent to your email.');
+    }
+
+    private function composeEmployeeName(array $data): string
+    {
+        return collect([
+            $data['first_name'] ?? null,
+            $data['middle_name'] ?? null,
+            $data['last_name'] ?? null,
+            $data['extension_name'] ?? null,
+        ])
+            ->filter(fn ($value) => filled($value))
+            ->implode(' ');
     }
 }

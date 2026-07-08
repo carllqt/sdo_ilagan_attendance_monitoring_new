@@ -331,6 +331,21 @@ const Attendance = ({
         });
     };
 
+    const broadcastAttendanceMonitoringUpdate = (employeeId) => {
+        if (!employeeId) return;
+
+        window.axios
+            ?.post(route("attendance-monitoring.broadcast"), {
+                employee_id: employeeId,
+            })
+            .catch((error) => {
+                console.error(
+                    "Attendance monitoring broadcast failed:",
+                    error,
+                );
+            });
+    };
+
     const startRetryCountdown = (seconds, callback) => {
         setRetryCountdown(seconds);
         let count = seconds;
@@ -403,6 +418,9 @@ const Attendance = ({
         if (data.success && data.employee) {
             const timeStr = new Date().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
+            broadcastAttendanceMonitoringUpdate(
+                data.employee.id || data.employee.employee_id,
+            );
             setScanStatus("success");
             setScanMessage(data.message);
             startSuccessCountdown();
@@ -586,11 +604,11 @@ const Attendance = ({
     const getFingerprintColor = () => {
         switch (scanStatus) {
             case "scanning":
-                return "text-blue-500 animate-pulse";
+                return "text-blue-500";
             case "processing":
-                return "text-amber-500 animate-pulse";
+                return "text-amber-500";
             case "success":
-                return "text-emerald-500 animate-bounce";
+                return "text-emerald-500";
             case "error":
                 return "text-red-500";
             default:
@@ -688,8 +706,7 @@ const Attendance = ({
                         />
                     ) : (
                         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                            <section className="relative flex min-h-[32rem] flex-col overflow-hidden rounded-[1.35rem] border border-white/25 bg-[linear-gradient(135deg,rgba(255,255,255,0.09),rgba(120,119,255,0.14))] p-5 shadow-[0_0_24px_rgba(167,139,250,0.16),0_18px_56px_rgba(2,6,47,0.30),inset_0_1px_0_rgba(255,255,255,0.18)] ring-1 ring-violet-200/10 backdrop-blur-[2px]">
-                                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.10),transparent_31%),radial-gradient(circle_at_86%_94%,rgba(167,139,250,0.14),transparent_38%)]" />
+                            <section className="relative flex min-h-[32rem] flex-col overflow-hidden rounded-[1.35rem] border border-blue-400/25 bg-[#071158] p-5 shadow-[0_18px_56px_rgba(2,6,47,0.30)]">
                                 <div className="relative z-10 flex min-h-0 flex-1 flex-col">
                                     <div className="mb-4 flex items-center justify-between gap-4">
                                         <div>
@@ -701,25 +718,24 @@ const Attendance = ({
                                                 attendance.
                                             </p>
                                         </div>
-                                        <div className="rounded-full border border-white/25 bg-white/15 px-3 py-1 text-sm font-bold text-white shadow-sm backdrop-blur">
+                                        <div className="rounded-full border border-blue-300/30 bg-blue-950/55 px-3 py-1 text-sm font-bold text-white shadow-sm">
                                             {activeTab} Session
                                         </div>
                                     </div>
 
                                     <div className="flex min-h-0 flex-1 flex-col gap-4">
                                         <div
-                                            className={`relative flex flex-[0.4] flex-col items-center justify-center overflow-hidden rounded-2xl border border-violet-400/70 bg-[radial-gradient(circle_at_50%_20%,rgba(80,70,255,0.42),transparent_30%),linear-gradient(135deg,rgba(14,21,139,0.92),rgba(4,10,78,0.96))] px-5 py-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_0_28px_rgba(79,70,229,0.26)] backdrop-blur ${currentStatus.panelClass}`}
+                                            className={`relative flex flex-[0.4] flex-col items-center justify-center overflow-hidden rounded-2xl border border-violet-400/70 bg-[radial-gradient(circle_at_50%_20%,rgba(80,70,255,0.42),transparent_30%),linear-gradient(135deg,rgba(14,21,139,0.92),rgba(4,10,78,0.96))] px-5 py-4 text-center shadow-[0_0_28px_rgba(79,70,229,0.26)] ${currentStatus.panelClass}`}
                                         >
                                             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_62%,rgba(56,189,248,0.16)_0_1px,transparent_1px),radial-gradient(circle_at_82%_36%,rgba(167,139,250,0.18)_0_1px,transparent_1px)] bg-[length:14px_14px]" />
                                             <div className="pointer-events-none absolute left-5 top-5 h-6 w-6 rounded-tl-xl border-l-2 border-t-2 border-violet-400/80" />
                                             <div className="pointer-events-none absolute right-5 top-5 h-6 w-6 rounded-tr-xl border-r-2 border-t-2 border-violet-400/80" />
                                             <div className="pointer-events-none absolute bottom-5 left-5 h-6 w-6 rounded-bl-xl border-b-2 border-l-2 border-violet-400/80" />
                                             <div className="pointer-events-none absolute bottom-5 right-5 h-6 w-6 rounded-br-xl border-b-2 border-r-2 border-violet-400/80" />
-                                            <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-cyan-300/25 bg-blue-950/45 shadow-[0_0_34px_rgba(56,189,248,0.38)]">
-                                                <div className="absolute inset-2 rounded-full border border-violet-400/30" />
-                                                <div className="absolute inset-5 rounded-full bg-cyan-400/10 blur-sm" />
+                                            <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-blue-400/30 bg-blue-950/45">
+                                                <div className="absolute inset-2 rounded-full border border-blue-400/25" />
                                                 <Fingerprint
-                                                    className={`relative h-20 w-20 drop-shadow-[0_0_14px_rgba(34,211,238,0.75)] ${getFingerprintColor()}`}
+                                                    className={`relative h-20 w-20 ${getFingerprintColor()}`}
                                                 />
                                             </div>
                                             <div className="relative mt-3 min-h-[3.5rem]">
@@ -737,22 +753,22 @@ const Attendance = ({
                                             </div>
                                         </div>
 
-                                        <div className="grid flex-[0.6] overflow-hidden rounded-2xl border border-blue-300/35 bg-[#080f5c] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_16px_34px_rgba(2,6,47,0.24)] backdrop-blur md:grid-cols-[38%_1fr]">
+                                        <div className="grid flex-[0.6] overflow-hidden rounded-2xl border border-blue-300/35 bg-[#080f5c] text-white shadow-[0_16px_34px_rgba(2,6,47,0.24)] md:grid-cols-[38%_1fr]">
                                             <div className="relative flex min-h-[13rem] items-center justify-center bg-[#080f5c] p-5">
-                                                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.14)_0_1px,transparent_1px)] bg-[length:12px_12px]" />
                                                 <EmployeeAvatar
                                                     employee={employee}
                                                     name={employeeName}
-                                                    className="relative h-48 w-48 border border-blue-300/55 bg-[#06115d] shadow-[0_0_42px_rgba(59,130,246,0.64),0_18px_38px_rgba(2,6,47,0.35)]"
+                                                    className="relative h-48 w-48 border border-blue-300/55 bg-[#06115d]"
                                                     fallbackClassName="bg-[#06115d]"
                                                     glowClassName="bg-transparent"
-                                                    iconClassName="text-blue-300 drop-shadow-[0_0_14px_rgba(96,165,250,0.75)]"
+                                                    iconClassName="text-blue-300"
+                                                    fallbackAnimationClassName=""
                                                 />
                                             </div>
 
                                             <div className="flex min-w-0 flex-col justify-center p-5">
-                                                <div className="flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
-                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-100 ring-1 ring-blue-200/20">
+                                                <div className="flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-950/55 text-blue-100 ring-1 ring-blue-200/20">
                                                         <UserRound className="h-5 w-5" />
                                                     </div>
                                                     <div className="min-w-0">
@@ -765,8 +781,8 @@ const Attendance = ({
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="mt-3 flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
-                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-100 ring-1 ring-blue-200/20">
+                                                <div className="mt-3 flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-950/55 text-blue-100 ring-1 ring-blue-200/20">
                                                         <Building2 className="h-5 w-5" />
                                                     </div>
                                                     <div className="min-w-0">
@@ -781,8 +797,8 @@ const Attendance = ({
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="mt-3 flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
-                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-100 ring-1 ring-blue-200/20">
+                                                <div className="mt-3 flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-950/55 text-blue-100 ring-1 ring-blue-200/20">
                                                         <BriefcaseBusiness className="h-5 w-5" />
                                                     </div>
                                                     <div className="min-w-0">
@@ -801,8 +817,7 @@ const Attendance = ({
                                 </div>
                             </section>
 
-                            <section className="relative flex min-h-[32rem] flex-col overflow-hidden rounded-[1.35rem] border border-white/25 bg-[linear-gradient(135deg,rgba(255,255,255,0.09),rgba(120,119,255,0.14))] p-5 shadow-[0_0_24px_rgba(167,139,250,0.16),0_18px_56px_rgba(2,6,47,0.30),inset_0_1px_0_rgba(255,255,255,0.18)] ring-1 ring-violet-200/10 backdrop-blur-[2px]">
-                                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_0%,rgba(255,255,255,0.10),transparent_30%),radial-gradient(circle_at_92%_88%,rgba(125,211,252,0.10),transparent_34%)]" />
+                            <section className="relative flex min-h-[32rem] flex-col overflow-hidden rounded-[1.35rem] border border-blue-400/25 bg-[#071158] p-5 shadow-[0_18px_56px_rgba(2,6,47,0.30)]">
                                 <div className="relative z-10 flex min-h-0 flex-1 flex-col">
                                     <div className="mb-4 flex items-start justify-between gap-4">
                                         <div>
@@ -814,7 +829,7 @@ const Attendance = ({
                                                 day.
                                             </p>
                                         </div>
-                                        <div className="rounded-full border border-white/25 bg-white/15 px-3 py-1 text-sm font-bold text-white shadow-sm backdrop-blur">
+                                        <div className="rounded-full border border-blue-300/30 bg-blue-950/55 px-3 py-1 text-sm font-bold text-white shadow-sm">
                                             {totalAttendanceRecords} records
                                         </div>
                                     </div>
@@ -850,8 +865,8 @@ const Attendance = ({
                                         />
 
                                         {showSuggestions && search.trim() ? (
-                                            <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-white/25 bg-white shadow-2xl">
-                                                <div className="border-b bg-[#f4f6ff] px-3 py-2 text-xs font-bold uppercase tracking-wide text-[#141b6d]">
+                                            <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-blue-300/30 bg-[#071158] shadow-2xl shadow-blue-950/30">
+                                                <div className="border-b border-blue-300/20 bg-blue-950/55 px-3 py-2 text-xs font-bold uppercase tracking-wide text-blue-100">
                                                     Results for "{search.trim()}
                                                     "
                                                 </div>
@@ -875,7 +890,7 @@ const Attendance = ({
                                                                             employee,
                                                                         )
                                                                     }
-                                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-[#f4f6ff]"
+                                                                    className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm text-white transition hover:bg-blue-900/60"
                                                                 >
                                                                     <div className="flex min-w-0 items-center gap-3">
                                                                         <EmployeeAvatar
@@ -888,26 +903,26 @@ const Attendance = ({
                                                                             className="h-9 w-9"
                                                                         />
                                                                         <div className="min-w-0">
-                                                                            <div className="truncate font-medium text-slate-800">
+                                                                            <div className="truncate font-medium text-white">
                                                                                 {
                                                                                     employee.label
                                                                                 }
                                                                             </div>
-                                                                            <div className="truncate text-xs text-slate-500">
+                                                                            <div className="truncate text-xs text-blue-100">
                                                                                 {employee.meta ||
                                                                                     "Employee"}
                                                                             </div>
                                                                         </div>
                                                                     </div>
 
-                                                                    <span className="shrink-0 rounded-full bg-[#eef1ff] px-2 py-1 text-[11px] font-bold text-[#141b6d]">
+                                                                    <span className="shrink-0 rounded-full bg-blue-800/70 px-2 py-1 text-[11px] font-bold text-blue-50">
                                                                         Search
                                                                     </span>
                                                                 </button>
                                                             ),
                                                         )
                                                     ) : (
-                                                        <div className="px-3 py-4 text-sm text-slate-500">
+                                                        <div className="px-3 py-4 text-sm text-blue-100">
                                                             No employee matches
                                                             found.
                                                         </div>
@@ -922,16 +937,16 @@ const Attendance = ({
                                         onValueChange={handleSessionChange}
                                         className="flex min-h-0 flex-1 flex-col"
                                     >
-                                        <TabsList className="mb-4 grid w-full grid-cols-2 rounded-xl border border-white/20 bg-white/10 p-1 backdrop-blur">
+                                        <TabsList className="mb-4 grid w-full grid-cols-2 rounded-xl border border-blue-300/25 bg-blue-950/45 p-1">
                                             <TabsTrigger
                                                 value="AM"
-                                                className="rounded-lg text-white/80 data-[state=active]:bg-white/95 data-[state=active]:text-[#141b6d]"
+                                                className="rounded-lg text-white/80 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
                                             >
                                                 AM Logs
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="PM"
-                                                className="rounded-lg text-white/80 data-[state=active]:bg-white/95 data-[state=active]:text-[#141b6d]"
+                                                className="rounded-lg text-white/80 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
                                             >
                                                 PM Logs
                                             </TabsTrigger>

@@ -21,7 +21,6 @@ const LocatorSlipTable = ({
     isLoading,
     onFilterChange,
     records,
-    stations,
 }) => (
     <RequestTableSection
         title="Locator Slip Logs"
@@ -30,7 +29,6 @@ const LocatorSlipTable = ({
         filters={filters}
         isLoading={isLoading}
         onFilterChange={onFilterChange}
-        stations={stations}
         type="locator_slip"
         columns={columns}
         renderRow={(request) => (

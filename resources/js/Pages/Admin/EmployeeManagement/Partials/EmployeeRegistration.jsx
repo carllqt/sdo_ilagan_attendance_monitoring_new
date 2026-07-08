@@ -3,6 +3,7 @@ import FloatingInput from "@/components/floating-input";
 import {
     UserPlus,
     User,
+    Hash,
     Briefcase,
     Building2,
     UploadCloud,
@@ -22,10 +23,12 @@ import {
     AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import {
+    CustomDropdownCheckbox,
     CustomDropdownCheckboxObject,
     CustomDropdownWorkSchedule,
 } from "@/components/dropdown-menu-main";
 import useEmployeeRegistrationForm from "../hooks/useEmployeeRegistrationForm";
+import { extensionNameOptions } from "../utils";
 
 const EmployeeRegistration = ({
     userStationId,
@@ -162,45 +165,92 @@ const EmployeeRegistration = ({
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <FloatingInput
-                                label="First Name"
-                                icon={User}
-                                name="first_name"
-                                value={form.first_name}
-                                onChange={handleFormChange}
-                            />
+                            <div className="md:col-span-1">
+                                <FloatingInput
+                                    label="Employee ID"
+                                    icon={Hash}
+                                    name="id"
+                                    value={form.id}
+                                    onChange={handleFormChange}
+                                />
+                            </div>
 
-                            <FloatingInput
-                                label="Last Name"
-                                icon={User}
-                                name="last_name"
-                                value={form.last_name}
-                                onChange={handleFormChange}
-                            />
+                            <div className="md:col-span-1">
+                                <FloatingInput
+                                    label="First Name"
+                                    icon={User}
+                                    name="first_name"
+                                    value={form.first_name}
+                                    onChange={handleFormChange}
+                                />
+                            </div>
 
-                            <FloatingInput
-                                label="Middle Name"
-                                icon={User}
-                                name="middle_name"
-                                value={form.middle_name}
-                                onChange={handleFormChange}
-                            />
+                            <div className="md:col-span-1">
+                                <FloatingInput
+                                    label="Last Name"
+                                    icon={User}
+                                    name="last_name"
+                                    value={form.last_name}
+                                    onChange={handleFormChange}
+                                />
+                            </div>
 
-                            <FloatingInput
-                                label="Position"
-                                icon={Briefcase}
-                                name="position"
-                                value={form.position}
-                                onChange={handleFormChange}
-                            />
+                            <div className="md:col-span-1">
+                                <FloatingInput
+                                    label="Middle Name"
+                                    icon={User}
+                                    name="middle_name"
+                                    value={form.middle_name}
+                                    onChange={handleFormChange}
+                                />
+                            </div>
 
-                            <div className="relative w-full md:col-span-2">
+                            <div className="relative w-full">
+                                <FloatingInput
+                                    label="Extension Name"
+                                    icon={User}
+                                    value={form.extension_name || "None"}
+                                    readOnly
+                                    onChange={() => {}}
+                                    inputClassName="truncate pr-12"
+                                />
+                                <div className="absolute right-2 top-0 flex h-full items-center">
+                                    <CustomDropdownCheckbox
+                                        label="Select Extension"
+                                        items={extensionNameOptions}
+                                        selected={
+                                            form.extension_name || "None"
+                                        }
+                                        onChange={(value) =>
+                                            updateFormValue(
+                                                "extension_name",
+                                                value === "None" ? "" : value,
+                                            )
+                                        }
+                                        buttonVariant="white"
+                                        iconOnly
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-1">
+                                <FloatingInput
+                                    label="Position"
+                                    icon={Briefcase}
+                                    name="position"
+                                    value={form.position}
+                                    onChange={handleFormChange}
+                                />
+                            </div>
+
+                            <div className="relative w-full">
                                 <FloatingInput
                                     label="Office"
                                     icon={Building2}
                                     value={displayOffice}
                                     readOnly
                                     onChange={() => {}}
+                                    inputClassName="truncate pr-12"
                                 />
                                 <div
                                     className={`absolute right-2 top-0 flex h-full items-center ${
@@ -223,13 +273,14 @@ const EmployeeRegistration = ({
                                 </div>
                             </div>
 
-                            <div className="relative w-full md:col-span-2">
+                            <div className="relative w-full">
                                 <FloatingInput
                                     label="Work Schedule"
                                     icon={Briefcase}
                                     value={displayWorkSchedule}
                                     readOnly
                                     onChange={() => {}}
+                                    inputClassName="truncate pr-12"
                                 />
                                 <div className="absolute right-2 top-0 flex h-full items-center">
                                     <CustomDropdownWorkSchedule

@@ -63,7 +63,7 @@ const PreviewDtrTable = ({
                                         className="px-2 py-1 text-center text-[11px] font-semibold text-orange-700"
                                         colSpan={4}
                                     >
-                                        Travel Order
+                                        ON TRAVEL
                                     </TableCell>
                                 ) : (
                                     <>

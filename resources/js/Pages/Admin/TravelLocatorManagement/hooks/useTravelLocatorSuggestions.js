@@ -4,7 +4,6 @@ import axios from "axios";
 const useTravelLocatorSuggestions = ({
     enabled = true,
     query,
-    stationId,
     type,
 }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -52,7 +51,7 @@ const useTravelLocatorSuggestions = ({
         const timeout = setTimeout(() => {
             axios
                 .get(route("travel-locator-management.suggestions"), {
-                    params: { search, station_id: stationId, type },
+                    params: { search, type },
                 })
                 .then((response) => {
                     if (suggestionRequestRef.current !== requestId) return;
@@ -72,7 +71,7 @@ const useTravelLocatorSuggestions = ({
         }, 250);
 
         return () => clearTimeout(timeout);
-    }, [enabled, query, showSuggestions, stationId, type]);
+    }, [enabled, query, showSuggestions, type]);
 
     return {
         searchBoxRef,

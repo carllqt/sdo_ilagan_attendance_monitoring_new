@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PaginationMain from "@/Components/PaginationMain";
 import { SuggestionSkeletonList } from "@/Components/Skeletons";
-import { CustomDropdownCheckboxObject } from "@/components/dropdown-menu-main";
 import FloatingInput from "@/components/floating-input";
 import {
     Table,
@@ -23,20 +22,11 @@ const RequestTableSection = ({
     records = emptyPagination,
     renderRow,
     searchPlaceholder,
-    stations = [],
     title,
     type,
 }) => {
     const [searchInput, setSearchInput] = useState(filters.search || "");
     const items = records.data || [];
-    const stationItems = stations.map((station) => ({
-        ...station,
-        division: station.code ? { name: station.code } : null,
-    }));
-    const selectedStation =
-        stationItems.find(
-            (station) => Number(station.id) === Number(filters.station_id),
-        ) || stationItems[0];
     const {
         searchBoxRef,
         setShowSuggestions,
@@ -46,7 +36,6 @@ const RequestTableSection = ({
     } = useTravelLocatorSuggestions({
         enabled: !isLoading && Boolean(searchInput.trim()),
         query: searchInput,
-        stationId: selectedStation?.id,
         type,
     });
 
@@ -101,22 +90,6 @@ const RequestTableSection = ({
                 </div>
 
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                    <CustomDropdownCheckboxObject
-                        label="Select Station"
-                        items={stationItems}
-                        selected={selectedStation?.id}
-                        buttonLabel={selectedStation?.name || "Select Station"}
-                        onChange={(stationId) =>
-                            onFilterChange({
-                                station_id: stationId,
-                                page: 1,
-                            })
-                        }
-                        disabled={isLoading}
-                        buttonVariant="outline"
-                        className="h-10 w-full border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 sm:w-[320px]"
-                    />
-
                     <div
                         ref={searchBoxRef}
                         className="relative w-full sm:w-[360px]"

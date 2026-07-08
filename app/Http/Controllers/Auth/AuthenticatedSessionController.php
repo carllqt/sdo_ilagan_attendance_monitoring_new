@@ -23,7 +23,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('employee-management');
         }
 
-        return Inertia::render('Auth/Login', [
+        return Inertia::render('Auth/Login/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
             'stations' => fn () => Station::query()

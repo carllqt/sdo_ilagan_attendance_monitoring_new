@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('travel_order_requests', function (Blueprint $table) {
             $table->id();
+            $table->string('employee_id');
+            $table->string('first_name');
+            $table->string('middle_name')->nullable();
+            $table->string('last_name');
+            $table->string('extension_name')->nullable();
             $table->string('employee_name');
             $table->string('email');
             $table->string('position');

@@ -82,6 +82,7 @@ class EmployeeManagementService
             'full_name' => $employee->full_name ?: 'Employee',
             'first_name' => $employee->first_name,
             'middle_name' => $employee->middle_name,
+            'extension_name' => $employee->extension_name,
             'last_name' => $employee->last_name,
             'profile_img' => $employee->profile_img,
             'position' => $employee->position,
@@ -193,6 +194,7 @@ class EmployeeManagementService
                     $employeeData['first_name'] ?? '',
                     $employeeData['middle_name'] ?? '',
                     $employeeData['last_name'] ?? '',
+                    $employeeData['extension_name'] ?? '',
                 ]),
             ),
         );

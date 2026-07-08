@@ -39,6 +39,7 @@ Route::get('/employee-profile-images/{filename}', [EmployeeProfileImageControlle
     ->name('employee-profile-images.show');
 
 Route::get('/attendance-monitoring', [AttendanceMonitoringController::class, 'index'])->name('attendance-monitoring');
+Route::get('/attendance-monitoring/employees-page', [AttendanceMonitoringController::class, 'employeesPage'])->name('attendance-monitoring.employees-page');
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
 Route::post('/document-requests', [DocumentRequestController::class, 'store'])->name('document-requests.store');
@@ -60,6 +61,9 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::post('/attendance/device', [AttendanceController::class, 'registerDevice'])->name('attendance.device.register');
     Route::post('/attendance/unlock', [AttendanceController::class, 'unlock'])->name('attendance.unlock');
     Route::post('/attendance/lock', [AttendanceController::class, 'lock'])->name('attendance.lock');
+    Route::post('/attendance-monitoring/broadcast', [AttendanceMonitoringController::class, 'broadcast'])->name('attendance-monitoring.broadcast');
+    Route::get('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'liveTest'])->name('attendance-monitoring.live-test');
+    Route::post('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'triggerLiveTest'])->name('attendance-monitoring.live-test.trigger');
 
     //Attendance Management
     Route::get('/attendance-management', [AttendanceManagementController::class, 'index'])->name('attendance-management');
@@ -69,6 +73,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
     // Travel and Locator Requests
     Route::get('/travel-locator-management/suggestions', [TravelLocatorManagementController::class, 'suggestions'])->name('travel-locator-management.suggestions');
+    Route::post('/travel-locator-management/travel-orders/{id}/approve', [TravelLocatorManagementController::class, 'approveTravelOrder'])->name('travel-locator-management.travel-orders.approve');
     Route::get('/travel-locator-management', [TravelLocatorManagementController::class, 'index'])->name('travel-locator-management');
 
     // Daily Time Records

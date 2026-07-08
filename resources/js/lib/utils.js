@@ -21,7 +21,12 @@ export const compareAlphabetically = (a, b) =>
 export const getEmployeeName = (employee) =>
     employee?.full_name ||
     employee?.name ||
-    [employee?.first_name, employee?.middle_name, employee?.last_name]
+    [
+        employee?.first_name,
+        employee?.middle_name,
+        employee?.last_name,
+        employee?.extension_name,
+    ]
         .filter(Boolean)
         .join(" ")
         .replace(/\s+/g, " ")

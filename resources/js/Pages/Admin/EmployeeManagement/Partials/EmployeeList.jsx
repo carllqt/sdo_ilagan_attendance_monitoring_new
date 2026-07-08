@@ -228,7 +228,7 @@ const EmployeeList = ({
                 <Table className="w-full table-fixed">
                     <TableHeader>
                         <TableRow className="bg-blue-900 hover:bg-blue-800">
-                            <TableHead className="text-white text-left px-16 w-[25%]">
+                            <TableHead className="text-white text-left px-16 w-[30%]">
                                 Employee Name
                             </TableHead>
                             <TableHead className="text-white text-left w-[20%]">
@@ -237,10 +237,10 @@ const EmployeeList = ({
                             <TableHead className="text-white text-left w-[25%]">
                                 {isSchoolAdmin ? "School" : "Section / Unit"}
                             </TableHead>
-                            <TableHead className="text-white text-left w-[15%]">
+                            <TableHead className="text-white text-left w-[17%]">
                                 Work Schedule
                             </TableHead>
-                            <TableHead className="text-white text-left px-10 w-[10%]">
+                            <TableHead className="text-white text-left px-10 w-[8%]">
                                 Actions
                             </TableHead>
                         </TableRow>

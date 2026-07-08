@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Administrator;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Administrator\TravelLocatorManagement\ApproveTravelOrderRequest;
 use App\Http\Requests\Administrator\TravelLocatorManagement\TravelLocatorManagementRequest;
 use App\Services\Administrator\TravelLocatorManagementService;
 use Inertia\Inertia;
@@ -26,5 +27,18 @@ class TravelLocatorManagementController extends Controller
         return response()->json(
             $this->travelLocatorManagement->suggestions($request),
         );
+    }
+
+    public function approveTravelOrder(ApproveTravelOrderRequest $request, int $id)
+    {
+        $validated = $request->validated();
+
+        $this->travelLocatorManagement->approveTravelOrder(
+            $id,
+            (int) $validated['employee_id'],
+            $request,
+        );
+
+        return back()->with('success', 'Travel order approved!');
     }
 }

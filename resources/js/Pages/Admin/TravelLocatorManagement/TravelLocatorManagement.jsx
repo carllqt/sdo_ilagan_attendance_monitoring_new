@@ -12,7 +12,6 @@ const TravelLocatorManagement = ({
     travel_order_requests = emptyPagination,
     locator_filters = {},
     travel_filters = {},
-    station_options = [],
 }) => {
     const {
         currentLocatorFilters,
@@ -43,14 +42,12 @@ const TravelLocatorManagement = ({
                     filters={currentTravelFilters}
                     isLoading={travelLoading}
                     onFilterChange={updateTravelRequests}
-                    stations={station_options}
                 />
                 <LocatorSlipTable
                     records={locator_slip_requests}
                     filters={currentLocatorFilters}
                     isLoading={locatorLoading}
                     onFilterChange={updateLocatorRequests}
-                    stations={station_options}
                 />
             </div>
         </AuthenticatedLayout>

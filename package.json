@@ -4,8 +4,9 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "reverb": "php artisan reverb:start",
         "serve": "php artisan serve",
-        "start": "concurrently \"npm run dev\" \"php artisan serve\""
+        "start": "concurrently -c \"#93c5fd,#c4b5fd,#86efac\" -n \"vite,server,reverb\" \"npm run dev\" \"php artisan serve\" \"php artisan reverb:start\""
     },
     "devDependencies": {
         "@headlessui/react": "^2.2.9",
@@ -16,8 +17,10 @@
         "autoprefixer": "^10.4.21",
         "axios": "^1.13.6",
         "concurrently": "^9.2.0",
+        "laravel-echo": "^2.3.7",
         "laravel-vite-plugin": "^1.2.0",
         "postcss": "^8.5.6",
+        "pusher-js": "^8.5.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "tailwindcss": "^3.4.17",

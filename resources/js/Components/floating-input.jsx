@@ -28,7 +28,7 @@ export default function FloatingInput({
     const labelOffsetClasses = Icon ? "left-8" : "left-3";
     const isGlass = variant === "glass";
     const wrapperClassName = isGlass
-        ? "relative flex items-center rounded-xl bg-white/[0.12] px-3 py-1.5 text-white backdrop-blur transition focus-within:bg-white/[0.16]"
+        ? "relative flex items-center rounded-xl border border-blue-300/25 bg-blue-950/45 px-3 py-1.5 text-white transition focus-within:border-blue-300/45 focus-within:bg-blue-950/65"
         : "relative flex items-center rounded-xl border border-slate-200 bg-slate-50/90 px-3 py-1.5 shadow-sm transition focus-within:border-blue-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100";
     const iconClassName = isGlass
         ? "mr-2 h-4 w-4 text-white/75"

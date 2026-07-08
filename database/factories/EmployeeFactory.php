@@ -19,6 +19,7 @@ class EmployeeFactory extends Factory
         return [
             'first_name' => $this->faker->firstName,
             'middle_name' => $this->faker->optional()->firstName,
+            'extension_name' => $this->faker->optional()->randomElement(['Jr.', 'Sr.', 'III']),
             'last_name' => $this->faker->lastName,
             'position' => $this->faker->randomElement([
                 'Administrative Officer I',

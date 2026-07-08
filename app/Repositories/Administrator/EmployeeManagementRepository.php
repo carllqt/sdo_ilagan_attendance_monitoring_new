@@ -47,13 +47,14 @@ class EmployeeManagementRepository
                     $query->where('id', $filter->search)
                         ->orWhere('first_name', 'like', "%{$filter->search}%")
                         ->orWhere('middle_name', 'like', "%{$filter->search}%")
+                        ->orWhere('extension_name', 'like', "%{$filter->search}%")
                         ->orWhere('last_name', 'like', "%{$filter->search}%")
                         ->orWhereRaw(
-                            "CONCAT_WS(' ', first_name, middle_name, last_name) LIKE ?",
+                            "CONCAT_WS(' ', first_name, middle_name, last_name, extension_name) LIKE ?",
                             ["%{$filter->search}%"],
                         )
                         ->orWhereRaw(
-                            "CONCAT_WS(' ', id, first_name, middle_name, last_name) LIKE ?",
+                            "CONCAT_WS(' ', id, first_name, middle_name, last_name, extension_name) LIKE ?",
                             ["%{$filter->search}%"],
                         );
                 });
@@ -80,6 +81,7 @@ class EmployeeManagementRepository
                 'id',
                 'first_name',
                 'middle_name',
+                'extension_name',
                 'last_name',
                 'profile_img',
                 'position',
@@ -96,13 +98,14 @@ class EmployeeManagementRepository
                     $query->where('id', $search)
                         ->orWhere('first_name', 'like', "%{$search}%")
                         ->orWhere('middle_name', 'like', "%{$search}%")
+                        ->orWhere('extension_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%")
                         ->orWhereRaw(
-                            "CONCAT_WS(' ', first_name, middle_name, last_name) LIKE ?",
+                            "CONCAT_WS(' ', first_name, middle_name, last_name, extension_name) LIKE ?",
                             ["%{$search}%"],
                         )
                         ->orWhereRaw(
-                            "CONCAT_WS(' ', id, first_name, middle_name, last_name) LIKE ?",
+                            "CONCAT_WS(' ', id, first_name, middle_name, last_name, extension_name) LIKE ?",
                             ["%{$search}%"],
                         );
                 });
@@ -122,6 +125,7 @@ class EmployeeManagementRepository
                 'id',
                 'first_name',
                 'middle_name',
+                'extension_name',
                 'last_name',
                 'profile_img',
                 'position',
@@ -143,6 +147,7 @@ class EmployeeManagementRepository
                 'id',
                 'first_name',
                 'middle_name',
+                'extension_name',
                 'last_name',
                 'profile_img',
                 'position',
