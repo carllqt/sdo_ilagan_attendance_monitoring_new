@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { router } from "@inertiajs/react";
-import { CalendarDays, CheckCircle2, MapPin, Search, UserCheck } from "lucide-react";
+import {
+    CalendarDays,
+    CheckCircle2,
+    Hash,
+    MapPin,
+    Trash2,
+    User,
+    UserCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,63 +19,33 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import FloatingInput from "@/components/floating-input";
-import { SuggestionSkeletonList } from "@/Components/Skeletons";
-import useEmployeeSearchSuggestions from "../../EmployeeManagement/hooks/useEmployeeSearchSuggestions";
 import { formatDate } from "../util";
 
 const ApproveTravelOrderDialog = ({ onClose, onApproved, request }) => {
     const open = Boolean(request);
-    const [employeeSearch, setEmployeeSearch] = useState("");
-    const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [processing, setProcessing] = useState(false);
-    const {
-        searchBoxRef,
-        setShowSuggestions,
-        showSuggestions,
-        suggestionMatches,
-        suggestionsLoading,
-    } = useEmployeeSearchSuggestions({
-        enabled: open && Boolean(employeeSearch.trim()) && !selectedEmployee,
-        query: employeeSearch,
-    });
+    const hasEmployeeMatch = Boolean(
+        request?.has_employee_match && request?.matched_employee_id,
+    );
 
     useEffect(() => {
         if (!open) {
-            setEmployeeSearch("");
-            setSelectedEmployee(null);
             setProcessing(false);
-            setShowSuggestions(false);
             return;
         }
 
-        setEmployeeSearch(request?.employee_name || "");
-        setSelectedEmployee(null);
         setProcessing(false);
-        setShowSuggestions(Boolean(request?.employee_name));
-    }, [open, request, setShowSuggestions]);
+    }, [open]);
 
-    const selectEmployee = (employee) => {
-        setSelectedEmployee(employee);
-        setEmployeeSearch(employee.label || "");
-        setShowSuggestions(false);
-    };
-
-    const handleEmployeeSearchChange = (event) => {
-        setEmployeeSearch(event.target.value);
-        setSelectedEmployee(null);
-        setShowSuggestions(true);
-    };
-
-    const handleSubmit = (event) => {
+    const handleApprove = (event) => {
         event.preventDefault();
 
-        if (!request?.id || !selectedEmployee || processing) return;
+        if (!request?.id || !hasEmployeeMatch || processing) return;
 
         setProcessing(true);
         router.post(
             route("travel-locator-management.travel-orders.approve", request.id),
-            { employee_id: selectedEmployee.id },
+            {},
             {
                 only: ["travel_order_requests", "travel_filters"],
                 preserveScroll: true,
@@ -77,6 +55,27 @@ const ApproveTravelOrderDialog = ({ onClose, onApproved, request }) => {
                     onClose();
                 },
                 onError: () => toast.error("Failed to approve travel order."),
+                onFinish: () => setProcessing(false),
+            },
+        );
+    };
+
+    const handleDelete = () => {
+        if (!request?.id || processing) return;
+
+        setProcessing(true);
+        router.delete(
+            route("travel-locator-management.travel-orders.delete", request.id),
+            {
+                only: ["travel_order_requests", "travel_filters"],
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success("Travel order request deleted!");
+                    onApproved?.();
+                    onClose();
+                },
+                onError: () =>
+                    toast.error("Failed to delete travel order request."),
                 onFinish: () => setProcessing(false),
             },
         );
@@ -92,14 +91,47 @@ const ApproveTravelOrderDialog = ({ onClose, onApproved, request }) => {
                             Assign Travel Order
                         </DialogTitle>
                         <DialogDescription className="text-blue-100">
-                            Select the employee to approve this travel order.
+                            Validate the requested employee before approving this travel order.
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4 px-5 pb-5 pt-4">
+                <form onSubmit={handleApprove} className="space-y-4 px-5 pb-5 pt-4">
                     <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 sm:grid-cols-2">
                         <div className="min-w-0">
+                            <div className="flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
+                                <Hash className="h-3.5 w-3.5" />
+                                Employee Number
+                            </div>
+                            <div className="truncate font-medium text-slate-900">
+                                {request?.employee_id || "-"}
+                            </div>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="text-xs font-semibold uppercase text-slate-500">
+                                First Name
+                            </div>
+                            <div className="truncate font-medium text-slate-900">
+                                {request?.first_name || "-"}
+                            </div>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="text-xs font-semibold uppercase text-slate-500">
+                                Middle Name
+                            </div>
+                            <div className="truncate font-medium text-slate-900">
+                                {request?.middle_name || "-"}
+                            </div>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="text-xs font-semibold uppercase text-slate-500">
+                                Last Name
+                            </div>
+                            <div className="truncate font-medium text-slate-900">
+                                {request?.last_name || "-"}
+                            </div>
+                        </div>
+                        <div className="min-w-0 sm:col-span-2">
                             <div className="text-xs font-semibold uppercase text-slate-500">
                                 Request Name
                             </div>
@@ -127,56 +159,64 @@ const ApproveTravelOrderDialog = ({ onClose, onApproved, request }) => {
                         </div>
                     </div>
 
-                    <div ref={searchBoxRef} className="relative">
-                        <FloatingInput
-                            label="Employee Name"
-                            icon={Search}
-                            name="approve_travel_order_employee"
-                            value={employeeSearch}
-                            disabled={processing}
-                            onChange={handleEmployeeSearchChange}
-                            onFocus={() => setShowSuggestions(true)}
-                        />
-
-                        {showSuggestions && employeeSearch.trim() && !processing ? (
-                            <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
-                                <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                    Employees matching "{employeeSearch.trim()}"
-                                </div>
-
-                                <div className="max-h-72 overflow-y-auto">
-                                    {suggestionsLoading ? (
-                                        <SuggestionSkeletonList />
-                                    ) : suggestionMatches.length > 0 ? (
-                                        suggestionMatches.map((employee) => (
-                                            <button
-                                                key={employee.id}
-                                                type="button"
-                                                onMouseDown={() => selectEmployee(employee)}
-                                                className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50"
-                                            >
-                                                <div className="min-w-0">
-                                                    <div className="truncate font-medium text-slate-800">
-                                                        {employee.label}
-                                                    </div>
-                                                    <div className="truncate text-xs text-slate-500">
-                                                        {employee.meta || "-"}
-                                                    </div>
-                                                </div>
-
-                                                <span className="shrink-0 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold text-blue-700">
-                                                    Select
-                                                </span>
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="px-3 py-4 text-sm text-slate-500">
-                                            No employee matches found.
-                                        </div>
-                                    )}
-                                </div>
+                    <div
+                        className={`rounded-xl border p-4 ${
+                            hasEmployeeMatch
+                                ? "border-emerald-200 bg-emerald-50"
+                                : "border-red-200 bg-red-50"
+                        }`}
+                    >
+                        <div className="flex items-start gap-3">
+                            <div
+                                className={`mt-0.5 rounded-full p-2 ${
+                                    hasEmployeeMatch
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : "bg-red-100 text-red-700"
+                                }`}
+                            >
+                                {hasEmployeeMatch ? (
+                                    <CheckCircle2 className="h-4 w-4" />
+                                ) : (
+                                    <User className="h-4 w-4" />
+                                )}
                             </div>
-                        ) : null}
+                            <div className="min-w-0 flex-1">
+                                <p
+                                    className={`text-sm font-bold ${
+                                        hasEmployeeMatch
+                                            ? "text-emerald-800"
+                                            : "text-red-800"
+                                    }`}
+                                >
+                                    {hasEmployeeMatch
+                                        ? "Employee matched"
+                                        : "No matching employee found"}
+                                </p>
+                                <p
+                                    className={`mt-1 text-sm ${
+                                        hasEmployeeMatch
+                                            ? "text-emerald-700"
+                                            : "text-red-700"
+                                    }`}
+                                >
+                                    {hasEmployeeMatch
+                                        ? "The request employee number, first name, middle name, and last name match an active employee record."
+                                        : "The request employee number, first name, middle name, and last name do not match any active employee in the employee table."}
+                                </p>
+                                {hasEmployeeMatch ? (
+                                    <div className="mt-3 rounded-lg border border-emerald-200 bg-white/80 px-3 py-2 text-sm text-emerald-900">
+                                        <div className="font-semibold">
+                                            {request?.matched_employee_name ||
+                                                "-"}
+                                        </div>
+                                        <div className="text-xs font-medium uppercase text-emerald-700">
+                                            Employee No.{" "}
+                                            {request?.matched_employee_id || "-"}
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </div>
                     </div>
 
                     <DialogFooter className="gap-2 pt-1">
@@ -189,12 +229,27 @@ const ApproveTravelOrderDialog = ({ onClose, onApproved, request }) => {
                             Cancel
                         </Button>
                         <Button
-                            type="submit"
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                            disabled={!selectedEmployee || processing}
+                            type={hasEmployeeMatch ? "submit" : "button"}
+                            onClick={hasEmployeeMatch ? undefined : handleDelete}
+                            className={
+                                hasEmployeeMatch
+                                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                                    : "bg-red-600 text-white hover:bg-red-700"
+                            }
+                            disabled={processing}
                         >
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            {processing ? "Approving..." : "Approve"}
+                            {hasEmployeeMatch ? (
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                            ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            {processing
+                                ? hasEmployeeMatch
+                                    ? "Approving..."
+                                    : "Deleting..."
+                                : hasEmployeeMatch
+                                  ? "Approve"
+                                  : "Delete"}
                         </Button>
                     </DialogFooter>
                 </form>

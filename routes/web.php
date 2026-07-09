@@ -74,6 +74,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     // Travel and Locator Requests
     Route::get('/travel-locator-management/suggestions', [TravelLocatorManagementController::class, 'suggestions'])->name('travel-locator-management.suggestions');
     Route::post('/travel-locator-management/travel-orders/{id}/approve', [TravelLocatorManagementController::class, 'approveTravelOrder'])->name('travel-locator-management.travel-orders.approve');
+    Route::delete('/travel-locator-management/travel-orders/{id}', [TravelLocatorManagementController::class, 'deleteTravelOrder'])->name('travel-locator-management.travel-orders.delete');
     Route::get('/travel-locator-management', [TravelLocatorManagementController::class, 'index'])->name('travel-locator-management');
 
     // Daily Time Records

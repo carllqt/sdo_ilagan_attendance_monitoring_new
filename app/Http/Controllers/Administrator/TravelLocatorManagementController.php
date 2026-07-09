@@ -31,14 +31,18 @@ class TravelLocatorManagementController extends Controller
 
     public function approveTravelOrder(ApproveTravelOrderRequest $request, int $id)
     {
-        $validated = $request->validated();
-
         $this->travelLocatorManagement->approveTravelOrder(
             $id,
-            (int) $validated['employee_id'],
             $request,
         );
 
         return back()->with('success', 'Travel order approved!');
+    }
+
+    public function deleteTravelOrder(int $id, TravelLocatorManagementRequest $request)
+    {
+        $this->travelLocatorManagement->deleteTravelOrder($id, $request);
+
+        return back()->with('success', 'Travel order request deleted.');
     }
 }

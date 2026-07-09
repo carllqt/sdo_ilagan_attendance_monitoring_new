@@ -16,7 +16,7 @@ class StoreDocumentRequest extends FormRequest
     {
         return [
             'request_type' => ['required', Rule::in(['locator_slip', 'travel_order'])],
-            'employee_id' => ['required', 'string', 'max:50'],
+            'employee_id' => ['required', 'integer', 'min:1'],
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],

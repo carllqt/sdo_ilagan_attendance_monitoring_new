@@ -1,8 +1,11 @@
 import { Head } from "@inertiajs/react";
+import { useEffect } from "react";
+import { Toaster, toast } from "sonner";
 
 import TalaBackground from "@/Components/TalaBackground";
 
 import DocumentRequestDialog from "./Partials/DocumentRequestDialog";
+import DocumentRequestSuccessToast from "./Partials/DocumentRequestSuccessToast";
 import LoginFormPanel from "./Partials/LoginFormPanel";
 import LoginHeroPanel from "./Partials/LoginHeroPanel";
 import useLoginPageForms from "./hooks/useLoginPageForms";
@@ -33,9 +36,22 @@ const Login = ({ status, canResetPassword, flash = {}, stations = [] }) => {
         documentRequestForm.data.station_id,
     );
 
+    useEffect(() => {
+        if (!flash.success) return;
+
+        toast.custom(
+            () => <DocumentRequestSuccessToast message={flash.success} />,
+            {
+                id: "document-request-success",
+                duration: 4500,
+            },
+        );
+    }, [flash.success]);
+
     return (
         <>
             <Head title="Log in" />
+            <Toaster position="top-center" visibleToasts={1} gap={10} />
 
             <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#02062f] px-3 py-5 text-slate-900 sm:px-4 sm:py-8">
                 <TalaBackground />

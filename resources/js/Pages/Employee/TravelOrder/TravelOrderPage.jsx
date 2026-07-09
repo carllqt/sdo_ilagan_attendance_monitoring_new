@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import TravelAuthorityForm from "./Partials/TravelOrderForm";
 import TravelOrderPrintDialog from "./Partials/TravelOrderPrintDialog";
 import { Head, Link } from "@inertiajs/react";
@@ -9,10 +9,12 @@ import {
     ArrowLeft,
     ClipboardPlus,
     History,
+    Mail,
     Plane,
     Printer,
     ShieldCheck,
 } from "lucide-react";
+import { Toaster, toast } from "sonner";
 
 const pageVariants = {
     hidden: { opacity: 0 },
@@ -41,9 +43,42 @@ export default function TravelOrderPage({
     const [showForm, setShowForm] = useState(false);
     const [printOpen, setPrintOpen] = useState(false);
 
+    useEffect(() => {
+        if (!success_message) return;
+
+        toast.custom(
+            () => (
+                <div className="relative flex min-w-[270px] max-w-[330px] items-center gap-2.5 overflow-hidden rounded-xl border border-sky-300/25 bg-gradient-to-br from-[#02062f]/95 via-[#08145a]/95 to-[#0f2f72]/95 px-3.5 py-3 text-white shadow-2xl shadow-blue-950/35 backdrop-blur">
+                    <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/80 to-transparent" />
+                    <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-300/25 bg-emerald-400/15 text-emerald-200 shadow-inner">
+                        <span className="absolute inset-0 rounded-full bg-emerald-300/25 animate-ping" />
+                        <Plane className="relative h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 pr-2">
+                        <p className="text-xs font-black uppercase text-sky-100">
+                            Travel order submitted
+                        </p>
+                        <p className="truncate text-sm font-semibold text-white">
+                            Request applied successfully
+                        </p>
+                        <p className="flex items-center gap-1 text-[11px] font-bold uppercase text-emerald-200">
+                            <Mail className="h-3.5 w-3.5" />
+                            <span className="truncate">{success_message}</span>
+                        </p>
+                    </div>
+                </div>
+            ),
+            {
+                id: "employee-travel-order-success",
+                duration: 4500,
+            },
+        );
+    }, [success_message]);
+
     return (
         <>
             <Head title="Travel Order" />
+            <Toaster position="top-center" visibleToasts={1} gap={10} />
 
             <main className="min-h-screen bg-slate-50 text-slate-950">
                 <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">

@@ -9,6 +9,7 @@ export const RequestTextField = ({
     value,
     error,
     onChange,
+    disabled = false,
 }) => (
     <div>
         <FloatingInput
@@ -17,6 +18,7 @@ export const RequestTextField = ({
             name={id}
             type={type}
             value={value}
+            disabled={disabled}
             onChange={(e) => onChange(e.target.value)}
         />
         <InputError message={error} className="mt-2" />
@@ -29,6 +31,7 @@ export const RequestDropdownField = ({
     error,
     value,
     children,
+    disabled = false,
 }) => (
     <div>
         <div className="relative">
@@ -37,6 +40,7 @@ export const RequestDropdownField = ({
                 icon={Icon}
                 value={value}
                 readOnly
+                disabled={disabled}
                 onChange={() => {}}
                 inputClassName="truncate pr-12"
             />

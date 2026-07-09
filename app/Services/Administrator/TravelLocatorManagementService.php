@@ -45,18 +45,30 @@ class TravelLocatorManagementService
         );
     }
 
-    public function approveTravelOrder(int $id, int $employeeId, Request $request): void
+    public function approveTravelOrder(int $id, Request $request): void
+    {
+        $stationId = $this->userStationId($request);
+        $travelRequest = $this->repository->travelOrderRequestForApproval($id, $stationId);
+        $matchedEmployee = $this->repository->matchedEmployeeForTravelRequest($travelRequest);
+
+        if (! $matchedEmployee) {
+            abort(422, 'No matching employee found for this request.');
+        }
+
+        $travelOrder = $this->repository->approveTravelOrderRequest(
+            $travelRequest,
+            (int) $matchedEmployee->getKey(),
+        );
+
+        $this->realtime->broadcastForTravelOrder($travelOrder);
+    }
+
+    public function deleteTravelOrder(int $id, Request $request): void
     {
         $stationId = $this->userStationId($request);
         $travelRequest = $this->repository->travelOrderRequestForApproval($id, $stationId);
 
-        if (! $this->repository->employeeBelongsToStation($employeeId, $stationId)) {
-            abort(422, 'Selected employee does not belong to your station.');
-        }
-
-        $travelOrder = $this->repository->approveTravelOrderRequest($travelRequest, $employeeId);
-
-        $this->realtime->broadcastForTravelOrder($travelOrder);
+        $this->repository->deleteTravelOrderRequest($travelRequest);
     }
 
     private function userStationId(Request $request): int

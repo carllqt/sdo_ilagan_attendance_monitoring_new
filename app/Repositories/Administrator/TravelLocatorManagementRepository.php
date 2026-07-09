@@ -47,10 +47,14 @@ class TravelLocatorManagementRepository
             'status',
         ], includeStation: false);
 
-        return $query
+        $paginator = $query
             ->latest()
             ->paginate($filter->limit, [
                 'id',
+                'employee_id',
+                'first_name',
+                'middle_name',
+                'last_name',
                 'employee_name',
                 'destination',
                 'host_of_activity',
@@ -58,8 +62,55 @@ class TravelLocatorManagementRepository
                 'fund_source',
                 'status',
                 'created_at',
+                'station_id',
             ], 'travel_page', $filter->page)
             ->withQueryString();
+
+        $employeesById = Employee::query()
+            ->whereIn(
+                'id',
+                $paginator->getCollection()
+                    ->pluck('employee_id')
+                    ->filter()
+                    ->unique()
+                    ->values(),
+            )
+            ->where('active_status', 1)
+            ->get([
+                'id',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'extension_name',
+                'station_id',
+            ])
+            ->keyBy(fn (Employee $employee) => (string) $employee->getKey());
+
+        $paginator->setCollection(
+            $paginator->getCollection()->map(function (TravelOrderRequest $request) use ($employeesById) {
+                $matchedEmployee = $this->matchedEmployeeForTravelRequest(
+                    $request,
+                    $employeesById,
+                );
+
+                $request->setAttribute(
+                    'matched_employee_id',
+                    $matchedEmployee?->getKey(),
+                );
+                $request->setAttribute(
+                    'matched_employee_name',
+                    $matchedEmployee?->full_name,
+                );
+                $request->setAttribute(
+                    'has_employee_match',
+                    (bool) $matchedEmployee,
+                );
+
+                return $request;
+            }),
+        );
+
+        return $paginator;
     }
 
     public function suggestions(string $type, string $search, ?int $stationId = null): array
@@ -133,15 +184,6 @@ class TravelLocatorManagementRepository
             ->findOrFail($id);
     }
 
-    public function employeeBelongsToStation(int $employeeId, int $stationId): bool
-    {
-        return Employee::query()
-            ->where('id', $employeeId)
-            ->where('station_id', $stationId)
-            ->where('active_status', 1)
-            ->exists();
-    }
-
     public function approveTravelOrderRequest(
         TravelOrderRequest $travelRequest,
         int $employeeId,
@@ -157,6 +199,45 @@ class TravelLocatorManagementRepository
 
             return $travelOrder;
         });
+    }
+
+    public function matchedEmployeeForTravelRequest(
+        TravelOrderRequest $travelRequest,
+        $employeesById = null,
+    ): ?Employee {
+        $employee = $employeesById?->get((string) $travelRequest->employee_id);
+
+        if (! $employee) {
+            $employee = Employee::query()
+                ->where('id', $travelRequest->employee_id)
+                ->where('station_id', $travelRequest->station_id)
+                ->where('active_status', 1)
+                ->first([
+                    'id',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'extension_name',
+                    'station_id',
+                ]);
+        }
+
+        if (! $employee) {
+            return null;
+        }
+
+        if ((int) $employee->station_id !== (int) $travelRequest->station_id) {
+            return null;
+        }
+
+        return $this->employeeMatchesTravelRequest($employee, $travelRequest)
+            ? $employee
+            : null;
+    }
+
+    public function deleteTravelOrderRequest(TravelOrderRequest $travelRequest): void
+    {
+        $travelRequest->delete();
     }
 
     private function applyStation(Builder $query, TravelLocatorRequestFilter $filter): void
@@ -191,5 +272,21 @@ class TravelLocatorManagementRepository
                 });
             }
         });
+    }
+
+    private function employeeMatchesTravelRequest(
+        Employee $employee,
+        TravelOrderRequest $travelRequest,
+    ): bool {
+        return $this->normalizeName($employee->first_name) === $this->normalizeName($travelRequest->first_name)
+            && $this->normalizeName($employee->middle_name) === $this->normalizeName($travelRequest->middle_name)
+            && $this->normalizeName($employee->last_name) === $this->normalizeName($travelRequest->last_name);
+    }
+
+    private function normalizeName(?string $value): string
+    {
+        return strtolower(
+            preg_replace('/\s+/', ' ', trim((string) $value)),
+        );
     }
 }

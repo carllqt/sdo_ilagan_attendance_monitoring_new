@@ -8,7 +8,11 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/Components/ui/dialog";
-import { CustomDropdownCheckboxObject } from "@/components/dropdown-menu-main";
+import {
+    CustomDropdownCheckbox,
+    CustomDropdownCheckboxObject,
+} from "@/components/dropdown-menu-main";
+import { extensionNameOptions } from "@/Pages/Admin/EmployeeManagement/utils";
 import {
     Briefcase,
     Building2,
@@ -16,6 +20,7 @@ import {
     ClipboardPlus,
     FileText,
     Hash,
+    Loader2,
     ShieldCheck,
     User,
     Users,
@@ -23,6 +28,7 @@ import {
     MapPin,
     Mail,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { RequestDropdownField, RequestTextField } from "./RequestFields";
 
@@ -37,12 +43,36 @@ const DocumentRequestDialog = ({
 }) => {
     const { data, setData, processing, errors, close, submit } =
         documentRequestForm;
+    const [progressValue, setProgressValue] = useState(0);
+
+    useEffect(() => {
+        if (!processing) {
+            setProgressValue(0);
+            return;
+        }
+
+        setProgressValue(12);
+
+        const timer = window.setInterval(() => {
+            setProgressValue((current) => {
+                if (current >= 92) {
+                    return current;
+                }
+
+                const nextStep = current < 42 ? 9 : current < 72 ? 6 : 3;
+
+                return Math.min(current + nextStep, 92);
+            });
+        }, 260);
+
+        return () => window.clearInterval(timer);
+    }, [processing]);
 
     return (
         <Dialog
             open={Boolean(requestModalType)}
             onOpenChange={(open) => {
-                if (!open) {
+                if (!open && !processing) {
                     close();
                 }
             }}
@@ -69,6 +99,37 @@ const DocumentRequestDialog = ({
                         </DialogHeader>
 
                         <form onSubmit={submit} className="space-y-5">
+                            {processing && (
+                                <div className="overflow-hidden rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
+                                    <div className="flex items-center gap-3 px-4 py-3 text-blue-900">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm">
+                                            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-bold">
+                                                Sending request email...
+                                            </p>
+                                            <p className="text-xs text-blue-700">
+                                                Please wait while we submit your{" "}
+                                                {requestLabel.title.toLowerCase()}{" "}
+                                                and notify the approver.
+                                            </p>
+                                        </div>
+                                        <div className="text-sm font-bold text-blue-700">
+                                            {progressValue}%
+                                        </div>
+                                    </div>
+                                    <div className="h-2 w-full bg-blue-100">
+                                        <div
+                                            className="h-full rounded-r-full bg-[linear-gradient(90deg,#2563eb,#38bdf8)] transition-[width] duration-300 ease-out"
+                                            style={{
+                                                width: `${progressValue}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                                 <div className="mb-4 flex items-center justify-between gap-4">
                                     <div>
@@ -93,8 +154,15 @@ const DocumentRequestDialog = ({
                                         icon={Hash}
                                         value={data.employee_id}
                                         error={errors.employee_id}
+                                        disabled={processing}
                                         onChange={(value) =>
-                                            setData("employee_id", value)
+                                            setData(
+                                                "employee_id",
+                                                String(value).replace(
+                                                    /[^0-9]/g,
+                                                    "",
+                                                ),
+                                            )
                                         }
                                     />
                                     <RequestTextField
@@ -104,6 +172,7 @@ const DocumentRequestDialog = ({
                                         icon={Mail}
                                         value={data.email}
                                         error={errors.email}
+                                        disabled={processing}
                                         onChange={(value) =>
                                             setData("email", value)
                                         }
@@ -114,6 +183,7 @@ const DocumentRequestDialog = ({
                                         icon={User}
                                         value={data.first_name}
                                         error={errors.first_name}
+                                        disabled={processing}
                                         onChange={(value) =>
                                             setData("first_name", value)
                                         }
@@ -124,6 +194,7 @@ const DocumentRequestDialog = ({
                                         icon={User}
                                         value={data.middle_name}
                                         error={errors.middle_name}
+                                        disabled={processing}
                                         onChange={(value) =>
                                             setData("middle_name", value)
                                         }
@@ -134,26 +205,44 @@ const DocumentRequestDialog = ({
                                         icon={User}
                                         value={data.last_name}
                                         error={errors.last_name}
+                                        disabled={processing}
                                         onChange={(value) =>
                                             setData("last_name", value)
                                         }
                                     />
-                                    <RequestTextField
-                                        id="request_extension_name"
+                                    <RequestDropdownField
                                         label="Extension Name"
                                         icon={User}
-                                        value={data.extension_name}
+                                        value={data.extension_name || "None"}
                                         error={errors.extension_name}
-                                        onChange={(value) =>
-                                            setData("extension_name", value)
-                                        }
-                                    />
+                                        disabled={processing}
+                                    >
+                                        <CustomDropdownCheckbox
+                                            label="Select Extension"
+                                            items={extensionNameOptions}
+                                            selected={
+                                                data.extension_name || "None"
+                                            }
+                                            onChange={(value) =>
+                                                setData(
+                                                    "extension_name",
+                                                    value === "None"
+                                                        ? ""
+                                                        : value,
+                                                )
+                                            }
+                                            buttonVariant="white"
+                                            iconOnly
+                                            disabled={processing}
+                                        />
+                                    </RequestDropdownField>
                                     <RequestTextField
                                         id="request_position"
                                         label="Position / Designation"
                                         icon={Briefcase}
                                         value={data.position}
                                         error={errors.position}
+                                        disabled={processing}
                                         onChange={(value) =>
                                             setData("position", value)
                                         }
@@ -163,6 +252,7 @@ const DocumentRequestDialog = ({
                                         icon={Building2}
                                         error={errors.station_id}
                                         value={selectedStation?.name || ""}
+                                        disabled={processing}
                                     >
                                         <CustomDropdownCheckboxObject
                                             label="Select Station"
@@ -177,6 +267,7 @@ const DocumentRequestDialog = ({
                                             }
                                             buttonVariant="white"
                                             iconOnly
+                                            disabled={processing}
                                         />
                                     </RequestDropdownField>
                                 </div>
@@ -208,6 +299,7 @@ const DocumentRequestDialog = ({
                                         icon={FileText}
                                         value={data.purpose_of_travel}
                                         error={errors.purpose_of_travel}
+                                        disabled={processing}
                                         onChange={(value) =>
                                             setData("purpose_of_travel", value)
                                         }
@@ -222,6 +314,7 @@ const DocumentRequestDialog = ({
                                                     icon={MapPin}
                                                     value={data.destination}
                                                     error={errors.destination}
+                                                    disabled={processing}
                                                     onChange={(value) =>
                                                         setData(
                                                             "destination",
@@ -238,6 +331,7 @@ const DocumentRequestDialog = ({
                                                     error={
                                                         errors.travel_datetime
                                                     }
+                                                    disabled={processing}
                                                     onChange={(value) =>
                                                         setData(
                                                             "travel_datetime",
@@ -252,11 +346,20 @@ const DocumentRequestDialog = ({
                                                     Travel Type
                                                 </p>
                                                 <div className="mt-2 grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
-                                                    <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                                                    <label
+                                                        className={`flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm ${
+                                                            processing
+                                                                ? "cursor-not-allowed opacity-60"
+                                                                : "cursor-pointer"
+                                                        }`}
+                                                    >
                                                         <input
                                                             type="radio"
                                                             name="travel_type"
                                                             value="official_business"
+                                                            disabled={
+                                                                processing
+                                                            }
                                                             checked={
                                                                 data.travel_type ===
                                                                 "official_business"
@@ -271,11 +374,20 @@ const DocumentRequestDialog = ({
                                                         />
                                                         Official Business
                                                     </label>
-                                                    <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                                                    <label
+                                                        className={`flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm ${
+                                                            processing
+                                                                ? "cursor-not-allowed opacity-60"
+                                                                : "cursor-pointer"
+                                                        }`}
+                                                    >
                                                         <input
                                                             type="radio"
                                                             name="travel_type"
                                                             value="official_time"
+                                                            disabled={
+                                                                processing
+                                                            }
                                                             checked={
                                                                 data.travel_type ===
                                                                 "official_time"
@@ -306,6 +418,7 @@ const DocumentRequestDialog = ({
                                                     icon={MapPin}
                                                     value={data.destination}
                                                     error={errors.destination}
+                                                    disabled={processing}
                                                     onChange={(value) =>
                                                         setData(
                                                             "destination",
@@ -323,6 +436,7 @@ const DocumentRequestDialog = ({
                                                     error={
                                                         errors.host_of_activity
                                                     }
+                                                    disabled={processing}
                                                     onChange={(value) =>
                                                         setData(
                                                             "host_of_activity",
@@ -342,6 +456,7 @@ const DocumentRequestDialog = ({
                                                     error={
                                                         errors.inclusive_dates
                                                     }
+                                                    disabled={processing}
                                                     onChange={(value) =>
                                                         setData(
                                                             "inclusive_dates",
@@ -355,6 +470,7 @@ const DocumentRequestDialog = ({
                                                     icon={Wallet}
                                                     value={data.fund_source}
                                                     error={errors.fund_source}
+                                                    disabled={processing}
                                                     onChange={(value) =>
                                                         setData(
                                                             "fund_source",
@@ -373,6 +489,7 @@ const DocumentRequestDialog = ({
                                     type="button"
                                     variant="outline"
                                     onClick={close}
+                                    disabled={processing}
                                 >
                                     Cancel
                                 </Button>
@@ -382,9 +499,14 @@ const DocumentRequestDialog = ({
                                     disabled={processing}
                                     className="bg-[linear-gradient(135deg,#075fff,#3024df)] font-black"
                                 >
-                                    {processing
-                                        ? "Submitting..."
-                                        : "Submit Request"}
+                                    {processing ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Sending Email...
+                                        </>
+                                    ) : (
+                                        "Submit Request"
+                                    )}
                                 </Button>
                             </DialogFooter>
                         </form>
