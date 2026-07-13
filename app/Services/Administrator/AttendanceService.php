@@ -3,46 +3,35 @@
 namespace App\Services\Administrator;
 
 use App\Data\Administrator\Attendance\AttendanceFilter;
+use App\Models\Administrator\Attendance;
 use App\Models\Administrator\Employee;
-use App\Models\AttendanceDevice;
 use App\Models\User;
 use App\Repositories\Administrator\AttendanceRepository;
+use App\Services\AttendanceMonitoringRealtimeService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class AttendanceService
 {
-    public const DEVICE_COOKIE = 'attendance_device_token';
-    public const UNLOCK_SESSION = 'attendance_unlocked';
-    public const UNLOCK_MINUTES = 30;
+    private const AM_CUTOFF_HOUR = 13;
 
     public function __construct(
         private readonly AttendanceRepository $repository,
+        private readonly AttendanceMonitoringRealtimeService $realtime,
     ) {}
 
     public function pageData(Request $request): array
     {
         $user = $request->user();
         $stationId = $this->stationId($user);
-        $device = $this->registeredDevice($request);
-        $deviceRegistered = $device && (int) $device->station_id === $stationId;
-        $unlocked = $deviceRegistered && $this->isUnlocked($request, $device);
         $filter = AttendanceFilter::fromRequest($request);
 
-        if ($deviceRegistered) {
-            $this->repository->touchDevice($device);
-        }
-
         return [
-            'attendances' => $unlocked
-                ? $this->repository->todayAttendancesForStation($stationId, $filter)
-                : [],
+            'attendances' => $this->repository->todayAttendancesForStation($stationId, $filter),
             'attendanceFilters' => $filter->toArray(),
             'fingerprintServiceUrl' => $this->fingerprintServiceUrl($request),
             'attendanceAccess' => [
-                'device_registered' => $deviceRegistered,
-                'unlocked' => $unlocked,
-                'unlock_expires_at' => session(self::UNLOCK_SESSION . '.expires_at'),
                 'station' => [
                     'id' => $user->employee?->station?->id,
                     'name' => $user->employee?->station?->name,
@@ -52,25 +41,6 @@ class AttendanceService
                     'name' => $user->employee?->full_name,
                 ],
             ],
-        ];
-    }
-
-    public function registerDevice(Request $request): array
-    {
-        $user = $request->user();
-        $stationId = $this->stationId($user);
-        $token = Str::random(64);
-
-        $this->repository->createDevice(
-            $stationId,
-            $user->id,
-            $token,
-            $request->input('name') ?: $request->userAgent(),
-        );
-
-        return [
-            'token' => $token,
-            'minutes' => 60 * 24 * 365,
         ];
     }
 
@@ -85,33 +55,124 @@ class AttendanceService
             ->all();
     }
 
-    public function unlock(Request $request, int $scannedEmployeeId): void
+    public function recordScan(Request $request, int $employeeId): array
     {
-        $user = $request->user();
-        $stationId = $this->stationId($user);
-        $device = $this->registeredDevice($request);
+        $stationId = $this->stationId($request->user());
+        $employee = $this->employeeForAttendance($employeeId, $stationId);
+        $now = now();
 
-        if (! $device || (int) $device->station_id !== $stationId) {
-            abort(403, 'This device is not registered for your station.');
-        }
+        return DB::transaction(function () use ($employee, $now) {
+            $attendance = $this->attendanceForToday((int) $employee->id, $now);
+            $attendance->load(['am', 'pm', 'employee.office']);
 
-        if ((int) $user->employee_id !== $scannedEmployeeId) {
-            abort(403, 'Fingerprint does not match the logged-in station admin.');
-        }
+            $am = $attendance->am;
+            $forcePm = $now->hour >= 12
+                && (! $am || ! $am->am_time_in || ($am->am_time_in && $am->am_time_out));
 
-        $this->repository->touchDevice($device);
+            if ($am && $am->am_time_in && ! $am->am_time_out && $now->hour >= self::AM_CUTOFF_HOUR) {
+                return [
+                    'success' => true,
+                    'prompt' => true,
+                    'prompt_type' => 'AM',
+                    'message' => 'You scanned after 1 PM. Do you want to record AM Time-Out or PM Time-In?',
+                    'options' => ['AM Time-Out', 'PM Time-In'],
+                    'employee' => $this->employeePayload($employee),
+                ];
+            }
 
-        session()->put(self::UNLOCK_SESSION, [
-            'device_id' => $device->id,
-            'station_id' => $stationId,
-            'employee_id' => $scannedEmployeeId,
-            'expires_at' => now()->addMinutes(self::UNLOCK_MINUTES)->toIso8601String(),
-        ]);
+            if ($now->hour < self::AM_CUTOFF_HOUR && ! $forcePm) {
+                if (! $am) {
+                    $attendance->am()->create(['am_time_in' => $this->timeString($now)]);
+                    return $this->recordedPayload($attendance, $employee, 'AM', 'time-in', 'AM time-in recorded', $now);
+                }
+
+                if ($am->am_time_in && ! $am->am_time_out) {
+                    $am->update(['am_time_out' => $this->timeString($now)]);
+                    return $this->recordedPayload($attendance, $employee, 'AM', 'time-out', 'AM time-out recorded', $now);
+                }
+
+                return $this->errorPayload('AM attendance is already complete.', $employee);
+            }
+
+            $pm = $attendance->pm;
+
+            if (! $pm) {
+                $attendance->pm()->create(['pm_time_in' => $this->timeString($now)]);
+                return $this->recordedPayload($attendance, $employee, 'PM', 'time-in', 'PM time-in recorded', $now);
+            }
+
+            if (! $pm->pm_time_in) {
+                $pm->update(['pm_time_in' => $this->timeString($now)]);
+                return $this->recordedPayload($attendance, $employee, 'PM', 'time-in', 'PM time-in recorded', $now);
+            }
+
+            if (! $pm->pm_time_out) {
+                $pm->update(['pm_time_out' => $this->timeString($now)]);
+                return $this->recordedPayload($attendance, $employee, 'PM', 'time-out', 'PM time-out recorded', $now);
+            }
+
+            return $this->errorPayload('PM attendance is already complete.', $employee);
+        });
     }
 
-    public function lock(): void
+    public function recordChoice(Request $request, int $employeeId, string $choice): array
     {
-        session()->forget(self::UNLOCK_SESSION);
+        $stationId = $this->stationId($request->user());
+        $employee = $this->employeeForAttendance($employeeId, $stationId);
+        $now = now();
+
+        return DB::transaction(function () use ($choice, $employee, $now) {
+            $attendance = $this->attendanceForToday((int) $employee->id, $now);
+            $attendance->load(['am', 'pm', 'employee.office']);
+
+            if ($choice === 'AM Time-Out') {
+                $am = $attendance->am;
+
+                if (! $am || ! $am->am_time_in) {
+                    return $this->errorPayload('Cannot record AM Time-Out before AM Time-In.', $employee);
+                }
+
+                if ($am->am_time_out) {
+                    return $this->errorPayload('AM Time-Out already recorded.', $employee);
+                }
+
+                $am->update(['am_time_out' => $this->timeString($now)]);
+                return $this->recordedPayload($attendance, $employee, 'AM', 'time-out', 'AM Time-Out recorded', $now);
+            }
+
+            if ($choice === 'PM Time-In') {
+                $pm = $attendance->pm;
+
+                if (! $pm) {
+                    $attendance->pm()->create(['pm_time_in' => $this->timeString($now)]);
+                    return $this->recordedPayload($attendance, $employee, 'PM', 'time-in', 'PM Time-In recorded', $now);
+                }
+
+                if ($pm->pm_time_in) {
+                    return $this->errorPayload('PM Time-In already recorded.', $employee);
+                }
+
+                $pm->update(['pm_time_in' => $this->timeString($now)]);
+                return $this->recordedPayload($attendance, $employee, 'PM', 'time-in', 'PM Time-In recorded', $now);
+            }
+
+            if ($choice === 'PM Time-Out') {
+                $pm = $attendance->pm;
+
+                if (! $pm || ! $pm->pm_time_in) {
+                    return $this->errorPayload('Cannot record PM Time-Out before PM Time-In.', $employee);
+                }
+
+                if ($pm->pm_time_out) {
+                    return $this->errorPayload('PM Time-Out already recorded.', $employee);
+                }
+
+                $pm->update(['pm_time_out' => $this->timeString($now)]);
+                return $this->recordedPayload($attendance, $employee, 'PM', 'time-out', 'PM Time-Out recorded', $now);
+            }
+
+            return $this->errorPayload('Invalid attendance choice.', $employee);
+        });
     }
 
     public function stationId(User $user): int
@@ -132,32 +193,105 @@ class AttendanceService
         return (int) $employee->station_id;
     }
 
-    private function registeredDevice(Request $request): ?AttendanceDevice
-    {
-        return $this->repository->deviceByToken(
-            (string) $request->cookie(self::DEVICE_COOKIE, ''),
-        );
-    }
-
-    private function isUnlocked(Request $request, AttendanceDevice $device): bool
-    {
-        $unlock = session(self::UNLOCK_SESSION);
-
-        if (! is_array($unlock)) {
-            return false;
-        }
-
-        return (int) ($unlock['device_id'] ?? 0) === (int) $device->id
-            && (int) ($unlock['station_id'] ?? 0) === (int) $device->station_id
-            && now()->lessThan($unlock['expires_at'] ?? now()->subSecond());
-    }
-
     private function fingerprintServiceUrl(Request $request): string
     {
         return rtrim(
             env('BIOMETRIC_SERVICE_URL') ?: $request->getScheme() . '://' . $request->getHost() . ':5000',
             '/',
         );
+    }
+
+    private function employeeForAttendance(int $employeeId, int $stationId): Employee
+    {
+        $employee = Employee::query()
+            ->with(['office:id,name'])
+            ->select([
+                'id',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'profile_img',
+                'position',
+                'office_id',
+                'station_id',
+                'active_status',
+            ])
+            ->whereKey($employeeId)
+            ->first();
+
+        if (! $employee) {
+            abort(404, 'Employee not found.');
+        }
+
+        if ((int) $employee->station_id !== $stationId) {
+            abort(403, 'Employee is not assigned to this station.');
+        }
+
+        if (! (int) $employee->active_status) {
+            abort(422, 'Employee is inactive.');
+        }
+
+        return $employee;
+    }
+
+    private function attendanceForToday(int $employeeId, Carbon $now): Attendance
+    {
+        return Attendance::firstOrCreate([
+            'employee_id' => $employeeId,
+            'date' => $now->toDateString(),
+        ]);
+    }
+
+    private function recordedPayload(
+        Attendance $attendance,
+        Employee $employee,
+        string $session,
+        string $action,
+        string $message,
+        Carbon $now,
+    ): array {
+        $attendance->refresh();
+        $this->realtime->broadcastForAttendance($attendance);
+
+        return [
+            'success' => true,
+            'message' => $message,
+            'session' => $session,
+            'action' => $action,
+            'time' => $this->timeString($now),
+            'employee' => $this->employeePayload($employee),
+        ];
+    }
+
+    private function errorPayload(string $message, Employee $employee): array
+    {
+        return [
+            'success' => false,
+            'message' => $message,
+            'employee' => $this->employeePayload($employee),
+        ];
+    }
+
+    private function employeePayload(Employee $employee): array
+    {
+        return [
+            'id' => $employee->id,
+            'first_name' => $employee->first_name,
+            'middle_name' => $employee->middle_name,
+            'last_name' => $employee->last_name,
+            'profile_img' => $employee->profile_img,
+            'position' => $employee->position,
+            'office' => $employee->office ? [
+                'id' => $employee->office->id,
+                'name' => $employee->office->name,
+            ] : null,
+            'station_id' => $employee->station_id,
+        ];
+    }
+
+    private function timeString(Carbon $time): string
+    {
+        return $time->format('H:i:s');
     }
 
     private function formatSuggestion(Employee $employee): array

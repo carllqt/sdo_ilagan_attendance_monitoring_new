@@ -5,7 +5,6 @@ namespace App\Repositories\Administrator;
 use App\Data\Administrator\Attendance\AttendanceFilter;
 use App\Models\Administrator\Attendance;
 use App\Models\Administrator\Employee;
-use App\Models\AttendanceDevice;
 use Carbon\Carbon;
 
 class AttendanceRepository
@@ -110,30 +109,4 @@ class AttendanceRepository
             ->get();
     }
 
-    public function deviceByToken(string $token): ?AttendanceDevice
-    {
-        if ($token === '') {
-            return null;
-        }
-
-        return AttendanceDevice::with('station:id,name')
-            ->where('token_hash', hash('sha256', $token))
-            ->first();
-    }
-
-    public function createDevice(int $stationId, int $userId, string $token, ?string $name = null): AttendanceDevice
-    {
-        return AttendanceDevice::create([
-            'station_id' => $stationId,
-            'registered_by' => $userId,
-            'name' => $name,
-            'token_hash' => hash('sha256', $token),
-            'last_used_at' => now(),
-        ]);
-    }
-
-    public function touchDevice(AttendanceDevice $device): void
-    {
-        $device->forceFill(['last_used_at' => now()])->save();
-    }
 }

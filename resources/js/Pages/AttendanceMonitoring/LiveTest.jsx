@@ -87,6 +87,10 @@ const LiveTest = ({
     const [result, setResult] = useState(null);
     const [submittedIds, setSubmittedIds] = useState([]);
     const [allRunning, setAllRunning] = useState(false);
+    const monitoringHref = route("attendance-monitoring", {
+        ...(station?.code ? { station_code: station.code } : {}),
+        ...(station?.name ? { station_name: station.name } : {}),
+    });
 
     const handleResult = (
         nextResult,
@@ -210,7 +214,7 @@ const LiveTest = ({
                         </div>
 
                         <Link
-                            href={route("attendance-monitoring")}
+                            href={monitoringHref}
                             className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                         >
                             Open Monitoring

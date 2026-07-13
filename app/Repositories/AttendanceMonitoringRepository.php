@@ -228,7 +228,7 @@ class AttendanceMonitoringRepository
 
     public function recentLogs(Carbon $today, AttendanceMonitoringFilter $filter)
     {
-        $limit = $filter->sidePanelLimit;
+        $limit = AttendanceMonitoringFilter::RECENT_LOG_LIMIT;
         $amIn = $this->recentLogQuery($today, $filter->stationId, 'attendance_ams', 'am_time_in', 'AM In');
         $amOut = $this->recentLogQuery($today, $filter->stationId, 'attendance_ams', 'am_time_out', 'AM Out');
         $pmIn = $this->recentLogQuery($today, $filter->stationId, 'attendance_pms', 'pm_time_in', 'PM In');

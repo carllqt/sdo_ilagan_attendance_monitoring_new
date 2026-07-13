@@ -196,7 +196,7 @@ const useFingerprintPanel = ({
         setTestMessage("Place your finger on the scanner...");
         setTestStatus("scanning");
 
-        const source = new EventSource(`${fingerprintServiceUrl}/bioTestSSE`);
+        const source = new EventSource(`${fingerprintServiceUrl}/bioAttendanceScan`);
         setTestSource(source);
 
         source.onmessage = (event) => {

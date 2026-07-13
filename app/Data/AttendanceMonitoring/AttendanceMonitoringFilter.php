@@ -9,6 +9,7 @@ class AttendanceMonitoringFilter
 {
     public const EMPLOYEE_PAGE_LIMIT = 16;
     public const SIDE_PANEL_LIMIT = 4;
+    public const RECENT_LOG_LIMIT = 3;
 
     public function __construct(
         public readonly string $search,

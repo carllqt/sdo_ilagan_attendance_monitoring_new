@@ -50,7 +50,7 @@ const RecentLogsPanel = ({ isLoading = false, items = [] }) => (
 
         <div className="space-y-1 border-t border-white/20 pt-2">
             {isLoading ? (
-                <SidePanelSkeletonItems count={4} />
+                <SidePanelSkeletonItems count={3} />
             ) : items.length > 0 ? (
                 items.map((item) => (
                     <div

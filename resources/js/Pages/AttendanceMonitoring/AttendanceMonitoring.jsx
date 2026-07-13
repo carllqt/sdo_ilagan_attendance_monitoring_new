@@ -278,7 +278,7 @@ const AttendanceMonitoring = ({
         }
 
         const channelName = `attendance-monitoring.station.${selectedStation}`;
-        const channel = window.Echo.private(channelName);
+        const channel = window.Echo.channel(channelName);
 
         channel.listen(".attendance-monitoring.updated", (event) => {
             const payload = event.payload || {};

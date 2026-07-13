@@ -7,10 +7,7 @@ import {
     CheckCircle2,
     Fingerprint,
     Loader2,
-    LockKeyhole,
-    MonitorCheck,
     Search,
-    ShieldCheck,
     UserRound,
     Wifi,
     WifiOff,
@@ -114,12 +111,7 @@ const Attendance = ({
     const [pmPromptData, setPMPromptData] = useState(null);
     const [activeTab, setActiveTab] = useState(initialSession);
     const [search, setSearch] = useState(attendanceFilters.search || "");
-    const [access, setAccess] = useState(attendanceAccess || {});
     const [filterLoading, setFilterLoading] = useState(false);
-    const [unlockStatus, setUnlockStatus] = useState("idle");
-    const [unlockMessage, setUnlockMessage] = useState(
-        "Station admin fingerprint unlock is required.",
-    );
     const filtersRef = useRef({
         search: attendanceFilters.search || "",
         employeeId: attendanceFilters.employee_id || null,
@@ -128,9 +120,12 @@ const Attendance = ({
         limit: Number(attendanceFilters.limit || 6),
     });
     const eventSourceRef = useRef(null);
-    const unlockSourceRef = useRef(null);
     const scannerEnabledRef = useRef(false);
-    const canUseScanner = Boolean(access.device_registered && access.unlocked);
+    const retryTimerRef = useRef(null);
+    const successTimerRef = useRef(null);
+    const reconnectTimerRef = useRef(null);
+    const access = attendanceAccess || {};
+    const canUseScanner = true;
     const stationId = access.station?.id;
     const stationQuery = stationId
         ? `?station_id=${encodeURIComponent(stationId)}`
@@ -225,10 +220,6 @@ const Attendance = ({
     }, []);
 
     useEffect(() => {
-        setAccess(attendanceAccess || {});
-    }, [attendanceAccess]);
-
-    useEffect(() => {
         setDailyAttendance(attendanceItems(attendances));
         setAttendancePage(attendancePagination(attendances));
     }, [attendances]);
@@ -252,17 +243,18 @@ const Attendance = ({
         scannerEnabledRef.current = canUseScanner;
 
         if (!canUseScanner) {
-            eventSourceRef.current?.close();
+            closeFingerprintStream();
             return;
         }
 
-        startFingerprintLogin();
-        return () => eventSourceRef.current?.close();
+        startAttendanceFingerprintScan();
+        return () => {
+            closeFingerprintStream();
+            clearInterval(retryTimerRef.current);
+            clearInterval(successTimerRef.current);
+            clearTimeout(reconnectTimerRef.current);
+        };
     }, [canUseScanner, stationQuery]);
-
-    useEffect(() => {
-        return () => unlockSourceRef.current?.close();
-    }, []);
 
     const updateAttendance = (data, timeStr) => {
         const session = data.session;
@@ -331,53 +323,46 @@ const Attendance = ({
         });
     };
 
-    const broadcastAttendanceMonitoringUpdate = (employeeId) => {
-        if (!employeeId) return;
-
-        window.axios
-            ?.post(route("attendance-monitoring.broadcast"), {
-                employee_id: employeeId,
-            })
-            .catch((error) => {
-                console.error(
-                    "Attendance monitoring broadcast failed:",
-                    error,
-                );
-            });
+    const closeFingerprintStream = () => {
+        eventSourceRef.current?.close();
+        eventSourceRef.current = null;
     };
 
     const startRetryCountdown = (seconds, callback) => {
+        clearInterval(retryTimerRef.current);
         setRetryCountdown(seconds);
         let count = seconds;
-        const interval = setInterval(() => {
+        retryTimerRef.current = setInterval(() => {
             count -= 1;
             setRetryCountdown(count);
 
             if (count <= 0) {
-                clearInterval(interval);
+                clearInterval(retryTimerRef.current);
                 setRetryCountdown(null);
                 callback();
             }
         }, 1000);
     };
 
-    const startSuccessCountdown = () => {
+    const startSuccessCountdown = (callback = null) => {
+        clearInterval(successTimerRef.current);
         let count = 3;
         setSuccessCountdown(count);
-        const interval = setInterval(() => {
+        successTimerRef.current = setInterval(() => {
             count -= 1;
             setSuccessCountdown(count);
 
             if (count <= 0) {
-                clearInterval(interval);
+                clearInterval(successTimerRef.current);
                 setSuccessCountdown(null);
                 setScanStatus("scanning");
                 setScanMessage("Place your fingerprint");
+                callback?.();
             }
         }, 1000);
     };
 
-    const handleResponseData = (data) => {
+    const applyAttendanceResult = (data, restartScanner = true) => {
         if (!data || Object.keys(data).length === 0) return;
 
         if (
@@ -390,11 +375,13 @@ const Attendance = ({
             startRetryCountdown(3, () => {
                 setScanStatus("scanning");
                 setScanMessage("Place your fingerprint");
+                if (restartScanner) startAttendanceFingerprintScan();
             });
             return;
         }
 
         if (data.prompt) {
+            closeFingerprintStream();
             setScanStatus("prompt");
             setScanMessage(data.message);
 
@@ -413,17 +400,17 @@ const Attendance = ({
                 });
                 setShowPMPromptModal(true);
             }
+            return;
         }
 
-        if (data.success && data.employee) {
-            const timeStr = new Date().toTimeString().split(" ")[0];
+        if (data.success && data.employee && data.session && data.action) {
+            const timeStr = data.time || new Date().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
-            broadcastAttendanceMonitoringUpdate(
-                data.employee.id || data.employee.employee_id,
-            );
             setScanStatus("success");
             setScanMessage(data.message);
-            startSuccessCountdown();
+            startSuccessCountdown(() => {
+                if (restartScanner) startAttendanceFingerprintScan();
+            });
             return;
         }
 
@@ -433,19 +420,59 @@ const Attendance = ({
             startRetryCountdown(3, () => {
                 setScanStatus("scanning");
                 setScanMessage("Place your fingerprint");
+                if (restartScanner) startAttendanceFingerprintScan();
             });
         }
     };
 
-    const startFingerprintLogin = () => {
+    const recordAttendanceScan = async (employeeId) => {
+        if (!employeeId) return;
+
+        closeFingerprintStream();
+        setScanStatus("processing");
+        setScanMessage("Recording attendance...");
+
+        try {
+            const response = await window.axios.post(route("attendance.scan"), {
+                employee_id: employeeId,
+            });
+
+            applyAttendanceResult(response.data);
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                "Unable to record attendance.";
+
+            setScanStatus("error");
+            setScanMessage(message);
+            startRetryCountdown(3, () => {
+                setScanStatus("scanning");
+                setScanMessage("Place your fingerprint");
+                startAttendanceFingerprintScan();
+            });
+        }
+    };
+
+    const handleResponseData = (data) => {
+        if (!data || Object.keys(data).length === 0) return;
+
+        if (data.success && data.employee?.id && !data.session) {
+            recordAttendanceScan(data.employee.id);
+            return;
+        }
+
+        applyAttendanceResult(data, false);
+    };
+
+    const startAttendanceFingerprintScan = () => {
         if (!scannerEnabledRef.current) return;
 
-        eventSourceRef.current?.close();
+        closeFingerprintStream();
         setScanStatus("scanning");
         setScanMessage("Place your fingerprint");
 
         const eventSource = new EventSource(
-            `${fingerprintServiceUrl}/bioLogin${stationQuery}`,
+            `${fingerprintServiceUrl}/bioAttendanceScan${stationQuery}`,
         );
         eventSourceRef.current = eventSource;
 
@@ -467,24 +494,13 @@ const Attendance = ({
             console.error("SSE error:", err);
             setScanStatus("error");
             setScanMessage("Lost connection to fingerprint service.");
-            setTimeout(() => {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = setTimeout(() => {
                 if (scannerEnabledRef.current) {
-                    startFingerprintLogin();
+                    startAttendanceFingerprintScan();
                 }
             }, 3000);
         };
-    };
-
-    const registerDevice = () => {
-        router.post(
-            "/attendance/device",
-            { name: window.navigator.userAgent },
-            { preserveScroll: true },
-        );
-    };
-
-    const lockScanner = () => {
-        router.post("/attendance/lock", {}, { preserveScroll: true });
     };
 
     const handleSessionChange = (session) => {
@@ -492,76 +508,7 @@ const Attendance = ({
         updateAttendanceQuery({ session, page: 1 });
     };
 
-    const startAdminUnlock = () => {
-        unlockSourceRef.current?.close();
-        setUnlockStatus("scanning");
-        setUnlockMessage("Place the station admin fingerprint.");
-
-        const eventSource = new EventSource(
-            `${fingerprintServiceUrl}/bioTestSSE`,
-        );
-        unlockSourceRef.current = eventSource;
-
-        eventSource.onmessage = (event) => {
-            try {
-                const dataStr = event.data.startsWith("data:")
-                    ? event.data.slice(5)
-                    : event.data;
-                const data = JSON.parse(dataStr);
-
-                if (!data || Object.keys(data).length === 0) return;
-
-                if (data.success && data.employee?.id) {
-                    setUnlockStatus("processing");
-                    setUnlockMessage(
-                        `Verifying ${getEmployeeName(data.employee)}...`,
-                    );
-                    eventSource.close();
-                    unlockSourceRef.current = null;
-
-                    router.post(
-                        "/attendance/unlock",
-                        { employee_id: data.employee.id },
-                        {
-                            preserveScroll: true,
-                            onSuccess: () => {
-                                setUnlockStatus("success");
-                                setUnlockMessage(
-                                    "Attendance scanner unlocked.",
-                                );
-                            },
-                            onError: () => {
-                                setUnlockStatus("error");
-                                setUnlockMessage(
-                                    "Fingerprint does not match the logged-in station admin.",
-                                );
-                            },
-                        },
-                    );
-                    return;
-                }
-
-                if (data.message) {
-                    setUnlockStatus("error");
-                    setUnlockMessage(data.message);
-                }
-            } catch (err) {
-                console.error("Unlock SSE parse error:", err);
-                setUnlockStatus("error");
-                setUnlockMessage("Failed to read fingerprint response.");
-            }
-        };
-
-        eventSource.onerror = (err) => {
-            console.error("Unlock SSE error:", err);
-            setUnlockStatus("error");
-            setUnlockMessage("Could not reach fingerprint service.");
-            eventSource.close();
-            unlockSourceRef.current = null;
-        };
-    };
-
-    const handlePromptChoice = (choice) => {
+    const handlePromptChoice = async (choice) => {
         const promptData = amPromptData || pmPromptData;
 
         if (!promptData?.employee?.id) return;
@@ -571,34 +518,26 @@ const Attendance = ({
         setScanStatus("processing");
         setScanMessage(`Recording ${choice}...`);
 
-        const eventSource = new EventSource(
-            `${fingerprintServiceUrl}/bioFingerprintChoice/${
-                promptData.employee.id
-            }/${encodeURIComponent(choice)}${stationQuery}`,
-        );
+        try {
+            const response = await window.axios.post(route("attendance.choice"), {
+                employee_id: promptData.employee.id,
+                choice,
+            });
 
-        eventSource.onmessage = (event) => {
-            try {
-                const dataStr = event.data.startsWith("data:")
-                    ? event.data.slice(5)
-                    : event.data;
+            applyAttendanceResult(response.data);
+        } catch (error) {
+            const message =
+                error.response?.data?.message ||
+                "Failed to send choice to server.";
 
-                handleResponseData(JSON.parse(dataStr));
-            } catch (err) {
-                console.error("SSE parse error:", err);
-                setScanStatus("error");
-                setScanMessage("Failed to parse server response.");
-            } finally {
-                eventSource.close();
-            }
-        };
-
-        eventSource.onerror = (err) => {
-            console.error("SSE error:", err);
             setScanStatus("error");
-            setScanMessage("Failed to send choice to server.");
-            eventSource.close();
-        };
+            setScanMessage(message);
+            startRetryCountdown(3, () => {
+                setScanStatus("scanning");
+                setScanMessage("Place your fingerprint");
+                startAttendanceFingerprintScan();
+            });
+        }
     };
 
     const getFingerprintColor = () => {
@@ -652,17 +591,6 @@ const Attendance = ({
                         </div>
 
                         <div className="flex flex-wrap items-center justify-end gap-2 lg:ml-auto">
-                            {canUseScanner && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="gap-2 border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                                    onClick={lockScanner}
-                                >
-                                    <LockKeyhole className="h-4 w-4" />
-                                    Lock
-                                </Button>
-                            )}
                             <div
                                 className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold shadow-sm ${currentStatus.badgeClass}`}
                             >
@@ -696,16 +624,7 @@ const Attendance = ({
                         </div>
                     </header>
 
-                    {!canUseScanner ? (
-                        <AttendanceAccessGate
-                            access={access}
-                            unlockStatus={unlockStatus}
-                            unlockMessage={unlockMessage}
-                            onRegisterDevice={registerDevice}
-                            onStartUnlock={startAdminUnlock}
-                        />
-                    ) : (
-                        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                             <section className="relative flex min-h-[32rem] flex-col overflow-hidden rounded-[1.35rem] border border-blue-400/25 bg-[#071158] p-5 shadow-[0_18px_56px_rgba(2,6,47,0.30)]">
                                 <div className="relative z-10 flex min-h-0 flex-1 flex-col">
                                     <div className="mb-4 flex items-center justify-between gap-4">
@@ -977,8 +896,7 @@ const Attendance = ({
                                     </Tabs>
                                 </div>
                             </section>
-                        </div>
-                    )}
+                    </div>
                 </div>
 
                 {showAMPromptModal && amPromptData && (
@@ -1004,93 +922,6 @@ const Attendance = ({
                 )}
             </main>
         </>
-    );
-};
-
-const AttendanceAccessGate = ({
-    access,
-    unlockStatus,
-    unlockMessage,
-    onRegisterDevice,
-    onStartUnlock,
-}) => {
-    const isDeviceRegistered = Boolean(access.device_registered);
-    const isBusy = ["scanning", "processing"].includes(unlockStatus);
-    const panel = isDeviceRegistered
-        ? {
-              icon: ShieldCheck,
-              title: "Fingerprint Unlock Required",
-              description:
-                  "Scan the logged-in station admin fingerprint to open the attendance scanner.",
-              action: "Scan Admin Fingerprint",
-              onClick: onStartUnlock,
-          }
-        : {
-              icon: MonitorCheck,
-              title: "Register This Device",
-              description:
-                  "This computer must be registered to the station before it can run attendance.",
-              action: "Register Device",
-              onClick: onRegisterDevice,
-          };
-    const Icon = panel.icon;
-
-    return (
-        <section className="relative min-h-[36rem] overflow-hidden rounded-[1.35rem] border border-white/25 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(120,119,255,0.15))] p-5 shadow-[0_0_28px_rgba(167,139,250,0.18),0_22px_70px_rgba(2,6,47,0.38),inset_0_1px_0_rgba(255,255,255,0.22)] ring-1 ring-violet-200/10 backdrop-blur-[2px]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.11),transparent_31%),radial-gradient(circle_at_86%_94%,rgba(167,139,250,0.15),transparent_38%)]" />
-            <div className="relative z-10 flex h-full min-h-[33rem] flex-col items-center justify-center rounded-2xl border border-white/25 bg-white/[0.08] px-6 py-10 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur">
-                <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/40 bg-white/95 shadow-[0_0_28px_rgba(125,211,252,0.25)]">
-                    <Icon className="h-12 w-12 text-blue-700" />
-                </div>
-                <div className="mt-6 max-w-xl">
-                    <h2 className="text-2xl font-black text-white drop-shadow-sm">
-                        {panel.title}
-                    </h2>
-                    <p className="mt-2 text-sm font-semibold text-blue-100">
-                        {panel.description}
-                    </p>
-                </div>
-
-                <div className="mt-6 grid w-full max-w-2xl grid-cols-1 gap-3 text-left md:grid-cols-2">
-                    <div className="rounded-xl border border-white/25 bg-white/95 p-4 shadow-lg shadow-blue-950/10">
-                        <div className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                            Station
-                        </div>
-                        <div className="mt-1 font-bold text-slate-950">
-                            {access.station?.name || "No station assigned"}
-                        </div>
-                    </div>
-                    <div className="rounded-xl border border-white/25 bg-white/95 p-4 shadow-lg shadow-blue-950/10">
-                        <div className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                            Logged-in Admin
-                        </div>
-                        <div className="mt-1 font-bold text-slate-950">
-                            {access.admin?.name || "Unknown admin"}
-                        </div>
-                    </div>
-                </div>
-
-                {isDeviceRegistered && (
-                    <div className="mt-5 min-h-[2.5rem] rounded-xl border border-white/25 bg-white/15 px-4 py-3 text-sm font-semibold text-white backdrop-blur">
-                        {unlockMessage}
-                    </div>
-                )}
-
-                <Button
-                    type="button"
-                    className="mt-6 gap-2 border border-white/25 bg-white text-[#141b6d] shadow-lg shadow-blue-950/20 hover:bg-blue-50"
-                    disabled={isBusy}
-                    onClick={panel.onClick}
-                >
-                    {isBusy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Fingerprint className="h-4 w-4" />
-                    )}
-                    {isBusy ? "Waiting for fingerprint" : panel.action}
-                </Button>
-            </div>
-        </section>
     );
 };
 

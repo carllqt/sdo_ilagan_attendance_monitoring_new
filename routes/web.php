@@ -58,9 +58,8 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
 
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
     Route::get('/attendance/suggestions', [AttendanceController::class, 'suggestions'])->name('attendance.suggestions');
-    Route::post('/attendance/device', [AttendanceController::class, 'registerDevice'])->name('attendance.device.register');
-    Route::post('/attendance/unlock', [AttendanceController::class, 'unlock'])->name('attendance.unlock');
-    Route::post('/attendance/lock', [AttendanceController::class, 'lock'])->name('attendance.lock');
+    Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
+    Route::post('/attendance/choice', [AttendanceController::class, 'choice'])->name('attendance.choice');
     Route::post('/attendance-monitoring/broadcast', [AttendanceMonitoringController::class, 'broadcast'])->name('attendance-monitoring.broadcast');
     Route::get('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'liveTest'])->name('attendance-monitoring.live-test');
     Route::post('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'triggerLiveTest'])->name('attendance-monitoring.live-test.trigger');
