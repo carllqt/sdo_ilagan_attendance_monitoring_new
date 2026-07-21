@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Building2 } from "lucide-react";
 
 import PaginationMain from "@/Components/PaginationMain";
@@ -15,6 +15,7 @@ const EmployeeListHeader = ({
     search,
     selectedStationCode,
     selectedStationName,
+    setEmployeeSearchSuggestionsOpen,
     setSearch,
     submitSearch,
 }) => (
@@ -33,6 +34,7 @@ const EmployeeListHeader = ({
                 search={search}
                 selectedStationCode={selectedStationCode}
                 selectedStationName={selectedStationName}
+                onSuggestionOpenChange={setEmployeeSearchSuggestionsOpen}
                 setSearch={setSearch}
                 submitSearch={submitSearch}
             />
@@ -88,6 +90,8 @@ const EmployeeList = ({
 }) => {
     const { page, pageCount, total, startIndex, endIndex } =
         useEmployeePagination(employees);
+    const [employeeSearchSuggestionsOpen, setEmployeeSearchSuggestionsOpen] =
+        useState(false);
 
     return (
         <section className="relative z-10 mx-auto w-full max-w-[1840px] px-8 pb-7">
@@ -107,29 +111,40 @@ const EmployeeList = ({
                                 search={search}
                                 selectedStationCode={selectedStationCode}
                                 selectedStationName={selectedStationName}
+                                setEmployeeSearchSuggestionsOpen={
+                                    setEmployeeSearchSuggestionsOpen
+                                }
                                 setSearch={setSearch}
                                 submitSearch={submitSearch}
                             />
 
-                            <EmployeeCardsSection
-                                isFiltering={isFiltering}
-                                page={page}
-                                pageMotion={pageMotion}
-                                rows={rows}
-                            />
+                            <div
+                                className={`transition duration-200 ${
+                                    employeeSearchSuggestionsOpen
+                                        ? "pointer-events-none blur-[2px] opacity-45"
+                                        : ""
+                                }`}
+                            >
+                                <EmployeeCardsSection
+                                    isFiltering={isFiltering}
+                                    page={page}
+                                    pageMotion={pageMotion}
+                                    rows={rows}
+                                />
 
-                            <PaginationMain
-                                className="mt-7"
-                                currentPage={page}
-                                from={total === 0 ? 0 : startIndex}
-                                onPageChange={goToPage}
-                                showEntryLabel={false}
-                                to={endIndex}
-                                total={total}
-                                totalPages={pageCount}
-                                disabled={isFiltering}
-                                variant="glass"
-                            />
+                                <PaginationMain
+                                    className="mt-7"
+                                    currentPage={page}
+                                    from={total === 0 ? 0 : startIndex}
+                                    onPageChange={goToPage}
+                                    showEntryLabel={false}
+                                    to={endIndex}
+                                    total={total}
+                                    totalPages={pageCount}
+                                    disabled={isFiltering}
+                                    variant="glass"
+                                />
+                            </div>
                         </div>
 
                         <SidePanels

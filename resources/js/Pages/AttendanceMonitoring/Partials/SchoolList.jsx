@@ -26,6 +26,7 @@ const SchoolList = ({
 
     const stationTabs = selectedSuggestion ? [selectedSuggestion] : stations;
     const stationGroups = stationTabs.length > 5 ? [0, 1] : [0];
+    const hasOpenSuggestions = showSuggestions && Boolean(stationSearch.trim());
 
     const selectSuggestion = (station) => {
         setSelectedSuggestion(station);
@@ -119,7 +120,7 @@ const SchoolList = ({
                                 />
                             </form>
 
-                            {showSuggestions && stationSearch.trim() ? (
+                            {hasOpenSuggestions ? (
                                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-[#f4f6ff] px-3 py-2 text-xs font-semibold uppercase text-[#141b6d]">
                                         Results for "{stationSearch.trim()}"
@@ -202,7 +203,13 @@ const SchoolList = ({
                 </div>
             </div>
             {showSchoolFilter ? (
-                <div className="relative z-30 overflow-hidden py-1">
+                <div
+                    className={`relative z-30 overflow-hidden py-1 transition duration-200 ${
+                        hasOpenSuggestions
+                            ? "pointer-events-none blur-[2px] opacity-45"
+                            : ""
+                    }`}
+                >
                     <div className="pointer-events-none absolute left-0 top-0 h-full" />
                     <div className="pointer-events-none absolute right-0 top-0 z-20 h-full w-8 bg-gradient-to-l from-[#2734a7]/80 to-transparent" />
                     <div

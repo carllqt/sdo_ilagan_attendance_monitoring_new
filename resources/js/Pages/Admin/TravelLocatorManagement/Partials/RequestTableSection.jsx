@@ -76,6 +76,8 @@ const RequestTableSection = ({
             page: 1,
         });
     };
+    const hasOpenSuggestions =
+        showSuggestions && Boolean(searchInput.trim()) && !isLoading;
 
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -123,7 +125,7 @@ const RequestTableSection = ({
                             />
                         </form>
 
-                        {showSuggestions && searchInput.trim() && !isLoading ? (
+                        {hasOpenSuggestions ? (
                             <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                 <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                     Results for "{searchInput.trim()}"
@@ -168,7 +170,14 @@ const RequestTableSection = ({
                 </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <div
+                className={`transition duration-200 ${
+                    hasOpenSuggestions
+                        ? "pointer-events-none blur-[2px] opacity-45"
+                        : ""
+                }`}
+            >
+                <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <Table className="min-w-[1180px]">
                     <TableHeader>
                         <TableRow className="bg-blue-900 hover:bg-blue-900">
@@ -197,14 +206,15 @@ const RequestTableSection = ({
                         )}
                     </TableBody>
                 </Table>
-            </div>
+                </div>
 
-            <PaginationMain
-                pagination={records}
-                entryLabel="requests"
-                disabled={isLoading}
-                onPageChange={(page) => onFilterChange({ page })}
-            />
+                <PaginationMain
+                    pagination={records}
+                    entryLabel="requests"
+                    disabled={isLoading}
+                    onPageChange={(page) => onFilterChange({ page })}
+                />
+            </div>
         </section>
     );
 };

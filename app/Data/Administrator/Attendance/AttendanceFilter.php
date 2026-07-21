@@ -6,13 +6,10 @@ use Illuminate\Http\Request;
 
 class AttendanceFilter
 {
-    public const LIMIT = 6;
-
     public function __construct(
         public readonly string $search,
         public readonly ?int $employeeId,
         public readonly string $session,
-        public readonly int $page,
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -30,7 +27,6 @@ class AttendanceFilter
             search: trim((string) $request->query('search', '')),
             employeeId: self::employeeIdFromRequest($request),
             session: $session,
-            page: max((int) $request->query('page', 1), 1),
         );
     }
 
@@ -40,8 +36,6 @@ class AttendanceFilter
             'search' => $this->search,
             'employee_id' => $this->employeeId,
             'session' => $this->session,
-            'page' => $this->page,
-            'limit' => self::LIMIT,
         ];
     }
 

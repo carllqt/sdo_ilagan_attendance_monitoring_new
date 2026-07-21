@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Loader2, Search } from "lucide-react";
 
 import FloatingInput from "@/components/floating-input";
@@ -8,6 +8,7 @@ const EmployeeSearchBox = ({
     search,
     selectedStationCode,
     selectedStationName,
+    onSuggestionOpenChange,
     setSearch,
     submitSearch,
 }) => {
@@ -28,6 +29,11 @@ const EmployeeSearchBox = ({
         setSearch,
         submitSearch,
     });
+    const hasOpenSuggestions = showSuggestions && Boolean(search.trim());
+
+    useEffect(() => {
+        onSuggestionOpenChange?.(hasOpenSuggestions);
+    }, [hasOpenSuggestions, onSuggestionOpenChange]);
 
     return (
         <div ref={searchBoxRef} className="relative w-[340px] shrink-0">
@@ -46,7 +52,7 @@ const EmployeeSearchBox = ({
                 />
             </form>
 
-            {showSuggestions && search.trim() ? (
+            {hasOpenSuggestions ? (
                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
                     <div className="border-b bg-[#f4f6ff] px-3 py-2 text-xs font-semibold uppercase text-[#141b6d]">
                         Results for "{search.trim()}"

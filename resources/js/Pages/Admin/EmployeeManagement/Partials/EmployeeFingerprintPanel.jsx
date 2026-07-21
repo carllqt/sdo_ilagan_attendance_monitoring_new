@@ -125,6 +125,7 @@ const EmployeeFingerprintPanel = ({
             ? employee?.station?.name || "-"
             : employee?.meta || employee?.office?.name || "-";
     const actionDisabled = !selectedEmployee || fingerprintEmployeeLoading;
+    const hasOpenSuggestions = showSuggestions && !fingerprintEmployeeLoading;
 
     return (
         <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg">
@@ -261,146 +262,156 @@ const EmployeeFingerprintPanel = ({
                     </Button>
                 </div>
 
-                <div className="mt-7 grid min-h-[150px] grid-cols-[1fr_auto_1fr] items-start gap-6">
-                    <div className="flex min-h-[150px] flex-col items-center text-center">
-                        <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-[0_14px_30px_-18px_rgba(59,130,246,0.85)] ring-4 ring-white">
-                            {fingerprintEmployeeLoading ? (
-                                <div className="h-full w-full animate-pulse rounded-full bg-blue-200" />
-                            ) : selectedEmployeeRecord?.profile_img ? (
-                                <img
-                                    src={`/storage/${selectedEmployeeRecord.profile_img}`}
-                                    alt={selectedEmployeeRecord.full_name}
-                                    className="h-full w-full object-cover object-top"
-                                />
-                            ) : (
-                                <User className="h-12 w-12" />
-                            )}
-                        </div>
-                        <div className="mt-5 flex min-h-[35px] w-full max-w-[220px] flex-col items-center justify-start gap-2">
-                            {fingerprintEmployeeLoading ? (
-                                <>
-                                    <div className="h-4 w-36 animate-pulse rounded bg-slate-200" />
-                                    <div className="h-4 w-44 animate-pulse rounded bg-slate-100" />
-                                </>
-                            ) : (
-                                <>
-                                    <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
-                                        {selectedEmployeeRecord
-                                            ? selectedEmployeeRecord.full_name
-                                            : "Select Employee"}
-                                    </p>
-                                    <p className="line-clamp-2 text-sm leading-5 text-slate-500">
-                                        {selectedLocationName}
-                                    </p>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="h-[205px] w-px self-center bg-slate-200" />
-
-                    <div className="flex min-h-[150px] flex-col items-center text-center">
-                        <div
-                            className={`relative flex h-28 w-28 items-center justify-center rounded-full ${fingerprintVisual.bg} text-slate-500 ring-4 ${fingerprintVisual.ring} transition-all duration-500`}
-                        >
-                            {fingerprintVisual.glow ? (
-                                <span
-                                    className={`absolute inset-0 rounded-full ${fingerprintVisual.glow} animate-ping`}
-                                />
-                            ) : null}
-                            {scanning ? (
-                                <span className="absolute inset-2 rounded-full border border-blue-300/60" />
-                            ) : null}
-                            <Fingerprint
-                                className={`relative z-10 h-16 w-16 transition-all duration-500 ${fingerprintVisual.icon}`}
-                            />
-                        </div>
-                        <div className="mt-5 flex min-h-[35px] w-full max-w-[220px] items-start justify-center">
-                            <p
-                                key={scanFeedbackKey}
-                                className="text-sm leading-5 text-slate-700"
-                            >
-                                {fingerprintEmployeeLoading
-                                    ? "Loading employee..."
-                                    : selectedEmployeeRecord
-                                    ? panelMessage
-                                    : "Choose an employee to begin"}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-8 flex w-full gap-4">
-                    <Button
-                        variant="green"
-                        onClick={() => {
-                            if (scanning) cancelScan();
-                            else registerFingerprint();
-                        }}
-                        disabled={actionDisabled}
-                        className="h-10 flex-1 rounded-xl text-sm font-semibold"
-                    >
-                        {fingerprintEmployeeLoading
-                            ? "Loading Employee"
-                            : scanning
-                            ? "Cancel"
-                            : scanStatus === "success"
-                              ? "Register Another"
-                              : scanStatus === "error"
-                                ? "Retry"
-                                : "Register Fingerprint"}
-                    </Button>
-
-                    <AlertDialog open={testOpen} onOpenChange={setTestOpen}>
-                        <AlertDialogTrigger asChild>
-                            <Button
-                                variant="blue"
-                                disabled={actionDisabled}
-                                className="h-10 flex-1 rounded-xl text-sm font-semibold"
-                            >
-                                {fingerprintEmployeeLoading
-                                    ? "Loading Employee"
-                                    : "Test Fingerprint"}
-                            </Button>
-                        </AlertDialogTrigger>
-
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                    Test Fingerprint
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Place your finger on the scanner. It will
-                                    check against registered employees.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-
-                            <div className="flex flex-col items-center py-4">
-                                <div
-                                    className={`relative flex h-24 w-24 items-center justify-center rounded-full ${testVisual.bg} ring-4 ${testVisual.ring} transition-all duration-500`}
-                                >
-                                    {testVisual.glow ? (
-                                        <span
-                                            className={`absolute inset-0 rounded-full ${testVisual.glow} animate-ping`}
-                                        />
-                                    ) : null}
-                                    {testStatus === "scanning" ? (
-                                        <span className="absolute inset-2 rounded-full border border-blue-300/60" />
-                                    ) : null}
-                                    <Fingerprint
-                                        className={`relative z-10 h-16 w-16 transition-all duration-500 ${testVisual.icon}`}
+                <div
+                    className={`transition duration-200 ${
+                        hasOpenSuggestions
+                            ? "pointer-events-none blur-[2px] opacity-45"
+                            : ""
+                    }`}
+                >
+                    <div className="mt-7 grid min-h-[150px] grid-cols-[1fr_auto_1fr] items-start gap-6">
+                        <div className="flex min-h-[150px] flex-col items-center text-center">
+                            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-[0_14px_30px_-18px_rgba(59,130,246,0.85)] ring-4 ring-white">
+                                {fingerprintEmployeeLoading ? (
+                                    <div className="h-full w-full animate-pulse rounded-full bg-blue-200" />
+                                ) : selectedEmployeeRecord?.profile_img ? (
+                                    <img
+                                        src={`/storage/${selectedEmployeeRecord.profile_img}`}
+                                        alt={selectedEmployeeRecord.full_name}
+                                        className="h-full w-full object-cover object-top"
                                     />
-                                </div>
-                                <p className="mt-3 text-sm text-gray-700">
-                                    {testMessage}
+                                ) : (
+                                    <User className="h-12 w-12" />
+                                )}
+                            </div>
+                            <div className="mt-5 flex min-h-[35px] w-full max-w-[220px] flex-col items-center justify-start gap-2">
+                                {fingerprintEmployeeLoading ? (
+                                    <>
+                                        <div className="h-4 w-36 animate-pulse rounded bg-slate-200" />
+                                        <div className="h-4 w-44 animate-pulse rounded bg-slate-100" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
+                                            {selectedEmployeeRecord
+                                                ? selectedEmployeeRecord.full_name
+                                                : "Select Employee"}
+                                        </p>
+                                        <p className="line-clamp-2 text-sm leading-5 text-slate-500">
+                                            {selectedLocationName}
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="h-[205px] w-px self-center bg-slate-200" />
+
+                        <div className="flex min-h-[150px] flex-col items-center text-center">
+                            <div
+                                className={`relative flex h-28 w-28 items-center justify-center rounded-full ${fingerprintVisual.bg} text-slate-500 ring-4 ${fingerprintVisual.ring} transition-all duration-500`}
+                            >
+                                {fingerprintVisual.glow ? (
+                                    <span
+                                        className={`absolute inset-0 rounded-full ${fingerprintVisual.glow} animate-ping`}
+                                    />
+                                ) : null}
+                                {scanning ? (
+                                    <span className="absolute inset-2 rounded-full border border-blue-300/60" />
+                                ) : null}
+                                <Fingerprint
+                                    className={`relative z-10 h-16 w-16 transition-all duration-500 ${fingerprintVisual.icon}`}
+                                />
+                            </div>
+                            <div className="mt-5 flex min-h-[35px] w-full max-w-[220px] items-start justify-center">
+                                <p
+                                    key={scanFeedbackKey}
+                                    className="text-sm leading-5 text-slate-700"
+                                >
+                                    {fingerprintEmployeeLoading
+                                        ? "Loading employee..."
+                                        : selectedEmployeeRecord
+                                          ? panelMessage
+                                          : "Choose an employee to begin"}
                                 </p>
                             </div>
+                        </div>
+                    </div>
 
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Close</AlertDialogCancel>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="mt-8 flex w-full gap-4">
+                        <Button
+                            variant="green"
+                            onClick={() => {
+                                if (scanning) cancelScan();
+                                else registerFingerprint();
+                            }}
+                            disabled={actionDisabled}
+                            className="h-10 flex-1 rounded-xl text-sm font-semibold"
+                        >
+                            {fingerprintEmployeeLoading
+                                ? "Loading Employee"
+                                : scanning
+                                  ? "Cancel"
+                                  : scanStatus === "success"
+                                    ? "Register Another"
+                                    : scanStatus === "error"
+                                      ? "Retry"
+                                      : "Register Fingerprint"}
+                        </Button>
+
+                        <AlertDialog open={testOpen} onOpenChange={setTestOpen}>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="blue"
+                                    disabled={actionDisabled}
+                                    className="h-10 flex-1 rounded-xl text-sm font-semibold"
+                                >
+                                    {fingerprintEmployeeLoading
+                                        ? "Loading Employee"
+                                        : "Test Fingerprint"}
+                                </Button>
+                            </AlertDialogTrigger>
+
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                        Test Fingerprint
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Place your finger on the scanner. It
+                                        will check against registered employees.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+
+                                <div className="flex flex-col items-center py-4">
+                                    <div
+                                        className={`relative flex h-24 w-24 items-center justify-center rounded-full ${testVisual.bg} ring-4 ${testVisual.ring} transition-all duration-500`}
+                                    >
+                                        {testVisual.glow ? (
+                                            <span
+                                                className={`absolute inset-0 rounded-full ${testVisual.glow} animate-ping`}
+                                            />
+                                        ) : null}
+                                        {testStatus === "scanning" ? (
+                                            <span className="absolute inset-2 rounded-full border border-blue-300/60" />
+                                        ) : null}
+                                        <Fingerprint
+                                            className={`relative z-10 h-16 w-16 transition-all duration-500 ${testVisual.icon}`}
+                                        />
+                                    </div>
+                                    <p className="mt-3 text-sm text-gray-700">
+                                        {testMessage}
+                                    </p>
+                                </div>
+
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                        Close
+                                    </AlertDialogCancel>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </div>
             </div>
         </div>

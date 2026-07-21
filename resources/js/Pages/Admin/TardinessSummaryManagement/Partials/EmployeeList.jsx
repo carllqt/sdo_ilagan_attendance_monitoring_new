@@ -62,6 +62,8 @@ const EmployeeList = ({
         setShowSuggestions(false);
         applySearch("");
     };
+    const hasOpenSuggestions =
+        showSuggestions && Boolean(searchInput.trim()) && !isLoading;
 
     return (
         <div className="rounded-xl">
@@ -109,7 +111,7 @@ const EmployeeList = ({
                             disabled={isLoading}
                         />
 
-                        {showSuggestions && searchInput.trim() && !isLoading ? (
+                        {hasOpenSuggestions ? (
                             <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                 <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                     Results for "{searchInput.trim()}"
@@ -209,7 +211,14 @@ const EmployeeList = ({
                 </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border">
+            <div
+                className={`transition duration-200 ${
+                    hasOpenSuggestions
+                        ? "pointer-events-none blur-[2px] opacity-45"
+                        : ""
+                }`}
+            >
+                <div className="overflow-x-auto rounded-lg border">
                 <Table className="w-full min-w-[1180px] table-fixed">
                     <TableHeader>
                         <TableRow className="bg-blue-900 hover:bg-blue-800">
@@ -361,18 +370,19 @@ const EmployeeList = ({
                         )}
                     </TableBody>
                 </Table>
-            </div>
+                </div>
 
-            <PaginationMain
-                currentPage={currentPage}
-                from={paginationFrom}
-                onPageChange={handlePageChange}
-                pageNumbers={pageNumbers}
-                to={paginationTo}
-                total={totalRecords}
-                totalPages={totalPages}
-                disabled={isLoading}
-            />
+                <PaginationMain
+                    currentPage={currentPage}
+                    from={paginationFrom}
+                    onPageChange={handlePageChange}
+                    pageNumbers={pageNumbers}
+                    to={paginationTo}
+                    total={totalRecords}
+                    totalPages={totalPages}
+                    disabled={isLoading}
+                />
+            </div>
         </div>
     );
 };

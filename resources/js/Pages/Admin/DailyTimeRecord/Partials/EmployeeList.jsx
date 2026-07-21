@@ -100,6 +100,8 @@ const EmployeeList = ({
         setShowSuggestions(false);
         submitSearch("");
     };
+    const hasOpenSuggestions =
+        !controlsDisabled && showSuggestions && Boolean(search.trim());
 
     return (
         <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-4 shadow-lg">
@@ -150,9 +152,7 @@ const EmployeeList = ({
                                 }}
                             />
 
-                            {!controlsDisabled &&
-                            showSuggestions &&
-                            search.trim() ? (
+                            {hasOpenSuggestions ? (
                                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         Employees
@@ -281,7 +281,14 @@ const EmployeeList = ({
                 </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border">
+            <div
+                className={`transition duration-200 ${
+                    hasOpenSuggestions
+                        ? "pointer-events-none blur-[2px] opacity-45"
+                        : ""
+                }`}
+            >
+                <div className="overflow-x-auto rounded-lg border">
                 <Table className="w-full table-fixed">
                     <TableHeader>
                         <TableRow className="bg-blue-900 hover:bg-blue-800">
@@ -552,16 +559,17 @@ const EmployeeList = ({
                         )}
                     </TableBody>
                 </Table>
-            </div>
+                </div>
 
-            <PaginationMain
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-                pageNumbers={pageNumbers}
-                pagination={pagination}
-                totalPages={totalPages}
-                disabled={controlsDisabled}
-            />
+                <PaginationMain
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
+                    pageNumbers={pageNumbers}
+                    pagination={pagination}
+                    totalPages={totalPages}
+                    disabled={controlsDisabled}
+                />
+            </div>
         </div>
     );
 };

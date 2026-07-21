@@ -137,6 +137,8 @@ const LocatorSlipTable = ({
     }, [slips, searchInput]);
 
     const quickRanges = getQuickRanges();
+    const hasOpenSuggestions =
+        isSearchFocused && Boolean(searchInput.trim()) && suggestions.length > 0;
 
     return (
         <>
@@ -176,9 +178,7 @@ const LocatorSlipTable = ({
                             }}
                         />
 
-                        {isSearchFocused &&
-                            searchInput.trim() &&
-                            suggestions.length > 0 && (
+                        {hasOpenSuggestions && (
                                 <div className="absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         Locator slips
@@ -310,7 +310,13 @@ const LocatorSlipTable = ({
 
             </motion.div>
 
-            <div className="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div
+                className={`mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm transition duration-200 ${
+                    hasOpenSuggestions
+                        ? "pointer-events-none blur-[2px] opacity-45"
+                        : ""
+                }`}
+            >
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50">
                         <tr>

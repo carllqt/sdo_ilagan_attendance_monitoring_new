@@ -14,7 +14,13 @@ use Illuminate\Http\Request;
 
 class AttendanceService
 {
-    private const AM_CUTOFF_HOUR = 13;
+    private const NOON_HOUR = 12;
+    private const ATTENDANCE_CHOICES = [
+        'AM Time-In',
+        'AM Time-Out',
+        'PM Time-In',
+        'PM Time-Out',
+    ];
 
     public function __construct(
         private readonly AttendanceRepository $repository,
@@ -60,27 +66,51 @@ class AttendanceService
         $stationId = $this->stationId($request->user());
         $employee = $this->employeeForAttendance($employeeId, $stationId);
         $now = now();
+        $choice = (string) $request->input('choice', '');
+
+        if (in_array($choice, self::ATTENDANCE_CHOICES, true)) {
+            if ($choice === 'PM Time-In') {
+                $prompt = $this->missingAmOutPrompt($employee, $now);
+
+                if ($prompt) {
+                    return $prompt;
+                }
+            }
+
+            return $this->recordChoiceForEmployee($employee, $choice, $now);
+        }
 
         return DB::transaction(function () use ($employee, $now) {
             $attendance = $this->attendanceForToday((int) $employee->id, $now);
             $attendance->load(['am', 'pm', 'employee.office']);
 
             $am = $attendance->am;
-            $forcePm = $now->hour >= 12
+            $forcePm = $now->hour >= self::NOON_HOUR
                 && (! $am || ! $am->am_time_in || ($am->am_time_in && $am->am_time_out));
 
-            if ($am && $am->am_time_in && ! $am->am_time_out && $now->hour >= self::AM_CUTOFF_HOUR) {
+            if ((! $am || ! $am->am_time_in) && $now->hour >= self::NOON_HOUR) {
                 return [
                     'success' => true,
                     'prompt' => true,
                     'prompt_type' => 'AM',
-                    'message' => 'You scanned after 1 PM. Do you want to record AM Time-Out or PM Time-In?',
+                    'message' => 'No AM Time-In is recorded. Do you want to record AM Time-Out or PM Time-In?',
                     'options' => ['AM Time-Out', 'PM Time-In'],
                     'employee' => $this->employeePayload($employee),
                 ];
             }
 
-            if ($now->hour < self::AM_CUTOFF_HOUR && ! $forcePm) {
+            if ($am && $am->am_time_in && ! $am->am_time_out && $now->hour >= self::NOON_HOUR) {
+                return [
+                    'success' => true,
+                    'prompt' => true,
+                    'prompt_type' => 'AM',
+                    'message' => 'You scanned at noon or later. Do you want to record AM Time-Out or PM Time-In?',
+                    'options' => ['AM Time-Out', 'PM Time-In'],
+                    'employee' => $this->employeePayload($employee),
+                ];
+            }
+
+            if ($now->hour < self::NOON_HOUR && ! $forcePm) {
                 if (! $am) {
                     $attendance->am()->create(['am_time_in' => $this->timeString($now)]);
                     return $this->recordedPayload($attendance, $employee, 'AM', 'time-in', 'AM time-in recorded', $now);
@@ -121,15 +151,37 @@ class AttendanceService
         $employee = $this->employeeForAttendance($employeeId, $stationId);
         $now = now();
 
+        return $this->recordChoiceForEmployee($employee, $choice, $now);
+    }
+
+    private function recordChoiceForEmployee(Employee $employee, string $choice, Carbon $now): array
+    {
         return DB::transaction(function () use ($choice, $employee, $now) {
             $attendance = $this->attendanceForToday((int) $employee->id, $now);
             $attendance->load(['am', 'pm', 'employee.office']);
 
+            if ($choice === 'AM Time-In') {
+                $am = $attendance->am;
+
+                if (! $am) {
+                    $attendance->am()->create(['am_time_in' => $this->timeString($now)]);
+                    return $this->recordedPayload($attendance, $employee, 'AM', 'time-in', 'AM Time-In recorded', $now);
+                }
+
+                if ($am->am_time_in) {
+                    return $this->errorPayload('AM Time-In already recorded.', $employee);
+                }
+
+                $am->update(['am_time_in' => $this->timeString($now)]);
+                return $this->recordedPayload($attendance, $employee, 'AM', 'time-in', 'AM Time-In recorded', $now);
+            }
+
             if ($choice === 'AM Time-Out') {
                 $am = $attendance->am;
 
-                if (! $am || ! $am->am_time_in) {
-                    return $this->errorPayload('Cannot record AM Time-Out before AM Time-In.', $employee);
+                if (! $am) {
+                    $attendance->am()->create(['am_time_out' => $this->timeString($now)]);
+                    return $this->recordedPayload($attendance, $employee, 'AM', 'time-out', 'AM Time-Out recorded', $now);
                 }
 
                 if ($am->am_time_out) {
@@ -159,8 +211,9 @@ class AttendanceService
             if ($choice === 'PM Time-Out') {
                 $pm = $attendance->pm;
 
-                if (! $pm || ! $pm->pm_time_in) {
-                    return $this->errorPayload('Cannot record PM Time-Out before PM Time-In.', $employee);
+                if (! $pm) {
+                    $attendance->pm()->create(['pm_time_out' => $this->timeString($now)]);
+                    return $this->recordedPayload($attendance, $employee, 'PM', 'time-out', 'PM Time-Out recorded', $now);
                 }
 
                 if ($pm->pm_time_out) {
@@ -172,6 +225,32 @@ class AttendanceService
             }
 
             return $this->errorPayload('Invalid attendance choice.', $employee);
+        });
+    }
+
+    private function missingAmOutPrompt(Employee $employee, Carbon $now): ?array
+    {
+        if ($now->hour < self::NOON_HOUR) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($employee, $now) {
+            $attendance = $this->attendanceForToday((int) $employee->id, $now);
+            $attendance->load(['am', 'employee.office']);
+            $am = $attendance->am;
+
+            if (! $am || ! $am->am_time_in || $am->am_time_out) {
+                return null;
+            }
+
+            return [
+                'success' => true,
+                'prompt' => true,
+                'prompt_type' => 'AM',
+                'message' => 'AM Time-Out is still not recorded. Do you want to record AM Time-Out or PM Time-In?',
+                'options' => ['AM Time-Out', 'PM Time-In'],
+                'employee' => $this->employeePayload($employee),
+            ];
         });
     }
 

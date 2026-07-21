@@ -33,6 +33,7 @@ class AttendanceController extends Controller
     {
         $data = $request->validate([
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
+            'choice' => ['nullable', 'string', 'in:AM Time-In,AM Time-Out,PM Time-In,PM Time-Out'],
         ]);
 
         return response()->json(
@@ -44,7 +45,7 @@ class AttendanceController extends Controller
     {
         $data = $request->validate([
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
-            'choice' => ['required', 'string', 'in:AM Time-Out,PM Time-In,PM Time-Out'],
+            'choice' => ['required', 'string', 'in:AM Time-In,AM Time-Out,PM Time-In,PM Time-Out'],
         ]);
 
         return response()->json(

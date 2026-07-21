@@ -56,6 +56,8 @@ const DepartmentHeadList = ({
         5,
         Math.min(Number(officeHeadLimit || 10), 10),
     );
+    const hasOpenSuggestions =
+        isSearchFocused && Boolean(searchInput.trim()) && !isLoading;
 
     return (
         <div className="rounded-xl">
@@ -97,7 +99,7 @@ const DepartmentHeadList = ({
                             disabled={isLoading}
                         />
 
-                        {isSearchFocused && searchInput.trim() && !isLoading && (
+                        {hasOpenSuggestions && (
                                 <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                     <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         Offices
@@ -163,7 +165,14 @@ const DepartmentHeadList = ({
                 preselectedOffice={assignOfficeHeadModal?.office_id || null}
             />
 
-            <div className="overflow-x-auto border rounded-lg">
+            <div
+                className={`transition duration-200 ${
+                    hasOpenSuggestions
+                        ? "pointer-events-none blur-[2px] opacity-45"
+                        : ""
+                }`}
+            >
+                <div className="overflow-x-auto border rounded-lg">
                 <Table className="w-full table-fixed">
                     <TableHeader>
                         <TableRow className="bg-blue-900 hover:bg-blue-800">
@@ -368,17 +377,18 @@ const DepartmentHeadList = ({
                         )}
                     </TableBody>
                 </Table>
-            </div>
+                </div>
 
-            <PaginationMain
-                currentPage={currentPage}
-                from={startIndex}
-                onPageChange={handlePageChange}
-                to={endIndex}
-                total={totalEntries}
-                totalPages={totalPages}
-                disabled={isLoading}
-            />
+                <PaginationMain
+                    currentPage={currentPage}
+                    from={startIndex}
+                    onPageChange={handlePageChange}
+                    to={endIndex}
+                    total={totalEntries}
+                    totalPages={totalPages}
+                    disabled={isLoading}
+                />
+            </div>
 
             <ConfirmPasswordDialog
                 trigger={null}

@@ -36,20 +36,6 @@ class AttendanceRepository
 
         if ($filter->employeeId) {
             $query->where('employees.id', $filter->employeeId);
-        } elseif ($filter->search !== '') {
-            $terms = preg_split('/\s+/', $filter->search) ?: [];
-
-            foreach ($terms as $term) {
-                $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $term) . '%';
-
-                $query->where(function ($query) use ($like) {
-                    $query->where('employees.first_name', 'like', $like)
-                        ->orWhere('employees.middle_name', 'like', $like)
-                        ->orWhere('employees.last_name', 'like', $like)
-                        ->orWhere('employees.position', 'like', $like)
-                        ->orWhere('offices.name', 'like', $like);
-                });
-            }
         }
 
         return $query
@@ -57,13 +43,7 @@ class AttendanceRepository
             ->orderBy('employees.first_name')
             ->orderBy('employees.middle_name')
             ->orderBy('employees.last_name')
-            ->paginate(
-                AttendanceFilter::LIMIT,
-                ['attendances.*'],
-                'page',
-                $filter->page,
-            )
-            ->withQueryString();
+            ->get();
     }
 
     public function attendanceEmployeeSuggestions(int $stationId, string $search)

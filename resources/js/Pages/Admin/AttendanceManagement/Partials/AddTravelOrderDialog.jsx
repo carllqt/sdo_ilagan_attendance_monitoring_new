@@ -59,6 +59,8 @@ const AddTravelOrderDialog = ({ open, onClose, onSaved }) => {
 
     const canSubmit =
         selectedEmployee && startDate && endDate && endDate >= startDate;
+    const hasOpenSuggestions =
+        showSuggestions && Boolean(employeeSearch.trim()) && !selectedEmployee;
 
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -112,7 +114,7 @@ const AddTravelOrderDialog = ({ open, onClose, onSaved }) => {
                             onFocus={() => setShowSuggestions(true)}
                         />
 
-                        {showSuggestions && employeeSearch.trim() ? (
+                        {hasOpenSuggestions ? (
                             <div className="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                 <div className="border-b bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                     Results for "{employeeSearch.trim()}"
@@ -155,55 +157,66 @@ const AddTravelOrderDialog = ({ open, onClose, onSaved }) => {
                         ) : null}
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <FloatingInput
-                            label="Start Date"
-                            icon={CalendarDays}
-                            name="travel_order_start_date"
-                            type="date"
-                            value={startDate}
-                            onChange={(event) => {
-                                setStartDate(event.target.value);
+                    <div
+                        className={`transition duration-200 ${
+                            hasOpenSuggestions
+                                ? "pointer-events-none blur-[2px] opacity-45"
+                                : ""
+                        }`}
+                    >
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <FloatingInput
+                                label="Start Date"
+                                icon={CalendarDays}
+                                name="travel_order_start_date"
+                                type="date"
+                                value={startDate}
+                                onChange={(event) => {
+                                    setStartDate(event.target.value);
 
-                                if (endDate < event.target.value) {
-                                    setEndDate(event.target.value);
+                                    if (endDate < event.target.value) {
+                                        setEndDate(event.target.value);
+                                    }
+                                }}
+                            />
+                            <FloatingInput
+                                label="End Date"
+                                icon={CalendarDays}
+                                name="travel_order_end_date"
+                                type="date"
+                                value={endDate}
+                                onChange={(event) =>
+                                    setEndDate(event.target.value)
                                 }
-                            }}
-                        />
-                        <FloatingInput
-                            label="End Date"
-                            icon={CalendarDays}
-                            name="travel_order_end_date"
-                            type="date"
-                            value={endDate}
-                            onChange={(event) => setEndDate(event.target.value)}
-                        />
-                    </div>
-
-                    {endDate && startDate && endDate < startDate ? (
-                        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                            End date must be the same as or later than start date.
+                            />
                         </div>
-                    ) : null}
 
-                    <DialogFooter className="gap-2 pt-1">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            disabled={processing}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                            disabled={!canSubmit || processing}
-                        >
-                            <Save className="mr-2 h-4 w-4" />
-                            {processing ? "Saving..." : "Save Travel Order"}
-                        </Button>
-                    </DialogFooter>
+                        {endDate && startDate && endDate < startDate ? (
+                            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                                End date must be the same as or later than start
+                                date.
+                            </div>
+                        ) : null}
+
+                        <DialogFooter className="gap-2 pt-5">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                                disabled={processing}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                className="bg-blue-600 text-white hover:bg-blue-700"
+                                disabled={!canSubmit || processing}
+                            >
+                                <Save className="mr-2 h-4 w-4" />
+                                {processing ? "Saving..." : "Save Travel Order"}
+                            </Button>
+                        </DialogFooter>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog>
