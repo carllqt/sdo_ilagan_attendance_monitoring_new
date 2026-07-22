@@ -6,8 +6,8 @@ import TalaBackground from "@/Components/TalaBackground";
 
 import DocumentRequestDialog from "./Partials/DocumentRequestDialog";
 import DocumentRequestSuccessToast from "./Partials/DocumentRequestSuccessToast";
-import LoginFormPanel from "./Partials/LoginFormPanel";
-import LoginHeroPanel from "./Partials/LoginHeroPanel";
+import DesktopBrandPanel from "./Partials/DesktopBrandPanel";
+import LoginFormSection from "./Partials/LoginFormSection";
 import useLoginPageForms from "./hooks/useLoginPageForms";
 import {
     getSelectedStation,
@@ -57,10 +57,10 @@ const Login = ({ status, canResetPassword, flash = {}, stations = [] }) => {
                 <TalaBackground />
 
                 <div className="relative z-10 grid w-full max-w-[390px] overflow-hidden rounded-[1.45rem] border border-white/20 bg-[linear-gradient(135deg,rgba(7,15,76,0.34),rgba(58,55,170,0.20))] shadow-[0_0_28px_rgba(167,139,250,0.18),0_24px_80px_rgba(2,6,47,0.48),inset_0_1px_0_rgba(255,255,255,0.18)] ring-1 ring-violet-200/10 backdrop-blur-[2px] sm:rounded-[1.7rem] lg:max-w-[1040px] lg:grid-cols-2">
-                    <LoginHeroPanel
+                    <DesktopBrandPanel
                         onOpenDocumentRequest={documentRequestForm.open}
                     />
-                    <LoginFormPanel
+                    <LoginFormSection
                         status={status}
                         flash={flash}
                         canResetPassword={canResetPassword}

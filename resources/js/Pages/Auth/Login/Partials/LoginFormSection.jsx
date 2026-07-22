@@ -8,7 +8,7 @@ import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 
 import DocumentRequestButtons from "./DocumentRequestButtons";
 
-const LoginFormPanel = ({
+const LoginFormSection = ({
     status,
     flash = {},
     canResetPassword,
@@ -223,4 +223,4 @@ const LoginFormPanel = ({
     );
 };
 
-export default LoginFormPanel;
+export default LoginFormSection;

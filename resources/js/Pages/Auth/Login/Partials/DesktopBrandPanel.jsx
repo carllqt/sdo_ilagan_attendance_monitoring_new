@@ -1,6 +1,6 @@
 import DocumentRequestButtons from "./DocumentRequestButtons";
 
-const LoginHeroPanel = ({ onOpenDocumentRequest }) => (
+const DesktopBrandPanel = ({ onOpenDocumentRequest }) => (
     <div className="relative hidden min-h-[590px] overflow-hidden border-r border-white/20 bg-[linear-gradient(135deg,rgba(8,17,86,0.42),rgba(48,47,161,0.24))] px-10 py-14 text-center text-white shadow-[0_0_22px_rgba(167,139,250,0.14),0_18px_48px_rgba(2,6,47,0.24),inset_0_1px_0_rgba(255,255,255,0.13)] ring-1 ring-violet-200/10 backdrop-blur-[2px] lg:flex lg:flex-col lg:items-center lg:justify-center">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,0.08),transparent_31%),radial-gradient(circle_at_86%_94%,rgba(167,139,250,0.12),transparent_38%)]" />
         <div className="absolute -left-10 top-0 h-44 w-2/3 rounded-full bg-white/[0.05] blur-3xl" />
@@ -62,4 +62,4 @@ const LoginHeroPanel = ({ onOpenDocumentRequest }) => (
     </div>
 );
 
-export default LoginHeroPanel;
+export default DesktopBrandPanel;
