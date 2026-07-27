@@ -124,7 +124,8 @@ const EmployeeFingerprintPanel = ({
         isSchoolAdmin
             ? employee?.station?.name || "-"
             : employee?.meta || employee?.office?.name || "-";
-    const actionDisabled = !selectedEmployee || fingerprintEmployeeLoading;
+    const registrationDisabled =
+        !selectedEmployee || fingerprintEmployeeLoading;
     const hasOpenSuggestions = showSuggestions && !fingerprintEmployeeLoading;
 
     return (
@@ -345,7 +346,7 @@ const EmployeeFingerprintPanel = ({
                                 if (scanning) cancelScan();
                                 else registerFingerprint();
                             }}
-                            disabled={actionDisabled}
+                            disabled={registrationDisabled}
                             className="h-10 flex-1 rounded-xl text-sm font-semibold"
                         >
                             {fingerprintEmployeeLoading
@@ -363,7 +364,7 @@ const EmployeeFingerprintPanel = ({
                             <AlertDialogTrigger asChild>
                                 <Button
                                     variant="blue"
-                                    disabled={actionDisabled}
+                                    disabled={fingerprintEmployeeLoading}
                                     className="h-10 flex-1 rounded-xl text-sm font-semibold"
                                 >
                                     {fingerprintEmployeeLoading

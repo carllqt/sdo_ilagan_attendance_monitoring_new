@@ -72,6 +72,5 @@ class DatabaseSeeder extends Seeder
                 ])
                 ->create();
         }
-        $this->call(MonthlySeeder::class);
     }
 }
