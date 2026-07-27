@@ -277,7 +277,9 @@ const EmployeeFingerprintPanel = ({
                                     <div className="h-full w-full animate-pulse rounded-full bg-blue-200" />
                                 ) : selectedEmployeeRecord?.profile_img ? (
                                     <img
-                                        src={`/storage/${selectedEmployeeRecord.profile_img}`}
+                                        src={`/employee-profile-images/${encodeURIComponent(
+                                                selectedEmployeeRecord.profile_img.replace(/^employee-profile-images[\\/]/, "")
+                                            )}`}
                                         alt={selectedEmployeeRecord.full_name}
                                         className="h-full w-full object-cover object-top"
                                     />
