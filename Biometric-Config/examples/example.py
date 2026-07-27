@@ -162,7 +162,11 @@ async def bio_register_sse(emp_id: int, request: Request):
 async def bio_attendance_scan(request: Request, station_id: int | None = None):
     """SSE endpoint for attendance fingerprint scanning."""
     async def event_stream():
-        async for msg in scan_attendance_fingerprint(service, station_id):
+        async for msg in scan_attendance_fingerprint(
+            service,
+            station_id,
+            request.is_disconnected,
+        ):
             if await request.is_disconnected():
                 break
             yield msg

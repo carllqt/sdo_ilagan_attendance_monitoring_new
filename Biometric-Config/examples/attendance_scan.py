@@ -9,6 +9,7 @@ last_scan_times = {}
 COOLDOWN_SECONDS = 3
 HEARTBEAT_INTERVAL = 15
 MATCH_THRESHOLD = 60
+FINGER_RELEASE_SECONDS = 0.5
 
 
 def sse(payload):
@@ -39,7 +40,11 @@ def load_fingerprints(service):
     return fingerprint_employees
 
 
-async def scan_attendance_fingerprint(service, station_id=None):
+async def scan_attendance_fingerprint(
+    service,
+    station_id=None,
+    is_disconnected=None,
+):
     """Identify a fingerprint and return employee data. Laravel records attendance."""
     try:
         fingerprint_employees = load_fingerprints(service)
@@ -50,8 +55,14 @@ async def scan_attendance_fingerprint(service, station_id=None):
 
     try:
         last_heartbeat = datetime.now()
+        sensor_armed = False
+        sensor_clear_since = None
 
         while True:
+            if is_disconnected and await is_disconnected():
+                logger.info("SSE attendance client disconnected; stopping scanner.")
+                return
+
             now = datetime.now()
 
             if (now - last_heartbeat).total_seconds() >= HEARTBEAT_INTERVAL:
@@ -66,9 +77,32 @@ async def scan_attendance_fingerprint(service, station_id=None):
                 await asyncio.sleep(0.1)
                 continue
 
+            if not sensor_armed:
+                if capture:
+                    # Discard a finger/capture left on the scanner during the
+                    # retry countdown. A new scan is accepted only after the
+                    # sensor has continuously reported no finger.
+                    sensor_clear_since = None
+                    await asyncio.sleep(0.1)
+                    continue
+
+                loop_time = asyncio.get_running_loop().time()
+                if sensor_clear_since is None:
+                    sensor_clear_since = loop_time
+                elif loop_time - sensor_clear_since >= FINGER_RELEASE_SECONDS:
+                    sensor_armed = True
+                    logger.info("Fingerprint sensor cleared and re-armed.")
+
+                await asyncio.sleep(0.1)
+                continue
+
             if not capture:
                 await asyncio.sleep(0.1)
                 continue
+
+            if is_disconnected and await is_disconnected():
+                logger.info("SSE attendance client disconnected after capture.")
+                return
 
             tmp, _ = capture
 

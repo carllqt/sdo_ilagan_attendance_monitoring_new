@@ -389,7 +389,9 @@ const useAttendanceController = ({
             return;
         }
 
-        applyAttendanceResult(data, false);
+        // Stop acquiring fingerprints throughout the retry countdown.
+        closeFingerprintStream();
+        applyAttendanceResult(data, true);
     };
 
     const startAttendanceFingerprintScan = () => {
