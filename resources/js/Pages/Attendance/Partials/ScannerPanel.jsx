@@ -121,17 +121,21 @@ const ScannerPanel = ({
                                             onClick={() =>
                                                 handleLogActionChange(action)
                                             }
-                                            className={`flex min-h-[3.9rem] items-center gap-4 rounded-xl border px-4 text-left text-sm font-black uppercase transition focus:outline-none focus:ring-2 focus:ring-emerald-300/70 2xl:min-h-[4.4rem] ${
+                                            aria-pressed={selected}
+                                            className={`relative flex min-h-[3.9rem] items-center gap-4 overflow-hidden rounded-xl border-2 px-4 text-left text-sm font-black uppercase transition duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-300/70 2xl:min-h-[4.4rem] ${
                                                 selected
-                                                    ? "border-emerald-400 bg-emerald-500/10 text-white shadow-[0_0_22px_rgba(16,185,129,0.18)]"
-                                                    : "border-emerald-400/45 bg-blue-950/25 text-blue-100 hover:border-emerald-300 hover:bg-emerald-500/10 hover:text-white"
+                                                    ? "border-emerald-300 bg-emerald-500/30 text-white shadow-[0_0_28px_rgba(16,185,129,0.38),inset_0_0_24px_rgba(16,185,129,0.12)]"
+                                                    : "border-blue-300/25 bg-blue-950/35 text-blue-100 hover:border-blue-200/55 hover:bg-blue-900/45 hover:text-white"
                                             }`}
                                         >
+                                            {selected && (
+                                                <span className="absolute inset-y-0 left-0 w-1.5 bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
+                                            )}
                                             <span
                                                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border ${
                                                     selected
-                                                        ? "border-emerald-300 bg-emerald-500/30 text-emerald-100"
-                                                        : "border-emerald-400/50 bg-emerald-500/15 text-emerald-200"
+                                                        ? "border-emerald-200 bg-emerald-400/35 text-white shadow-[0_0_16px_rgba(52,211,153,0.35)]"
+                                                        : "border-blue-300/35 bg-blue-900/45 text-blue-100"
                                                 }`}
                                             >
                                                 <Icon className="h-5 w-5" />

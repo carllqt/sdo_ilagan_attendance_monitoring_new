@@ -29,6 +29,11 @@ class AttendanceController extends Controller
         );
     }
 
+    public function keepAlive(): JsonResponse
+    {
+        return response()->json(['ok' => true]);
+    }
+
     public function scan(Request $request): JsonResponse
     {
         $data = $request->validate([

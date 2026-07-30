@@ -57,6 +57,7 @@ Route::post('/document-pdfs/{type}', [DocumentPdfController::class, 'store'])
 Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(function () {
 
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
+    Route::get('/attendance/keep-alive', [AttendanceController::class, 'keepAlive'])->name('attendance.keep-alive');
     Route::get('/attendance/suggestions', [AttendanceController::class, 'suggestions'])->name('attendance.suggestions');
     Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
     Route::post('/attendance/choice', [AttendanceController::class, 'choice'])->name('attendance.choice');

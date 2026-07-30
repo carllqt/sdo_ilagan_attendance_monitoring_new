@@ -149,6 +149,19 @@ const useAttendanceController = ({
     }, [attendances]);
 
     useEffect(() => {
+        const keepSessionAlive = () => {
+            window.axios
+                .get(route("attendance.keep-alive"))
+                .catch(() => undefined);
+        };
+
+        keepSessionAlive();
+        const timer = setInterval(keepSessionAlive, 30 * 60 * 1000);
+
+        return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
         const nextSession = attendanceFilters.session || defaultSession();
         const nextFilters = {
             search: attendanceFilters.search || "",
@@ -470,8 +483,10 @@ const useAttendanceController = ({
             applyAttendanceResult(response.data);
         } catch (error) {
             const message =
-                error.response?.data?.message ||
-                "Failed to send choice to server.";
+                error.response?.status === 419
+                    ? "Your attendance session expired. Refresh the page and sign in again."
+                    : error.response?.data?.message ||
+                      "Failed to send choice to server.";
 
             setScanStatus("error");
             setScanMessage(message);
