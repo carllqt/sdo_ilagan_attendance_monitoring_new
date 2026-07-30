@@ -29,10 +29,35 @@ const ScannerPanel = ({
     const nextSession = logSession === "AM" ? "PM" : "AM";
 
     const showSessionToast = () => {
+        const changed = handleLogSessionToggle();
+
+        if (!changed) {
+            toast.error("AM Session is closed after 1:00 PM.", {
+                description: "The scanner must remain in PM Session.",
+                duration: 3500,
+            });
+            return;
+        }
+
         toast.custom(() => <SessionChangeToast session={nextSession} />, {
             duration: 3000,
         });
-        handleLogSessionToggle();
+    };
+
+    const changeLogAction = (action) => {
+        if (action === logAction) return;
+
+        handleLogActionChange(action);
+        toast.success(
+            `Scanner changed to ${action === "time-in" ? "Time In" : "Time Out"}.`,
+            {
+                description: `The next scan records ${logSession} ${
+                    action === "time-in" ? "Time-In" : "Time-Out"
+                }.`,
+                duration: 3000,
+                position: "top-center",
+            },
+        );
     };
 
     return (
@@ -118,9 +143,7 @@ const ScannerPanel = ({
                                         <button
                                             key={action}
                                             type="button"
-                                            onClick={() =>
-                                                handleLogActionChange(action)
-                                            }
+                                            onClick={() => changeLogAction(action)}
                                             aria-pressed={selected}
                                             className={`relative flex min-h-[3.9rem] items-center gap-4 overflow-hidden rounded-xl border-2 px-4 text-left text-sm font-black uppercase transition duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-300/70 2xl:min-h-[4.4rem] ${
                                                 selected

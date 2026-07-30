@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
+import { toast } from "sonner";
 import { getEmployeeName } from "@/lib/utils";
 import useEmployeeSearchSuggestions from "../../Admin/EmployeeManagement/hooks/useEmployeeSearchSuggestions";
+import ScanCooldownToast from "../Partials/ScanCooldownToast";
 import {
     attendanceChoice,
     attendanceItems,
+    canSwitchToAmSession,
     defaultLogAction,
     defaultSession,
     employeePayload,
@@ -20,7 +23,13 @@ const useAttendanceController = ({
     attendanceFilters = {},
     fingerprintServiceUrl,
 }) => {
-    const initialSession = attendanceFilters.session || defaultSession();
+    const initialNow = new Date();
+    const requestedInitialSession =
+        attendanceFilters.session || defaultSession(initialNow);
+    const initialSession =
+        requestedInitialSession === "AM" && !canSwitchToAmSession(initialNow)
+            ? "PM"
+            : requestedInitialSession;
     const [time, setTime] = useState(new Date());
     const [employee, setEmployee] = useState(null);
     const [scanMessage, setScanMessage] = useState("Place your fingerprint");
@@ -132,7 +141,11 @@ const useAttendanceController = ({
 
             setTime(now);
 
-            if (!manualLogMode) {
+            if (!canSwitchToAmSession(now) && logSession === "AM") {
+                setManualLogMode(false);
+                setLogSession("PM");
+                setLogAction(defaultLogAction(now, "PM"));
+            } else if (!manualLogMode) {
                 setLogSession(nextSession);
                 setLogAction(defaultLogAction(now, nextSession));
             }
@@ -142,7 +155,7 @@ const useAttendanceController = ({
         const timer = setInterval(syncClock, 1000);
 
         return () => clearInterval(timer);
-    }, [manualLogMode]);
+    }, [logSession, manualLogMode]);
 
     useEffect(() => {
         setDailyAttendance(attendanceItems(attendances));
@@ -162,7 +175,13 @@ const useAttendanceController = ({
     }, []);
 
     useEffect(() => {
-        const nextSession = attendanceFilters.session || defaultSession();
+        const now = new Date();
+        const requestedSession =
+            attendanceFilters.session || defaultSession(now);
+        const nextSession =
+            requestedSession === "AM" && !canSwitchToAmSession(now)
+                ? "PM"
+                : requestedSession;
         const nextFilters = {
             search: attendanceFilters.search || "",
             employeeId: attendanceFilters.employee_id || null,
@@ -175,7 +194,7 @@ const useAttendanceController = ({
 
         if (!manualLogMode) {
             setLogSession(nextSession);
-            setLogAction(defaultLogAction(new Date(), nextSession));
+            setLogAction(defaultLogAction(now, nextSession));
         }
     }, [attendanceFilters, manualLogMode]);
 
@@ -343,6 +362,27 @@ const useAttendanceController = ({
             return;
         }
 
+        if (data.cooldown && data.employee) {
+            closeFingerprintStream();
+            toast.custom(
+                () =>
+                    React.createElement(ScanCooldownToast, {
+                        employee: data.employee,
+                        remainingMinutes: data.remaining_minutes,
+                    }),
+                {
+                    duration: 5000,
+                    position: "top-center",
+                },
+            );
+            setScanStatus("scanning");
+            setScanMessage("Place your fingerprint");
+            startRetryCountdown(3, () => {
+                if (restartScanner) startAttendanceFingerprintScan();
+            });
+            return;
+        }
+
         if (data.success && data.employee && data.session && data.action) {
             const timeStr = data.time || new Date().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
@@ -454,9 +494,15 @@ const useAttendanceController = ({
     const handleLogSessionToggle = () => {
         const nextSession = logSession === "AM" ? "PM" : "AM";
 
+        if (nextSession === "AM" && !canSwitchToAmSession(time)) {
+            return false;
+        }
+
         setManualLogMode(true);
         setLogSession(nextSession);
         setLogAction(defaultLogAction(time, nextSession));
+
+        return true;
     };
 
     const handleLogActionChange = (action) => {

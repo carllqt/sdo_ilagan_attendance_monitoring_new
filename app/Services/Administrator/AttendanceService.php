@@ -14,7 +14,8 @@ use Illuminate\Http\Request;
 
 class AttendanceService
 {
-    private const NOON_HOUR = 12;
+    private const PM_SESSION_START_MINUTES = 12 * 60 + 20;
+    private const SCAN_COOLDOWN_MINUTES = 15;
     private const ATTENDANCE_CHOICES = [
         'AM Time-In',
         'AM Time-Out',
@@ -67,6 +68,11 @@ class AttendanceService
         $employee = $this->employeeForAttendance($employeeId, $stationId);
         $now = now();
         $choice = (string) $request->input('choice', '');
+        $cooldown = $this->scanCooldownPayload($employee, $now);
+
+        if ($cooldown) {
+            return $cooldown;
+        }
 
         if (in_array($choice, self::ATTENDANCE_CHOICES, true)) {
             if ($choice === 'PM Time-In') {
@@ -85,10 +91,11 @@ class AttendanceService
             $attendance->load(['am', 'pm', 'employee.office']);
 
             $am = $attendance->am;
-            $forcePm = $now->hour >= self::NOON_HOUR
+            $isPmSession = $this->minutesSinceMidnight($now) >= self::PM_SESSION_START_MINUTES;
+            $forcePm = $isPmSession
                 && (! $am || ! $am->am_time_in || ($am->am_time_in && $am->am_time_out));
 
-            if ((! $am || ! $am->am_time_in) && $now->hour >= self::NOON_HOUR) {
+            if ((! $am || ! $am->am_time_in) && $isPmSession) {
                 return [
                     'success' => true,
                     'prompt' => true,
@@ -99,18 +106,18 @@ class AttendanceService
                 ];
             }
 
-            if ($am && $am->am_time_in && ! $am->am_time_out && $now->hour >= self::NOON_HOUR) {
+            if ($am && $am->am_time_in && ! $am->am_time_out && $isPmSession) {
                 return [
                     'success' => true,
                     'prompt' => true,
                     'prompt_type' => 'AM',
-                    'message' => 'You scanned at noon or later. Do you want to record AM Time-Out or PM Time-In?',
+                    'message' => 'You scanned at 12:20 PM or later. Do you want to record AM Time-Out or PM Time-In?',
                     'options' => ['AM Time-Out', 'PM Time-In'],
                     'employee' => $this->employeePayload($employee),
                 ];
             }
 
-            if ($now->hour < self::NOON_HOUR && ! $forcePm) {
+            if (! $isPmSession && ! $forcePm) {
                 if (! $am) {
                     $attendance->am()->create(['am_time_in' => $this->timeString($now)]);
                     return $this->recordedPayload($attendance, $employee, 'AM', 'time-in', 'AM time-in recorded', $now);
@@ -230,16 +237,19 @@ class AttendanceService
 
     private function missingAmOutPrompt(Employee $employee, Carbon $now): ?array
     {
-        if ($now->hour < self::NOON_HOUR) {
+        if ($this->minutesSinceMidnight($now) < self::PM_SESSION_START_MINUTES) {
             return null;
         }
 
         return DB::transaction(function () use ($employee, $now) {
             $attendance = $this->attendanceForToday((int) $employee->id, $now);
-            $attendance->load(['am', 'employee.office']);
+            $attendance->load(['am', 'pm', 'employee.office']);
             $am = $attendance->am;
+            $pm = $attendance->pm;
 
-            if (! $am || ! $am->am_time_in || $am->am_time_out) {
+            // Once PM Time-In exists, a missing AM Time-Out is intentional.
+            // Never offer to back-fill it on later scans.
+            if ($pm?->pm_time_in || ! $am || ! $am->am_time_in || $am->am_time_out) {
                 return null;
             }
 
@@ -252,6 +262,52 @@ class AttendanceService
                 'employee' => $this->employeePayload($employee),
             ];
         });
+    }
+
+    private function scanCooldownPayload(Employee $employee, Carbon $now): ?array
+    {
+        $attendance = Attendance::query()
+            ->with(['am', 'pm'])
+            ->where('employee_id', $employee->id)
+            ->whereDate('date', $now->toDateString())
+            ->first();
+
+        if (! $attendance) {
+            return null;
+        }
+
+        $recordedTimes = collect([
+            $attendance->am?->am_time_in,
+            $attendance->am?->am_time_out,
+            $attendance->pm?->pm_time_in,
+            $attendance->pm?->pm_time_out,
+        ])->filter();
+
+        if ($recordedTimes->isEmpty()) {
+            return null;
+        }
+
+        $lastRecordedAt = $recordedTimes
+            ->map(fn (string $time) => Carbon::parse("{$attendance->date} {$time}", $now->timezone))
+            ->sortDesc()
+            ->first();
+        $cooldownSeconds = self::SCAN_COOLDOWN_MINUTES * 60;
+        $elapsedSeconds = (int) $lastRecordedAt->diffInSeconds($now);
+
+        if ($elapsedSeconds >= $cooldownSeconds) {
+            return null;
+        }
+
+        $remainingSeconds = $cooldownSeconds - $elapsedSeconds;
+
+        return [
+            'success' => false,
+            'cooldown' => true,
+            'message' => 'Attendance was already recorded recently.',
+            'remaining_seconds' => $remainingSeconds,
+            'remaining_minutes' => (int) ceil($remainingSeconds / 60),
+            'employee' => $this->employeePayload($employee),
+        ];
     }
 
     public function stationId(User $user): int
@@ -371,6 +427,11 @@ class AttendanceService
     private function timeString(Carbon $time): string
     {
         return $time->format('H:i:s');
+    }
+
+    private function minutesSinceMidnight(Carbon $time): int
+    {
+        return $time->hour * 60 + $time->minute;
     }
 
     private function formatSuggestion(Employee $employee): array

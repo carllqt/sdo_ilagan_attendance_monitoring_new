@@ -64,18 +64,24 @@ export const employeePayload = (employee) => ({
 export const attendanceItems = (records) =>
     Array.isArray(records) ? records : records?.data || [];
 
+const minutesSinceMidnight = (date) =>
+    date.getHours() * 60 + date.getMinutes();
+
 export const defaultSession = (date = new Date()) =>
-    date.getHours() < 12 ? "AM" : "PM";
+    minutesSinceMidnight(date) < 12 * 60 + 20 ? "AM" : "PM";
 
 export const defaultLogAction = (date, session = defaultSession(date)) => {
-    const hour = date.getHours();
+    const minutes = minutesSinceMidnight(date);
 
     if (session === "AM") {
-        return hour >= 10 ? "time-out" : "time-in";
+        return minutes >= 11 * 60 ? "time-out" : "time-in";
     }
 
-    return hour >= 15 ? "time-out" : "time-in";
+    return minutes >= 13 * 60 + 30 ? "time-out" : "time-in";
 };
+
+export const canSwitchToAmSession = (date = new Date()) =>
+    minutesSinceMidnight(date) < 13 * 60;
 
 export const attendanceChoice = (session, action) =>
     `${session} Time-${action === "time-in" ? "In" : "Out"}`;
