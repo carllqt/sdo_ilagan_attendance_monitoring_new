@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
+import { toast } from "sonner";
 
 const emptyEmployeeForm = (stationId = "") => ({
     id: "",
@@ -128,14 +129,25 @@ const useEmployeeRegistrationForm = ({
         router.post(route("employees.store"), form, {
             preserveScroll: true,
             forceFormData: true,
-            onSuccess: () => {
-                resetForm();
-                router.reload({
-                    only: ["filteredEmployeesList"],
-                });
-            },
-        });
-    };
+        onSuccess: () => {
+            resetForm();
+            router.reload({
+                only: ["filteredEmployeesList"],
+            });
+        },
+        onError: (errors) => {
+            const message =
+                Object.values(errors).flat().find(Boolean) ||
+                "Unable to add employee. Please try again.";
+
+            toast.error(message, {
+                description: "Employee was not added.",
+                duration: 5000,
+                closeButton: true,
+            });
+        },
+    });
+};
 
     return {
         clearProfileImage,
@@ -156,4 +168,3 @@ const useEmployeeRegistrationForm = ({
 };
 
 export default useEmployeeRegistrationForm;
-
