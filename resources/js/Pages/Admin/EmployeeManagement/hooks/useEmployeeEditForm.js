@@ -48,7 +48,9 @@ const useEmployeeEditForm = ({
     );
     const currentImageUrl =
         typeof safeForm.profile_img === "string" && safeForm.profile_img
-            ? `/storage/${safeForm.profile_img}`
+            ? `/employee-profile-images/${encodeURIComponent(
+                safeForm.profile_img.replace(/^employee-profile-images[\\/]/, ""),
+            )}`
             : null;
     const displayImage = previewUrl || currentImageUrl;
     const initials =

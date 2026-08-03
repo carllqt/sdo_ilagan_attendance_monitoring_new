@@ -47,7 +47,7 @@ def env_list(name: str, default: str) -> list[str]:
 
 origins = env_list(
     "BIOMETRIC_CORS_ORIGINS",
-    "http://127.0.0.1:8000,http://localhost:8000,http://10.10.115.29:8000",
+    "http://127.0.0.1:8000,http://localhost:8000,http://10.10.103.146:8000",
 )
 
 app.add_middleware(
