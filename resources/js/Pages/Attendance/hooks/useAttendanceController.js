@@ -14,6 +14,7 @@ import {
     emptyAM,
     emptyPM,
     fingerprintColor,
+    scannerMessages,
     statusConfig,
 } from "../utils";
 
@@ -24,15 +25,25 @@ const useAttendanceController = ({
     fingerprintServiceUrl,
 }) => {
     const initialNow = new Date();
-    const requestedInitialSession =
-        attendanceFilters.session || defaultSession(initialNow);
-    const initialSession =
-        requestedInitialSession === "AM" && !canSwitchToAmSession(initialNow)
-            ? "PM"
-            : requestedInitialSession;
+    const initialUrlParams = new URLSearchParams(window.location.search);
+    const requestedScannerSession = initialUrlParams
+        .get("session")
+        ?.toUpperCase();
+    const initialScannerSession = ["AM", "PM"].includes(
+        requestedScannerSession,
+    )
+        ? requestedScannerSession
+        : defaultSession(initialNow);
+    const initialTab = attendanceFilters.session === "PM" ? "PM" : "AM";
+    const requestedInitialAction = initialUrlParams.get("action");
+    const initialScannerAction = ["time-in", "time-out"].includes(
+        requestedInitialAction,
+    )
+        ? requestedInitialAction
+        : defaultLogAction(initialNow, initialScannerSession);
     const [time, setTime] = useState(new Date());
     const [employee, setEmployee] = useState(null);
-    const [scanMessage, setScanMessage] = useState("Place your fingerprint");
+    const [scanMessage, setScanMessage] = useState(scannerMessages.placeFinger);
     const [scanStatus, setScanStatus] = useState("idle");
     const [retryCountdown, setRetryCountdown] = useState(null);
     const [successCountdown, setSuccessCountdown] = useState(null);
@@ -43,18 +54,18 @@ const useAttendanceController = ({
     const [amPromptData, setAMPromptData] = useState(null);
     const [showPMPromptModal, setShowPMPromptModal] = useState(false);
     const [pmPromptData, setPMPromptData] = useState(null);
-    const [activeTab, setActiveTab] = useState(initialSession);
-    const [logSession, setLogSession] = useState(initialSession);
-    const [logAction, setLogAction] = useState(
-        defaultLogAction(new Date(), initialSession),
+    const [activeTab, setActiveTab] = useState(initialTab);
+    const [logSession, setLogSession] = useState(initialScannerSession);
+    const [logAction, setLogAction] = useState(initialScannerAction);
+    const [manualLogMode, setManualLogMode] = useState(
+        Boolean(["time-in", "time-out"].includes(requestedInitialAction)),
     );
-    const [manualLogMode, setManualLogMode] = useState(false);
     const [search, setSearch] = useState(attendanceFilters.search || "");
     const [filterLoading, setFilterLoading] = useState(false);
     const filtersRef = useRef({
         search: attendanceFilters.search || "",
         employeeId: attendanceFilters.employee_id || null,
-        session: initialSession,
+        session: initialTab,
     });
     const eventSourceRef = useRef(null);
     const scannerEnabledRef = useRef(false);
@@ -81,6 +92,39 @@ const useAttendanceController = ({
     });
     const hasOpenSuggestions = showSuggestions && Boolean(search.trim());
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        let changed = false;
+
+        if (!params.has("session")) {
+            params.set("session", initialScannerSession.toLowerCase());
+            changed = true;
+        }
+
+        if (!params.has("action")) {
+            params.set("action", initialScannerAction);
+            changed = true;
+        }
+
+        if (!params.has("logs")) {
+            params.set("logs", initialTab.toLowerCase());
+            changed = true;
+        }
+
+        if (params.has("attendancelogs")) {
+            params.delete("attendancelogs");
+            changed = true;
+        }
+
+        if (changed) {
+            window.history.replaceState(
+                window.history.state,
+                "",
+                `${window.location.pathname}?${params.toString()}`,
+            );
+        }
+    }, [initialScannerAction, initialScannerSession, initialTab]);
+
     const updateAttendanceQuery = (values = {}) => {
         const next = {
             ...filtersRef.current,
@@ -98,7 +142,8 @@ const useAttendanceController = ({
             params.delete("search");
         }
 
-        params.set("session", nextSession);
+        params.set("logs", nextSession.toLowerCase());
+        params.delete("attendancelogs");
         params.delete("page");
         params.delete("limit");
 
@@ -168,20 +213,30 @@ const useAttendanceController = ({
                 .catch(() => undefined);
         };
 
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                keepSessionAlive();
+            }
+        };
+
         keepSessionAlive();
         const timer = setInterval(keepSessionAlive, 30 * 60 * 1000);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
-        return () => clearInterval(timer);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange,
+            );
+        };
     }, []);
 
     useEffect(() => {
         const now = new Date();
         const requestedSession =
             attendanceFilters.session || defaultSession(now);
-        const nextSession =
-            requestedSession === "AM" && !canSwitchToAmSession(now)
-                ? "PM"
-                : requestedSession;
+        const nextSession = requestedSession === "PM" ? "PM" : "AM";
         const nextFilters = {
             search: attendanceFilters.search || "",
             employeeId: attendanceFilters.employee_id || null,
@@ -191,12 +246,7 @@ const useAttendanceController = ({
         filtersRef.current = nextFilters;
         setSearch(nextFilters.search);
         setActiveTab(nextSession);
-
-        if (!manualLogMode) {
-            setLogSession(nextSession);
-            setLogAction(defaultLogAction(now, nextSession));
-        }
-    }, [attendanceFilters, manualLogMode]);
+    }, [attendanceFilters]);
 
     useEffect(() => {
         scannerEnabledRef.current = canUseScanner;
@@ -220,7 +270,6 @@ const useAttendanceController = ({
         const scannedEmployee = employeePayload(data.employee);
 
         setEmployee(scannedEmployee);
-        setActiveTab(session);
         setDailyAttendance((prev) => {
             const updated = [...prev];
             const existing = updated.find(
@@ -303,6 +352,11 @@ const useAttendanceController = ({
         }, 1000);
     };
 
+    const setScannerFeedback = (status, message) => {
+        setScanStatus(status);
+        setScanMessage(message);
+    };
+
     const startSuccessCountdown = (callback = null) => {
         clearInterval(successTimerRef.current);
         let count = 3;
@@ -314,35 +368,29 @@ const useAttendanceController = ({
             if (count <= 0) {
                 clearInterval(successTimerRef.current);
                 setSuccessCountdown(null);
-                setScanStatus("scanning");
-                setScanMessage("Place your fingerprint");
+                resetScannerState();
                 callback?.();
             }
         }, 1000);
     };
 
+    const resetScannerState = () => {
+        setScannerFeedback("scanning", scannerMessages.placeFinger);
+    };
+
+    const retryScanner = (restartScanner = true) => {
+        startRetryCountdown(3, () => {
+            resetScannerState();
+            if (restartScanner) startAttendanceFingerprintScan();
+        });
+    };
+
     const applyAttendanceResult = (data, restartScanner = true) => {
         if (!data || Object.keys(data).length === 0) return;
 
-        if (
-            data.employee?.station_id &&
-            stationId &&
-            Number(data.employee.station_id) !== Number(stationId)
-        ) {
-            setScanStatus("error");
-            setScanMessage("Employee is not assigned to this station.");
-            startRetryCountdown(3, () => {
-                setScanStatus("scanning");
-                setScanMessage("Place your fingerprint");
-                if (restartScanner) startAttendanceFingerprintScan();
-            });
-            return;
-        }
-
         if (data.prompt) {
             closeFingerprintStream();
-            setScanStatus("prompt");
-            setScanMessage(data.message);
+            setScannerFeedback("prompt", data.message);
 
             if (data.prompt_type === "AM") {
                 setAMPromptData({
@@ -375,19 +423,15 @@ const useAttendanceController = ({
                     position: "top-center",
                 },
             );
-            setScanStatus("scanning");
-            setScanMessage("Place your fingerprint");
-            startRetryCountdown(3, () => {
-                if (restartScanner) startAttendanceFingerprintScan();
-            });
+            resetScannerState();
+            retryScanner(restartScanner);
             return;
         }
 
         if (data.success && data.employee && data.session && data.action) {
             const timeStr = data.time || new Date().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
-            setScanStatus("success");
-            setScanMessage(data.message);
+            setScannerFeedback("success", data.message);
             startSuccessCountdown(() => {
                 if (restartScanner) startAttendanceFingerprintScan();
             });
@@ -395,13 +439,8 @@ const useAttendanceController = ({
         }
 
         if (data.message && !data.prompt) {
-            setScanStatus("error");
-            setScanMessage(data.message);
-            startRetryCountdown(3, () => {
-                setScanStatus("scanning");
-                setScanMessage("Place your fingerprint");
-                if (restartScanner) startAttendanceFingerprintScan();
-            });
+            setScannerFeedback("error", data.message);
+            retryScanner(restartScanner);
         }
     };
 
@@ -409,13 +448,14 @@ const useAttendanceController = ({
         if (!employeeId) return;
 
         closeFingerprintStream();
-        setScanStatus("processing");
-        setScanMessage("Recording attendance...");
+        setScannerFeedback("processing", scannerMessages.recording);
 
         try {
             const response = await window.axios.post(route("attendance.scan"), {
                 employee_id: employeeId,
                 choice: attendanceChoice(logSession, logAction),
+            }, {
+                timeout: 15000,
             });
 
             applyAttendanceResult(response.data);
@@ -424,18 +464,25 @@ const useAttendanceController = ({
                 error.response?.data?.message ||
                 "Unable to record attendance.";
 
-            setScanStatus("error");
-            setScanMessage(message);
-            startRetryCountdown(3, () => {
-                setScanStatus("scanning");
-                setScanMessage("Place your fingerprint");
-                startAttendanceFingerprintScan();
-            });
+            setScannerFeedback("error", message);
+            retryScanner();
         }
     };
 
     const handleResponseData = (data) => {
         if (!data || Object.keys(data).length === 0) return;
+
+        if (data.status) {
+            setScannerFeedback(
+                data.status === "processing"
+                    ? "processing"
+                    : data.status === "error"
+                      ? "error"
+                      : "scanning",
+                data.message || scannerMessages.placeFinger,
+            );
+            return;
+        }
 
         if (data.success && data.employee?.id && !data.session) {
             recordAttendanceScan(data.employee.id);
@@ -451,15 +498,22 @@ const useAttendanceController = ({
         if (!scannerEnabledRef.current) return;
 
         closeFingerprintStream();
-        setScanStatus("scanning");
-        setScanMessage("Place your fingerprint");
+        resetScannerState();
 
         const eventSource = new EventSource(
             `${fingerprintServiceUrl}/bioAttendanceScan${stationQuery}`,
         );
         eventSourceRef.current = eventSource;
 
+        eventSource.onopen = () => {
+            if (eventSourceRef.current !== eventSource) return;
+
+            setScannerFeedback("scanning", scannerMessages.connected);
+        };
+
         eventSource.onmessage = (event) => {
+            if (eventSourceRef.current !== eventSource) return;
+
             try {
                 const dataStr = event.data.startsWith("data:")
                     ? event.data.slice(5)
@@ -468,15 +522,17 @@ const useAttendanceController = ({
                 handleResponseData(JSON.parse(dataStr));
             } catch (err) {
                 console.error("SSE parse error:", err);
-                setScanStatus("error");
-                setScanMessage("Failed to parse server response.");
+                setScannerFeedback("error", scannerMessages.parseError);
             }
         };
 
         eventSource.onerror = (err) => {
+            if (eventSourceRef.current !== eventSource) return;
+
             console.error("SSE error:", err);
-            setScanStatus("error");
-            setScanMessage("Lost connection to fingerprint service.");
+            eventSource.close();
+            eventSourceRef.current = null;
+            setScannerFeedback("error", scannerMessages.disconnected);
             clearTimeout(reconnectTimerRef.current);
             reconnectTimerRef.current = setTimeout(() => {
                 if (scannerEnabledRef.current) {
@@ -500,7 +556,17 @@ const useAttendanceController = ({
 
         setManualLogMode(true);
         setLogSession(nextSession);
-        setLogAction(defaultLogAction(time, nextSession));
+        const nextAction = defaultLogAction(time, nextSession);
+        setLogAction(nextAction);
+
+        const params = new URLSearchParams(window.location.search);
+        params.set("session", nextSession.toLowerCase());
+        params.set("action", nextAction);
+        window.history.replaceState(
+            window.history.state,
+            "",
+            `${window.location.pathname}?${params.toString()}`,
+        );
 
         return true;
     };
@@ -508,6 +574,14 @@ const useAttendanceController = ({
     const handleLogActionChange = (action) => {
         setManualLogMode(true);
         setLogAction(action);
+
+        const params = new URLSearchParams(window.location.search);
+        params.set("action", action);
+        window.history.replaceState(
+            window.history.state,
+            "",
+            `${window.location.pathname}?${params.toString()}`,
+        );
     };
 
     const handlePromptChoice = async (choice) => {
@@ -517,8 +591,7 @@ const useAttendanceController = ({
 
         setShowAMPromptModal(false);
         setShowPMPromptModal(false);
-        setScanStatus("processing");
-        setScanMessage(`Recording ${choice}...`);
+        setScannerFeedback("processing", `Recording ${choice}...`);
 
         try {
             const response = await window.axios.post(route("attendance.choice"), {
@@ -534,13 +607,8 @@ const useAttendanceController = ({
                     : error.response?.data?.message ||
                       "Failed to send choice to server.";
 
-            setScanStatus("error");
-            setScanMessage(message);
-            startRetryCountdown(3, () => {
-                setScanStatus("scanning");
-                setScanMessage("Place your fingerprint");
-                startAttendanceFingerprintScan();
-            });
+            setScannerFeedback("error", message);
+            retryScanner();
         }
     };
 

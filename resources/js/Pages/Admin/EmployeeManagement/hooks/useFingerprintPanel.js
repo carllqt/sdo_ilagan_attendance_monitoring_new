@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 import {
     clampAvailableFingers,
+    fingerprintMessages,
     formatFingerprintRegistrationParam,
 } from "../utils";
 import { getEmployeeName } from "@/lib/utils";
@@ -24,9 +25,14 @@ const useFingerprintPanel = ({
     const [scanning, setScanning] = useState(false);
     const registerSourceRef = useRef(null);
     const [testOpen, setTestOpen] = useState(Boolean(testFingerprintModal));
-    const [testMessage, setTestMessage] = useState("Waiting for scan...");
+    const testOpenRef = useRef(Boolean(testFingerprintModal));
+    const [testMessage, setTestMessage] = useState(
+        fingerprintMessages.testWaiting,
+    );
     const [testStatus, setTestStatus] = useState("idle");
-    const [testSource, setTestSource] = useState(null);
+    const testSourceRef = useRef(null);
+    const testResetTimerRef = useRef(null);
+    const testReconnectTimerRef = useRef(null);
     const [fingerprintEmployeeLoading, setFingerprintEmployeeLoading] =
         useState(false);
 
@@ -36,7 +42,9 @@ const useFingerprintPanel = ({
     }, [selectedFingerprintEmployeeProp]);
 
     useEffect(() => {
-        setTestOpen(Boolean(testFingerprintModal));
+        const nextOpen = Boolean(testFingerprintModal);
+        setTestOpen(nextOpen);
+        testOpenRef.current = nextOpen;
     }, [testFingerprintModal]);
 
     const findCurrentEmployee = (empId) =>
@@ -66,6 +74,38 @@ const useFingerprintPanel = ({
         }
     };
 
+    const stopTestSource = (source = testSourceRef.current) => {
+        source?.close();
+
+        if (!source || testSourceRef.current === source) {
+            testSourceRef.current = null;
+        }
+    };
+
+    const clearTestTimers = () => {
+        clearTimeout(testResetTimerRef.current);
+        clearTimeout(testReconnectTimerRef.current);
+    };
+
+    const setRegistrationFeedback = (status, message) => {
+        setScanStatus(status);
+        setScanMessage(message);
+    };
+
+    const setTestFeedback = (status, message) => {
+        setTestStatus(status);
+        setTestMessage(message);
+    };
+
+    const resetTestFeedback = () => {
+        setTestFeedback("scanning", fingerprintMessages.testPlaceFinger);
+    };
+
+    const scheduleTestReset = () => {
+        clearTimeout(testResetTimerRef.current);
+        testResetTimerRef.current = setTimeout(resetTestFeedback, 3000);
+    };
+
     const clearFingerprintEmployee = () => {
         setFingerprintEmployeeLoading(true);
         setSelectedEmployee("");
@@ -89,8 +129,7 @@ const useFingerprintPanel = ({
         if (scanStatus === "success") {
             timer = setTimeout(() => {
                 setScanning(false);
-                setScanStatus("idle");
-                setScanMessage("Place your fingerprint");
+                setRegistrationFeedback("idle", fingerprintMessages.placeFinger);
                 clearFingerprintEmployee();
             }, 5000);
         }
@@ -101,14 +140,15 @@ const useFingerprintPanel = ({
     useEffect(() => {
         return () => {
             stopRegisterSource();
+            stopTestSource();
+            clearTestTimers();
         };
     }, []);
 
     const cancelScan = () => {
         stopRegisterSource();
         setScanning(false);
-        setScanStatus("idle");
-        setScanMessage("Scan cancelled");
+        setRegistrationFeedback("idle", fingerprintMessages.cancelled);
     };
 
     const registerFingerprint = () => {
@@ -116,8 +156,10 @@ const useFingerprintPanel = ({
 
         stopRegisterSource();
         setScanning(true);
-        setScanStatus("scanning");
-        setScanMessage("Starting fingerprint registration...");
+        setRegistrationFeedback(
+            "scanning",
+            fingerprintMessages.registrationStarting,
+        );
 
         const source = new EventSource(
             `${fingerprintServiceUrl}/bioRegisterSSE/${selectedEmployee}`,
@@ -134,11 +176,9 @@ const useFingerprintPanel = ({
                 setScanFeedbackKey((value) => value + 1);
 
                 if (data.success === null) {
-                    setScanStatus("scanning");
-                    setScanMessage(data.message);
+                    setRegistrationFeedback("scanning", data.message);
                 } else if (data.success === true) {
-                    setScanStatus("success");
-                    setScanMessage(data.message);
+                    setRegistrationFeedback("success", data.message);
                     setScanning(false);
                     stopRegisterSource(source);
 
@@ -161,16 +201,17 @@ const useFingerprintPanel = ({
                         clearFingerprintEmployee();
                     }
                 } else if (data.success === false) {
-                    setScanStatus("error");
-                    setScanMessage(data.message);
+                    setRegistrationFeedback("error", data.message);
                     setScanning(false);
                     stopRegisterSource(source);
                 }
             } catch (err) {
                 console.error("Failed to parse SSE data:", err);
                 setScanFeedbackKey((value) => value + 1);
-                setScanStatus("error");
-                setScanMessage("Unexpected error occurred.");
+                setRegistrationFeedback(
+                    "error",
+                    fingerprintMessages.unexpectedError,
+                );
                 setScanning(false);
                 stopRegisterSource(source);
             }
@@ -181,29 +222,38 @@ const useFingerprintPanel = ({
 
             console.error("SSE connection error:", err);
             setScanFeedbackKey((value) => value + 1);
-            setScanStatus("error");
-            setScanMessage("Could not reach fingerprint service.");
+            setRegistrationFeedback(
+                "error",
+                fingerprintMessages.serviceUnavailable,
+            );
             setScanning(false);
             stopRegisterSource(source);
         };
     };
 
     const startTestFingerprint = () => {
-        if (testSource) {
-            testSource.close();
-        }
-
-        setTestMessage("Place your finger on the scanner...");
-        setTestStatus("scanning");
+        clearTestTimers();
+        stopTestSource();
+        resetTestFeedback();
 
         const source = new EventSource(`${fingerprintServiceUrl}/bioAttendanceScan`);
-        setTestSource(source);
+        testSourceRef.current = source;
 
         source.onmessage = (event) => {
+            if (testSourceRef.current !== source) return;
+
             try {
                 const data = JSON.parse(event.data);
 
                 if (!data || Object.keys(data).length === 0) return;
+
+                if (data.status) {
+                    setTestFeedback(
+                        data.status === "error" ? "error" : "scanning",
+                        data.message || fingerprintMessages.testPlaceFinger,
+                    );
+                    return;
+                }
 
                 if (data.success && data.employee) {
                     const { office, position, station } = data.employee;
@@ -211,38 +261,33 @@ const useFingerprintPanel = ({
                         ? station?.name || "No station"
                         : office?.name || "-";
 
-                    setTestStatus("success");
-                    setTestMessage(
+                    setTestFeedback(
+                        "success",
                         `Match: ${getEmployeeName(data.employee)} (${locationName} - ${position})`,
                     );
 
-                    setTimeout(() => {
-                        setTestStatus("scanning");
-                        setTestMessage("Place your finger on the scanner...");
-                    }, 3000);
+                    scheduleTestReset();
                 } else if (data.message) {
-                    setTestStatus("error");
-                    setTestMessage(`${data.message}`);
-
-                    setTimeout(() => {
-                        setTestStatus("scanning");
-                        setTestMessage("Place your finger on the scanner...");
-                    }, 3000);
+                    setTestFeedback("error", data.message);
+                    scheduleTestReset();
                 }
             } catch (err) {
                 console.error("SSE parse error:", err);
-                setTestStatus("error");
-                setTestMessage("Test error.");
+                setTestFeedback("error", fingerprintMessages.testError);
             }
         };
 
         source.onerror = (err) => {
-            console.error("SSE error:", err);
-            setTestStatus("error");
-            setTestMessage("Lost connection to fingerprint service.");
-            source.close();
+            if (testSourceRef.current !== source) return;
 
-            setTimeout(() => startTestFingerprint(), 3000);
+            console.error("SSE error:", err);
+            setTestFeedback("error", fingerprintMessages.testDisconnected);
+            stopTestSource(source);
+
+            clearTimeout(testReconnectTimerRef.current);
+            testReconnectTimerRef.current = setTimeout(() => {
+                if (testOpenRef.current) startTestFingerprint();
+            }, 3000);
         };
     };
 
@@ -268,10 +313,11 @@ const useFingerprintPanel = ({
 
     const handleTestFingerprintOpenChange = (nextOpen) => {
         setTestOpen(nextOpen);
+        testOpenRef.current = nextOpen;
 
-        if (!nextOpen && testSource) {
-            testSource.close();
-            setTestSource(null);
+        if (!nextOpen) {
+            clearTestTimers();
+            stopTestSource();
         }
 
         const params = new URLSearchParams(window.location.search);

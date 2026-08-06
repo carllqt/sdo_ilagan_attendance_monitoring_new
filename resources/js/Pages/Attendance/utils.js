@@ -11,6 +11,14 @@ export const defaultFingerprintServiceUrl = `http://${window.location.hostname}:
 export const emptyAM = { am_time_in: null, am_time_out: null };
 export const emptyPM = { pm_time_in: null, pm_time_out: null };
 
+export const scannerMessages = {
+    connected: "Fingerprint scanner connected. Place your fingerprint.",
+    disconnected: "Lost connection to fingerprint service. Reconnecting...",
+    parseError: "Failed to parse server response.",
+    placeFinger: "Place your fingerprint",
+    recording: "Recording attendance...",
+};
+
 export const statusConfig = {
     idle: {
         label: "Ready",

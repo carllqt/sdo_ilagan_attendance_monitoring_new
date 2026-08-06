@@ -15,7 +15,7 @@ class AttendanceFilter
     public static function fromRequest(Request $request): self
     {
         $session = strtoupper((string) $request->query(
-            'session',
+            'logs',
             now()->hour < 12 ? 'AM' : 'PM',
         ));
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import useEmployeeSearchSuggestions from "./useEmployeeSearchSuggestions";
-import { clampAvailableFingers } from "../utils";
+import { clampAvailableFingers, fingerprintMessages } from "../utils";
 
 const useEmployeeFingerprintPanelUi = ({
     availableFingers,
@@ -82,7 +82,7 @@ const useEmployeeFingerprintPanelUi = ({
         if (
             !selectedEmployeeRecord ||
             !cleanMessage ||
-            cleanMessage === "Place your fingerprint"
+            cleanMessage === fingerprintMessages.placeFinger
         ) {
             return;
         }
@@ -115,8 +115,8 @@ const useEmployeeFingerprintPanelUi = ({
         if (
             !testOpen ||
             !cleanMessage ||
-            cleanMessage === "Waiting for scan..." ||
-            cleanMessage === "Place your finger on the scanner..."
+            cleanMessage === fingerprintMessages.testWaiting ||
+            cleanMessage === fingerprintMessages.testPlaceFinger
         ) {
             return;
         }

@@ -22,6 +22,12 @@ class AttendanceService
         'PM Time-In',
         'PM Time-Out',
     ];
+    private const ATTENDANCE_LOGS = [
+        'AM Time-In' => ['relation' => 'am', 'column' => 'am_time_in', 'session' => 'AM', 'action' => 'time-in'],
+        'AM Time-Out' => ['relation' => 'am', 'column' => 'am_time_out', 'session' => 'AM', 'action' => 'time-out'],
+        'PM Time-In' => ['relation' => 'pm', 'column' => 'pm_time_in', 'session' => 'PM', 'action' => 'time-in'],
+        'PM Time-Out' => ['relation' => 'pm', 'column' => 'pm_time_out', 'session' => 'PM', 'action' => 'time-out'],
+    ];
 
     public function __construct(
         private readonly AttendanceRepository $repository,
@@ -95,26 +101,10 @@ class AttendanceService
             $forcePm = $isPmSession
                 && (! $am || ! $am->am_time_in || ($am->am_time_in && $am->am_time_out));
 
-            if ((! $am || ! $am->am_time_in) && $isPmSession) {
-                return [
-                    'success' => true,
-                    'prompt' => true,
-                    'prompt_type' => 'AM',
-                    'message' => 'No AM Time-In is recorded. Do you want to record AM Time-Out or PM Time-In?',
-                    'options' => ['AM Time-Out', 'PM Time-In'],
-                    'employee' => $this->employeePayload($employee),
-                ];
-            }
+            $pm = $attendance->pm;
 
-            if ($am && $am->am_time_in && ! $am->am_time_out && $isPmSession) {
-                return [
-                    'success' => true,
-                    'prompt' => true,
-                    'prompt_type' => 'AM',
-                    'message' => 'You scanned at 12:20 PM or later. Do you want to record AM Time-Out or PM Time-In?',
-                    'options' => ['AM Time-Out', 'PM Time-In'],
-                    'employee' => $this->employeePayload($employee),
-                ];
+            if ($isPmSession && (! $am || ! $am->am_time_out) && ! $pm?->pm_time_in) {
+                return $this->missingAmOutPromptPayload($employee);
             }
 
             if (! $isPmSession && ! $forcePm) {
@@ -130,8 +120,6 @@ class AttendanceService
 
                 return $this->errorPayload('AM attendance is already complete.', $employee);
             }
-
-            $pm = $attendance->pm;
 
             if (! $pm) {
                 $attendance->pm()->create(['pm_time_in' => $this->timeString($now)]);
@@ -166,72 +154,36 @@ class AttendanceService
         return DB::transaction(function () use ($choice, $employee, $now) {
             $attendance = $this->attendanceForToday((int) $employee->id, $now);
             $attendance->load(['am', 'pm', 'employee.office']);
+            $log = self::ATTENDANCE_LOGS[$choice] ?? null;
 
-            if ($choice === 'AM Time-In') {
-                $am = $attendance->am;
-
-                if (! $am) {
-                    $attendance->am()->create(['am_time_in' => $this->timeString($now)]);
-                    return $this->recordedPayload($attendance, $employee, 'AM', 'time-in', 'AM Time-In recorded', $now);
-                }
-
-                if ($am->am_time_in) {
-                    return $this->errorPayload('AM Time-In already recorded.', $employee);
-                }
-
-                $am->update(['am_time_in' => $this->timeString($now)]);
-                return $this->recordedPayload($attendance, $employee, 'AM', 'time-in', 'AM Time-In recorded', $now);
+            if (! $log) {
+                return $this->errorPayload('Invalid attendance choice.', $employee);
             }
 
-            if ($choice === 'AM Time-Out') {
-                $am = $attendance->am;
+            $attendanceLog = $attendance->{$log['relation']};
 
-                if (! $am) {
-                    $attendance->am()->create(['am_time_out' => $this->timeString($now)]);
-                    return $this->recordedPayload($attendance, $employee, 'AM', 'time-out', 'AM Time-Out recorded', $now);
-                }
-
-                if ($am->am_time_out) {
-                    return $this->errorPayload('AM Time-Out already recorded.', $employee);
-                }
-
-                $am->update(['am_time_out' => $this->timeString($now)]);
-                return $this->recordedPayload($attendance, $employee, 'AM', 'time-out', 'AM Time-Out recorded', $now);
+            if ($attendanceLog?->{$log['column']}) {
+                return $this->errorPayload("{$choice} already recorded.", $employee);
             }
 
-            if ($choice === 'PM Time-In') {
-                $pm = $attendance->pm;
-
-                if (! $pm) {
-                    $attendance->pm()->create(['pm_time_in' => $this->timeString($now)]);
-                    return $this->recordedPayload($attendance, $employee, 'PM', 'time-in', 'PM Time-In recorded', $now);
-                }
-
-                if ($pm->pm_time_in) {
-                    return $this->errorPayload('PM Time-In already recorded.', $employee);
-                }
-
-                $pm->update(['pm_time_in' => $this->timeString($now)]);
-                return $this->recordedPayload($attendance, $employee, 'PM', 'time-in', 'PM Time-In recorded', $now);
+            if (! $attendanceLog) {
+                $attendance->{$log['relation']}()->create([
+                    $log['column'] => $this->timeString($now),
+                ]);
+            } else {
+                $attendanceLog->update([
+                    $log['column'] => $this->timeString($now),
+                ]);
             }
 
-            if ($choice === 'PM Time-Out') {
-                $pm = $attendance->pm;
-
-                if (! $pm) {
-                    $attendance->pm()->create(['pm_time_out' => $this->timeString($now)]);
-                    return $this->recordedPayload($attendance, $employee, 'PM', 'time-out', 'PM Time-Out recorded', $now);
-                }
-
-                if ($pm->pm_time_out) {
-                    return $this->errorPayload('PM Time-Out already recorded.', $employee);
-                }
-
-                $pm->update(['pm_time_out' => $this->timeString($now)]);
-                return $this->recordedPayload($attendance, $employee, 'PM', 'time-out', 'PM Time-Out recorded', $now);
-            }
-
-            return $this->errorPayload('Invalid attendance choice.', $employee);
+            return $this->recordedPayload(
+                $attendance,
+                $employee,
+                $log['session'],
+                $log['action'],
+                "{$choice} recorded",
+                $now,
+            );
         });
     }
 
@@ -249,19 +201,23 @@ class AttendanceService
 
             // Once PM Time-In exists, a missing AM Time-Out is intentional.
             // Never offer to back-fill it on later scans.
-            if ($pm?->pm_time_in || ! $am || ! $am->am_time_in || $am->am_time_out) {
+            if ($pm?->pm_time_in || ($am && $am->am_time_out)) {
                 return null;
             }
 
-            return [
-                'success' => true,
-                'prompt' => true,
-                'prompt_type' => 'AM',
-                'message' => 'AM Time-Out is still not recorded. Do you want to record AM Time-Out or PM Time-In?',
-                'options' => ['AM Time-Out', 'PM Time-In'],
-                'employee' => $this->employeePayload($employee),
-            ];
+            return $this->missingAmOutPromptPayload($employee);
         });
+    }
+
+    private function missingAmOutPromptPayload(Employee $employee): array
+    {
+        return $this->attendancePayload($employee, [
+            'success' => true,
+            'prompt' => true,
+            'prompt_type' => 'AM',
+            'message' => 'AM Time-Out is still not recorded. Do you want to record AM Time-Out or PM Time-In?',
+            'options' => ['AM Time-Out', 'PM Time-In'],
+        ]);
     }
 
     private function scanCooldownPayload(Employee $employee, Carbon $now): ?array
@@ -300,14 +256,13 @@ class AttendanceService
 
         $remainingSeconds = $cooldownSeconds - $elapsedSeconds;
 
-        return [
+        return $this->attendancePayload($employee, [
             'success' => false,
             'cooldown' => true,
             'message' => 'Attendance was already recorded recently.',
             'remaining_seconds' => $remainingSeconds,
             'remaining_minutes' => (int) ceil($remainingSeconds / 60),
-            'employee' => $this->employeePayload($employee),
-        ];
+        ]);
     }
 
     public function stationId(User $user): int
@@ -388,21 +343,27 @@ class AttendanceService
         $attendance->refresh();
         $this->realtime->broadcastForAttendance($attendance);
 
-        return [
+        return $this->attendancePayload($employee, [
             'success' => true,
             'message' => $message,
             'session' => $session,
             'action' => $action,
             'time' => $this->timeString($now),
-            'employee' => $this->employeePayload($employee),
-        ];
+        ]);
     }
 
     private function errorPayload(string $message, Employee $employee): array
     {
-        return [
+        return $this->attendancePayload($employee, [
             'success' => false,
             'message' => $message,
+        ]);
+    }
+
+    private function attendancePayload(Employee $employee, array $payload): array
+    {
+        return [
+            ...$payload,
             'employee' => $this->employeePayload($employee),
         ];
     }

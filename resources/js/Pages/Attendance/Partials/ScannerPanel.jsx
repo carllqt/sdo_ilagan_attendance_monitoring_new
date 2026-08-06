@@ -4,13 +4,16 @@ import {
     BriefcaseBusiness,
     Building2,
     Fingerprint,
+    LockKeyhole,
     LogIn,
     LogOut,
     Sun,
     UserRound,
 } from "lucide-react";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
+import AttendanceToast from "./AttendanceToast";
 import SessionChangeToast from "./SessionChangeToast";
+import LogActionChangeToast from "./LogActionChangeToast";
 
 const ScannerPanel = ({
     currentStatus,
@@ -32,10 +35,21 @@ const ScannerPanel = ({
         const changed = handleLogSessionToggle();
 
         if (!changed) {
-            toast.error("AM Session is closed after 1:00 PM.", {
-                description: "The scanner must remain in PM Session.",
-                duration: 3500,
-            });
+            toast.custom(
+                () => (
+                    <AttendanceToast
+                        detail="Scanner must remain in PM Session"
+                        icon={<LockKeyhole className="h-4 w-4" />}
+                        message="AM Session is closed after 1:00 PM"
+                        title="Session unavailable"
+                        tone="warning"
+                    />
+                ),
+                {
+                    duration: 3500,
+                    position: "top-center",
+                },
+            );
             return;
         }
 
@@ -48,12 +62,9 @@ const ScannerPanel = ({
         if (action === logAction) return;
 
         handleLogActionChange(action);
-        toast.success(
-            `Scanner changed to ${action === "time-in" ? "Time In" : "Time Out"}.`,
+        toast.custom(
+            () => <LogActionChangeToast action={action} session={logSession} />,
             {
-                description: `The next scan records ${logSession} ${
-                    action === "time-in" ? "Time-In" : "Time-Out"
-                }.`,
                 duration: 3000,
                 position: "top-center",
             },

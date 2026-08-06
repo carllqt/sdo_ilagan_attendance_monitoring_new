@@ -6,13 +6,13 @@ import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pyzkfp import ZKFP2
 import mysql.connector
 
 from .register import register_fingerprint
 from .attendance_scan import scan_attendance_fingerprint
 from .fingerprint_choice import fingerprint_choice
+from .sse import stream_response
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("FingerprintService")
@@ -47,7 +47,7 @@ def env_list(name: str, default: str) -> list[str]:
 
 origins = env_list(
     "BIOMETRIC_CORS_ORIGINS",
-    "http://127.0.0.1:8000,http://localhost:8000,http://10.10.103.146:8000",
+    "http://127.0.0.1:8000,http://localhost:8000,http://10.10.115.29:8000",
 )
 
 app.add_middleware(
@@ -143,6 +143,18 @@ class FingerprintService:
         except Exception:
             pass
 
+    def reconnect(self):
+        self.close()
+        self.zkfp2 = ZKFP2()
+        self.zkfp2.Init()
+
+        if self.zkfp2.GetDeviceCount() == 0:
+            raise RuntimeError("No fingerprint devices found")
+        if not self.zkfp2.OpenDevice(0):
+            raise RuntimeError("Failed to reconnect fingerprint device")
+
+        logger.info("Fingerprint device reconnected.")
+
 # Initialize service
 service = FingerprintService()
 
@@ -156,7 +168,7 @@ async def bio_register_sse(emp_id: int, request: Request):
                 break
             yield event
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return stream_response(event_stream())
 
 @app.get("/bioAttendanceScan")
 async def bio_attendance_scan(request: Request, station_id: int | None = None):
@@ -171,7 +183,7 @@ async def bio_attendance_scan(request: Request, station_id: int | None = None):
                 break
             yield msg
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return stream_response(event_stream())
 
 
 @app.get("/bioFingerprintChoice/{employee_id}/{choice}")
@@ -187,7 +199,7 @@ async def bio_fingerprint_choice_sse(
             if await request.is_disconnected():
                 break
             yield msg
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return stream_response(event_stream())
 
 
 @app.on_event("shutdown")

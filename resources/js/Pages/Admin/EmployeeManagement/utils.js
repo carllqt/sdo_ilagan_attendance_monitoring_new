@@ -1,5 +1,17 @@
 export const defaultFingerprintServiceUrl = `http://${window.location.hostname}:5000`;
 
+export const fingerprintMessages = {
+    cancelled: "Scan cancelled",
+    placeFinger: "Place your fingerprint",
+    registrationStarting: "Starting fingerprint registration...",
+    serviceUnavailable: "Could not reach fingerprint service.",
+    testError: "Test error.",
+    testPlaceFinger: "Place your finger on the scanner...",
+    testWaiting: "Waiting for scan...",
+    testDisconnected: "Lost connection to fingerprint service. Reconnecting...",
+    unexpectedError: "Unexpected error occurred.",
+};
+
 export const statusOptions = ["Active", "Inactive"];
 export const extensionNameOptions = [
     "None",

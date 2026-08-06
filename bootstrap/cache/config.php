@@ -8,7 +8,7 @@
     'name' => 'Project TALA',
     'env' => 'local',
     'debug' => true,
-    'url' => 'http://10.10.103.146:8000',
+    'url' => 'http://10.10.115.29:8000',
     'frontend_url' => 'http://localhost:3000',
     'asset_url' => NULL,
     'timezone' => 'Asia/Manila',
@@ -16,7 +16,7 @@
     'fallback_locale' => 'en',
     'faker_locale' => 'en_US',
     'cipher' => 'AES-256-CBC',
-    'key' => 'base64:HSFyE4j5P7uBKV0EKfHJ5BeG8k9iF921BmaKybXLI2s=',
+    'key' => 'base64:LojRZKmvDl/+jP7+0IeVYJTC26scZKUNpH+IzJ92WiE=',
     'previous_keys' => 
     array (
     ),
@@ -218,8 +218,8 @@
       'file' => 
       array (
         'driver' => 'file',
-        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\framework/cache/data',
-        'lock_path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\framework/cache/data',
+        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\framework/cache/data',
+        'lock_path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\framework/cache/data',
       ),
       'memcached' => 
       array (
@@ -392,7 +392,7 @@
       'local' => 
       array (
         'driver' => 'local',
-        'root' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\app/private',
+        'root' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\app/private',
         'serve' => true,
         'throw' => false,
         'report' => false,
@@ -400,8 +400,8 @@
       'public' => 
       array (
         'driver' => 'local',
-        'root' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\app/public',
-        'url' => 'http://10.10.103.146:8000/storage',
+        'root' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\app/public',
+        'url' => 'http://10.10.115.29:8000/storage',
         'visibility' => 'public',
         'throw' => false,
         'report' => false,
@@ -422,7 +422,7 @@
     ),
     'links' => 
     array (
-      'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\public\\storage' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\app/public',
+      'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\public\\storage' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\app/public',
     ),
   ),
   'logging' => 
@@ -447,14 +447,14 @@
       'single' => 
       array (
         'driver' => 'single',
-        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\logs/laravel.log',
+        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\logs/laravel.log',
         'level' => 'debug',
         'replace_placeholders' => true,
       ),
       'daily' => 
       array (
         'driver' => 'daily',
-        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\logs/laravel.log',
+        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\logs/laravel.log',
         'level' => 'debug',
         'days' => 14,
         'replace_placeholders' => true,
@@ -519,7 +519,7 @@
       ),
       'emergency' => 
       array (
-        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\logs/laravel.log',
+        'path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\logs/laravel.log',
       ),
     ),
   ),
@@ -539,7 +539,7 @@
         'password' => 'ckxsfjwcpwjtaogg',
         'timeout' => NULL,
         'verify_peer' => false,
-        'local_domain' => '10.10.103.146',
+        'local_domain' => '10.10.115.29',
       ),
       'ses' => 
       array (
@@ -598,7 +598,7 @@
       'theme' => 'default',
       'paths' => 
       array (
-        0 => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\resources\\views/vendor/mail',
+        0 => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\resources\\views/vendor/mail',
       ),
     ),
   ),
@@ -809,7 +809,7 @@
     'lifetime' => 60,
     'expire_on_close' => false,
     'encrypt' => false,
-    'files' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\framework/sessions',
+    'files' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\framework/sessions',
     'connection' => NULL,
     'table' => 'sessions',
     'store' => NULL,
@@ -880,9 +880,9 @@
   array (
     'paths' => 
     array (
-      0 => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\resources\\views',
+      0 => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\resources\\views',
     ),
-    'compiled' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\framework\\views',
+    'compiled' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\framework\\views',
   ),
   'dompdf' => 
   array (
@@ -891,10 +891,10 @@
     'convert_entities' => true,
     'options' => 
     array (
-      'font_dir' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\fonts',
-      'font_cache' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\fonts',
-      'temp_dir' => 'C:\\Users\\admin\\AppData\\Local\\Temp',
-      'chroot' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new',
+      'font_dir' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\fonts',
+      'font_cache' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\fonts',
+      'temp_dir' => 'C:\\Users\\REYCAR~1\\AppData\\Local\\Temp',
+      'chroot' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring',
       'allowed_protocols' => 
       array (
         'data://' => 
@@ -951,7 +951,7 @@
       'ensure_pages_exist' => true,
       'page_paths' => 
       array (
-        0 => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\resources\\js/Pages',
+        0 => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\resources\\js/Pages',
       ),
       'page_extensions' => 
       array (
@@ -977,7 +977,7 @@
       2 => '127.0.0.1',
       3 => '127.0.0.1:8000',
       4 => '::1',
-      5 => '10.10.103.146:8000',
+      5 => '10.10.115.29:8000',
     ),
     'guard' => 
     array (
@@ -1105,7 +1105,7 @@
     ),
     'temporary_files' => 
     array (
-      'local_path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring_new\\storage\\framework/cache/laravel-excel',
+      'local_path' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\framework/cache/laravel-excel',
       'local_permissions' => 
       array (
       ),

@@ -1,7 +1,8 @@
 import asyncio
-import json
 import logging
 from datetime import datetime
+
+from .sse import sse, sse_error, sse_status, sse_success
 
 logger = logging.getLogger("FingerprintService")
 last_scan_times = {}
@@ -10,11 +11,6 @@ COOLDOWN_SECONDS = 3
 HEARTBEAT_INTERVAL = 15
 MATCH_THRESHOLD = 60
 FINGER_RELEASE_SECONDS = 0.5
-
-
-def sse(payload):
-    return f"data: {json.dumps(payload)}\n\n"
-
 
 def load_fingerprints(service):
     service.zkfp2.DBClear()
@@ -50,13 +46,15 @@ async def scan_attendance_fingerprint(
         fingerprint_employees = load_fingerprints(service)
     except Exception as exc:
         logger.error("Error loading fingerprints into SDK memory: %s", exc)
-        yield sse({"success": False, "message": "Could not load registered fingerprints."})
+        yield sse_error("Could not load registered fingerprints.")
         return
 
     try:
+        yield sse_status("ready", "Fingerprint scanner ready.")
         last_heartbeat = datetime.now()
         sensor_armed = False
         sensor_clear_since = None
+        capture_error_count = 0
 
         while True:
             if is_disconnected and await is_disconnected():
@@ -74,8 +72,30 @@ async def scan_attendance_fingerprint(
                     capture = await asyncio.to_thread(service.zkfp2.AcquireFingerprint)
             except Exception as exc:
                 logger.error("Fingerprint capture error: %s", exc)
+                capture_error_count += 1
+
+                if capture_error_count >= 3:
+                    yield sse_status(
+                        "error",
+                        "Fingerprint device connection lost. Reconnecting...",
+                    )
+                    try:
+                        async with service.scan_lock:
+                            await asyncio.to_thread(service.reconnect)
+                        fingerprint_employees = load_fingerprints(service)
+                        capture_error_count = 0
+                        sensor_armed = False
+                        sensor_clear_since = None
+                        yield sse_status(
+                            "ready",
+                            "Fingerprint scanner reconnected. Place your finger.",
+                        )
+                    except Exception as reconnect_error:
+                        logger.error("Fingerprint device reconnect failed: %s", reconnect_error)
                 await asyncio.sleep(0.1)
                 continue
+
+            capture_error_count = 0
 
             if not sensor_armed:
                 if capture:
@@ -105,42 +125,41 @@ async def scan_attendance_fingerprint(
                 return
 
             tmp, _ = capture
+            yield sse_status("processing", "Fingerprint detected. Verifying...")
 
             try:
                 fid, score = service.zkfp2.DBIdentify(tmp)
 
                 if fid == -1 or score < MATCH_THRESHOLD:
                     logger.info("Scan result: no match score=%s", score)
-                    yield sse({"success": False, "message": "Fingerprint not recognized."})
+                    yield sse_error("Fingerprint not recognized.")
                     continue
 
                 employee_id = fingerprint_employees.get(int(fid))
                 if not employee_id:
-                    yield sse({"success": False, "message": "Fingerprint recognized but no employee linked."})
+                    yield sse_error("Fingerprint recognized but no employee linked.")
                     continue
 
                 employee_data = service.employee_payload(employee_id)
                 if not employee_data:
-                    yield sse({"success": False, "message": "Employee not found in database."})
+                    yield sse_error("Employee not found in database.")
                     continue
 
                 if station_id is not None and int(employee_data.get("station_id") or 0) != int(station_id):
-                    yield sse({
-                        "success": False,
-                        "message": "Employee is not assigned to this station.",
-                        "employee": employee_data,
-                    })
+                    yield sse_error(
+                        "Employee is not assigned to this station.",
+                        employee=employee_data,
+                    )
                     continue
 
                 now = datetime.now()
                 if employee_id in last_scan_times:
                     elapsed = (now - last_scan_times[employee_id]).total_seconds()
                     if elapsed < COOLDOWN_SECONDS:
-                        yield sse({
-                            "success": False,
-                            "message": "Scan ignored: please wait a moment before scanning again.",
-                            "employee": employee_data,
-                        })
+                        yield sse_error(
+                            "Scan ignored: please wait a moment before scanning again.",
+                            employee=employee_data,
+                        )
                         continue
 
                 last_scan_times[employee_id] = now
@@ -150,16 +169,15 @@ async def scan_attendance_fingerprint(
                     employee_id,
                     score,
                 )
-                yield sse({
-                    "success": True,
-                    "finger_id": fid,
-                    "score": score,
-                    "employee": employee_data,
-                })
+                yield sse_success(
+                    finger_id=fid,
+                    score=score,
+                    employee=employee_data,
+                )
 
             except Exception as exc:
                 logger.error("Attendance fingerprint scan failed: %s", exc)
-                yield sse({"success": False, "message": f"System error: {str(exc)}"})
+                yield sse_error(f"System error: {str(exc)}")
                 await asyncio.sleep(0.1)
 
             await asyncio.sleep(0.05)

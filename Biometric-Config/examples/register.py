@@ -1,12 +1,9 @@
 import asyncio
-import json
 import logging
 
+from .sse import sse_error, sse_progress, sse_success
+
 logger = logging.getLogger("FingerprintService")
-
-
-def sse(payload):
-    return f"data: {json.dumps(payload)}\n\n"
 
 
 async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_threshold=90):
@@ -49,10 +46,9 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
 
                     score = service.zkfp2.DBMatch(tmp, existing_template)
                     if score >= duplicate_threshold:
-                        yield sse({
-                            "success": False,
-                            "message": "Fingerprint already registered to another employee.",
-                        })
+                        yield sse_error(
+                            "Fingerprint already registered to another employee.",
+                        )
                         return
             except Exception as exc:
                 logger.error("Duplicate check failed: %s", exc)
@@ -60,18 +56,16 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
             if templates:
                 score = service.zkfp2.DBMatch(templates[-1], tmp)
                 if score < match_threshold:
-                    yield sse({
-                        "success": None,
-                        "message": f"Fingerprint {len(templates) + 1} mismatch. Try again.",
-                    })
+                    yield sse_progress(
+                        f"Fingerprint {len(templates) + 1} mismatch. Try again.",
+                    )
                     continue
 
             templates.append(tmp)
-            yield sse({
-                "success": None,
-                "message": f"Fingerprint {len(templates)} captured. Place finger again.",
-                "scan_number": len(templates),
-            })
+            yield sse_progress(
+                f"Fingerprint {len(templates)} captured. Place finger again.",
+                scan_number=len(templates),
+            )
 
         reg_temp, size = service.zkfp2.DBMerge(*templates)
         final_template = bytes(reg_temp)[:size]
@@ -92,16 +86,15 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
             )
             finger_id = cursor.lastrowid
 
-        yield sse({
-            "success": True,
-            "message": "Fingerprint registered successfully.",
-            "finger_id": finger_id,
-            "finger_index": next_finger_index,
-        })
+        yield sse_success(
+            message="Fingerprint registered successfully.",
+            finger_id=finger_id,
+            finger_index=next_finger_index,
+        )
 
     except asyncio.CancelledError:
         logger.info("SSE registration cancelled by client.")
         raise
     except Exception as exc:
         logger.error("Register failed: %s", exc)
-        yield sse({"success": False, "message": f"Register failed: {str(exc)}"})
+        yield sse_error(f"Register failed: {str(exc)}")
