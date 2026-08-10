@@ -806,7 +806,7 @@
   'session' => 
   array (
     'driver' => 'database',
-    'lifetime' => 60,
+    'lifetime' => 1440,
     'expire_on_close' => false,
     'encrypt' => false,
     'files' => 'C:\\xampp\\htdocs\\sdo_ilagan_attendance_monitoring\\storage\\framework/sessions',

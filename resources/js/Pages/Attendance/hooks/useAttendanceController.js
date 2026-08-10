@@ -18,6 +18,8 @@ import {
     statusConfig,
 } from "../utils";
 
+const MANUAL_SCANNER_SELECTION_MS = 60 * 1000;
+
 const useAttendanceController = ({
     attendances,
     attendanceAccess = {},
@@ -57,9 +59,7 @@ const useAttendanceController = ({
     const [activeTab, setActiveTab] = useState(initialTab);
     const [logSession, setLogSession] = useState(initialScannerSession);
     const [logAction, setLogAction] = useState(initialScannerAction);
-    const [manualLogMode, setManualLogMode] = useState(
-        Boolean(["time-in", "time-out"].includes(requestedInitialAction)),
-    );
+    const [manualLogMode, setManualLogMode] = useState(false);
     const [search, setSearch] = useState(attendanceFilters.search || "");
     const [filterLoading, setFilterLoading] = useState(false);
     const filtersRef = useRef({
@@ -68,10 +68,13 @@ const useAttendanceController = ({
         session: initialTab,
     });
     const eventSourceRef = useRef(null);
+    const logActionRef = useRef(initialScannerAction);
+    const logSessionRef = useRef(initialScannerSession);
     const scannerEnabledRef = useRef(false);
     const retryTimerRef = useRef(null);
     const successTimerRef = useRef(null);
     const reconnectTimerRef = useRef(null);
+    const manualSelectionTimerRef = useRef(null);
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
@@ -190,9 +193,13 @@ const useAttendanceController = ({
                 setManualLogMode(false);
                 setLogSession("PM");
                 setLogAction(defaultLogAction(now, "PM"));
+                logSessionRef.current = "PM";
+                logActionRef.current = defaultLogAction(now, "PM");
             } else if (!manualLogMode) {
                 setLogSession(nextSession);
                 setLogAction(defaultLogAction(now, nextSession));
+                logSessionRef.current = nextSession;
+                logActionRef.current = defaultLogAction(now, nextSession);
             }
         };
 
@@ -201,6 +208,33 @@ const useAttendanceController = ({
 
         return () => clearInterval(timer);
     }, [logSession, manualLogMode]);
+
+    useEffect(() => {
+        logActionRef.current = logAction;
+        logSessionRef.current = logSession;
+    }, [logAction, logSession]);
+
+    useEffect(() => {
+        if (manualLogMode) return;
+
+        const params = new URLSearchParams(window.location.search);
+        const session = logSession.toLowerCase();
+
+        if (
+            params.get("session") === session &&
+            params.get("action") === logAction
+        ) {
+            return;
+        }
+
+        params.set("session", session);
+        params.set("action", logAction);
+        window.history.replaceState(
+            window.history.state,
+            "",
+            `${window.location.pathname}?${params.toString()}`,
+        );
+    }, [logAction, logSession, manualLogMode]);
 
     useEffect(() => {
         setDailyAttendance(attendanceItems(attendances));
@@ -262,6 +296,7 @@ const useAttendanceController = ({
             clearInterval(retryTimerRef.current);
             clearInterval(successTimerRef.current);
             clearTimeout(reconnectTimerRef.current);
+            clearTimeout(manualSelectionTimerRef.current);
         };
     }, [canUseScanner, stationQuery]);
 
@@ -416,6 +451,8 @@ const useAttendanceController = ({
                 () =>
                     React.createElement(ScanCooldownToast, {
                         employee: data.employee,
+                        recordedAction: data.last_recorded_action,
+                        recordedAt: data.last_recorded_at,
                         remainingMinutes: data.remaining_minutes,
                     }),
                 {
@@ -453,7 +490,10 @@ const useAttendanceController = ({
         try {
             const response = await window.axios.post(route("attendance.scan"), {
                 employee_id: employeeId,
-                choice: attendanceChoice(logSession, logAction),
+                choice: attendanceChoice(
+                    logSessionRef.current,
+                    logActionRef.current,
+                ),
             }, {
                 timeout: 15000,
             });
@@ -547,6 +587,14 @@ const useAttendanceController = ({
         updateAttendanceQuery({ session });
     };
 
+    const enableManualLogMode = () => {
+        clearTimeout(manualSelectionTimerRef.current);
+        setManualLogMode(true);
+        manualSelectionTimerRef.current = setTimeout(() => {
+            setManualLogMode(false);
+        }, MANUAL_SCANNER_SELECTION_MS);
+    };
+
     const handleLogSessionToggle = () => {
         const nextSession = logSession === "AM" ? "PM" : "AM";
 
@@ -554,10 +602,12 @@ const useAttendanceController = ({
             return false;
         }
 
-        setManualLogMode(true);
+        enableManualLogMode();
         setLogSession(nextSession);
         const nextAction = defaultLogAction(time, nextSession);
         setLogAction(nextAction);
+        logSessionRef.current = nextSession;
+        logActionRef.current = nextAction;
 
         const params = new URLSearchParams(window.location.search);
         params.set("session", nextSession.toLowerCase());
@@ -572,8 +622,9 @@ const useAttendanceController = ({
     };
 
     const handleLogActionChange = (action) => {
-        setManualLogMode(true);
+        enableManualLogMode();
         setLogAction(action);
+        logActionRef.current = action;
 
         const params = new URLSearchParams(window.location.search);
         params.set("action", action);

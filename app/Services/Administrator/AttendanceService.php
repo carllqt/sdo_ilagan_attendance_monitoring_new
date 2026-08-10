@@ -233,22 +233,28 @@ class AttendanceService
         }
 
         $recordedTimes = collect([
-            $attendance->am?->am_time_in,
-            $attendance->am?->am_time_out,
-            $attendance->pm?->pm_time_in,
-            $attendance->pm?->pm_time_out,
-        ])->filter();
+            ['label' => 'AM Time-In', 'time' => $attendance->am?->am_time_in],
+            ['label' => 'AM Time-Out', 'time' => $attendance->am?->am_time_out],
+            ['label' => 'PM Time-In', 'time' => $attendance->pm?->pm_time_in],
+            ['label' => 'PM Time-Out', 'time' => $attendance->pm?->pm_time_out],
+        ])->filter(fn (array $record) => filled($record['time']));
 
         if ($recordedTimes->isEmpty()) {
             return null;
         }
 
         $lastRecordedAt = $recordedTimes
-            ->map(fn (string $time) => Carbon::parse("{$attendance->date} {$time}", $now->timezone))
-            ->sortDesc()
+            ->map(fn (array $record) => [
+                ...$record,
+                'recorded_at' => Carbon::parse(
+                    "{$attendance->date} {$record['time']}",
+                    $now->timezone,
+                ),
+            ])
+            ->sortByDesc('recorded_at')
             ->first();
         $cooldownSeconds = self::SCAN_COOLDOWN_MINUTES * 60;
-        $elapsedSeconds = (int) $lastRecordedAt->diffInSeconds($now);
+        $elapsedSeconds = (int) $lastRecordedAt['recorded_at']->diffInSeconds($now);
 
         if ($elapsedSeconds >= $cooldownSeconds) {
             return null;
@@ -260,6 +266,8 @@ class AttendanceService
             'success' => false,
             'cooldown' => true,
             'message' => 'Attendance was already recorded recently.',
+            'last_recorded_action' => $lastRecordedAt['label'],
+            'last_recorded_at' => $this->timeString($lastRecordedAt['recorded_at']),
             'remaining_seconds' => $remainingSeconds,
             'remaining_minutes' => (int) ceil($remainingSeconds / 60),
         ]);

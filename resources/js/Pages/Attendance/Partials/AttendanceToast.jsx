@@ -7,11 +7,18 @@ const toneClasses = {
     error: "border-rose-300/30 bg-rose-400/15 text-rose-200",
 };
 
-const AttendanceToast = ({ detail, icon, message, title, tone = "info" }) => (
-    <div className="monitor-live-toast relative flex min-w-[270px] max-w-[360px] items-center gap-3 overflow-hidden rounded-xl border border-sky-300/25 bg-gradient-to-br from-[#02062f]/95 via-[#08145a]/95 to-[#0f2f72]/95 px-3.5 py-3 text-white shadow-2xl shadow-blue-950/35 backdrop-blur">
+const AttendanceToast = ({
+    detail,
+    icon,
+    largeIcon = false,
+    message,
+    title,
+    tone = "info",
+}) => (
+    <div className="monitor-live-toast relative flex min-w-[270px] max-w-[390px] items-center gap-3 overflow-hidden rounded-xl border border-sky-300/25 bg-gradient-to-br from-[#02062f]/95 via-[#08145a]/95 to-[#0f2f72]/95 px-3.5 py-3 text-white shadow-2xl shadow-blue-950/35 backdrop-blur">
         <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/80 to-transparent" />
         <span
-            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border shadow-inner ${toneClasses[tone]}`}
+            className={`relative flex shrink-0 items-center justify-center rounded-full border shadow-inner ${largeIcon ? "h-14 w-14" : "h-10 w-10"} ${toneClasses[tone]}`}
         >
             {icon}
         </span>
