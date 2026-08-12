@@ -163,7 +163,11 @@ class AttendanceService
             $attendanceLog = $attendance->{$log['relation']};
 
             if ($attendanceLog?->{$log['column']}) {
-                return $this->errorPayload("{$choice} already recorded.", $employee);
+                return $this->alreadyRecordedPayload(
+                    $employee,
+                    $choice,
+                    (string) $attendanceLog->{$log['column']},
+                );
             }
 
             if (! $attendanceLog) {
@@ -365,6 +369,20 @@ class AttendanceService
         return $this->attendancePayload($employee, [
             'success' => false,
             'message' => $message,
+        ]);
+    }
+
+    private function alreadyRecordedPayload(
+        Employee $employee,
+        string $choice,
+        string $recordedAt,
+    ): array {
+        return $this->attendancePayload($employee, [
+            'success' => false,
+            'already_recorded' => true,
+            'message' => "{$choice} is already recorded.",
+            'recorded_action' => $choice,
+            'recorded_at' => $recordedAt,
         ]);
     }
 

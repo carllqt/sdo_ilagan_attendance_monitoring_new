@@ -8,6 +8,8 @@ import AttendanceSuggestionSkeletonList from "./AttendanceSuggestionSkeletonList
 
 const LogsPanel = ({
     activeTab,
+    applyAttendanceSearch,
+    clearAttendanceSearch,
     dailyAttendance,
     filterLoading,
     handleSearchChange,
@@ -44,13 +46,16 @@ const LogsPanel = ({
                     name="attendance_search"
                     value={search}
                     variant="glass"
+                    clearable
+                    onClear={clearAttendanceSearch}
+                    clearAriaLabel="Clear employee search"
                     disabled={filterLoading}
                     onChange={handleSearchChange}
                     onFocus={() => setShowSuggestions(true)}
                     onKeyDown={(event) => {
                         if (event.key === "Enter") {
                             event.preventDefault();
-                            setShowSuggestions(true);
+                            applyAttendanceSearch();
                         }
                     }}
                 />

@@ -41,6 +41,9 @@ const Attendance = ({
                         <ScannerPanel
                             currentStatus={attendance.currentStatus}
                             employee={attendance.employee}
+                            employeeConfirmationKey={
+                                attendance.employeeConfirmationKey
+                            }
                             employeeName={attendance.employeeName}
                             fingerprintColor={attendance.fingerprintColor}
                             handleLogActionChange={
@@ -59,6 +62,12 @@ const Attendance = ({
 
                         <LogsPanel
                             activeTab={attendance.activeTab}
+                            applyAttendanceSearch={
+                                attendance.applyAttendanceSearch
+                            }
+                            clearAttendanceSearch={
+                                attendance.clearAttendanceSearch
+                            }
                             dailyAttendance={attendance.dailyAttendance}
                             filterLoading={attendance.filterLoading}
                             handleSearchChange={attendance.handleSearchChange}

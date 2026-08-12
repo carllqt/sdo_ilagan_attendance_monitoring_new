@@ -36,6 +36,22 @@ class AttendanceRepository
 
         if ($filter->employeeId) {
             $query->where('employees.id', $filter->employeeId);
+        } elseif ($filter->search !== '') {
+            $search = $filter->search;
+
+            $query->where(function ($employeeQuery) use ($search) {
+                $employeeQuery
+                    ->where('employees.id', $search)
+                    ->orWhere('employees.first_name', 'like', "%{$search}%")
+                    ->orWhere('employees.middle_name', 'like', "%{$search}%")
+                    ->orWhere('employees.last_name', 'like', "%{$search}%")
+                    ->orWhere('employees.position', 'like', "%{$search}%")
+                    ->orWhere('offices.name', 'like', "%{$search}%")
+                    ->orWhereRaw(
+                        "CONCAT_WS(' ', employees.first_name, employees.middle_name, employees.last_name) LIKE ?",
+                        ["%{$search}%"],
+                    );
+            });
         }
 
         return $query
@@ -88,5 +104,4 @@ class AttendanceRepository
             ->limit(6)
             ->get();
     }
-
 }

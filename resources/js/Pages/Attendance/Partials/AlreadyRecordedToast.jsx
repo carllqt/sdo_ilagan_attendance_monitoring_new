@@ -2,27 +2,21 @@ import React from "react";
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import AttendanceToast from "./AttendanceToast";
 
-const ScanCooldownToast = ({
-    employee,
-    recordedAction,
-    recordedAt,
-    remainingMinutes,
-}) => {
+const AlreadyRecordedToast = ({ employee, recordedAction, recordedAt }) => {
     const name =
         `${employee?.first_name || ""} ${employee?.last_name || ""}`.trim() ||
         "Employee";
-
     const formattedRecordedAt = recordedAt
         ? new Date(`1970-01-01T${recordedAt}`).toLocaleTimeString([], {
               hour: "numeric",
               minute: "2-digit",
           })
-        : null;
+        : "Time unavailable";
 
     return (
         <AttendanceToast
             countdownSeconds={3}
-            detail={`${recordedAction || "Last scan"}${formattedRecordedAt ? `: ${formattedRecordedAt}` : ""} · Try again in ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`}
+            detail={`Recorded at ${formattedRecordedAt}`}
             icon={
                 <EmployeeAvatar
                     employee={employee}
@@ -33,10 +27,10 @@ const ScanCooldownToast = ({
             large
             largeIcon
             message={name}
-            title="Already scanned"
+            title={`${recordedAction || "Attendance"} already recorded`}
             tone="warning"
         />
     );
 };
 
-export default ScanCooldownToast;
+export default AlreadyRecordedToast;

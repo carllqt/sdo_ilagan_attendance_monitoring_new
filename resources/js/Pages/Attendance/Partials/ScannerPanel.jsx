@@ -18,6 +18,7 @@ import LogActionChangeToast from "./LogActionChangeToast";
 const ScannerPanel = ({
     currentStatus,
     employee,
+    employeeConfirmationKey,
     employeeName,
     fingerprintColor,
     handleLogActionChange,
@@ -30,6 +31,7 @@ const ScannerPanel = ({
     successCountdown,
 }) => {
     const nextSession = logSession === "AM" ? "PM" : "AM";
+    const showEmployeeConfirmation = Boolean(employee);
 
     const showSessionToast = () => {
         const changed = handleLogSessionToggle();
@@ -73,6 +75,30 @@ const ScannerPanel = ({
 
     return (
         <section className="relative flex min-h-[36rem] flex-col overflow-hidden rounded-[1.35rem] border border-blue-400/25 bg-[#071158] p-5 shadow-[0_18px_56px_rgba(2,6,47,0.30)] xl:h-full xl:min-h-0">
+            <style>{`
+                @keyframes attendance-employee-card-confirm {
+                    0% { opacity: .55; transform: scale(.96); border-color: rgba(147,197,253,.35); }
+                    25% { opacity: 1; transform: scale(1.018); border-color: rgba(110,231,183,.95); box-shadow: 0 0 42px rgba(16,185,129,.42); }
+                    55% { transform: scale(1); border-color: rgba(110,231,183,.72); box-shadow: 0 0 28px rgba(16,185,129,.28); }
+                    100% { opacity: 1; transform: scale(1); border-color: rgba(110,231,183,.48); box-shadow: 0 16px 34px rgba(2,6,47,.24); }
+                }
+                @keyframes attendance-employee-avatar-confirm {
+                    0% { opacity: 0; transform: scale(.68) rotate(-5deg); }
+                    38% { opacity: 1; transform: scale(1.1) rotate(2deg); filter: drop-shadow(0 0 20px rgba(110,231,183,.8)); }
+                    65% { transform: scale(.97) rotate(0); }
+                    100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 8px rgba(110,231,183,.35)); }
+                }
+                @keyframes attendance-employee-info-confirm {
+                    0% { opacity: 0; transform: translateX(28px); }
+                    55% { opacity: 1; transform: translateX(-4px); }
+                    100% { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes attendance-confirm-badge {
+                    0% { opacity: 0; transform: translateY(-10px) scale(.85); }
+                    35% { opacity: 1; transform: translateY(0) scale(1.06); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+            `}</style>
             <div className="relative z-10 flex min-h-0 flex-1 flex-col">
                 <div className="mb-4 flex items-center justify-between gap-4">
                     <div>
@@ -190,21 +216,42 @@ const ScannerPanel = ({
                         </div>
                     </div>
 
-                    <div className="grid min-h-0 flex-1 basis-1/2 overflow-hidden rounded-2xl border border-blue-300/35 bg-[#080f5c] text-white shadow-[0_16px_34px_rgba(2,6,47,0.24)] md:grid-cols-[38%_1fr]">
+                    <div
+                        key={employeeConfirmationKey}
+                        className={`relative grid min-h-0 flex-1 basis-1/2 overflow-hidden rounded-2xl border border-blue-300/35 bg-[#080f5c] text-white shadow-[0_16px_34px_rgba(2,6,47,0.24)] md:grid-cols-[38%_1fr] ${showEmployeeConfirmation ? "[animation:attendance-employee-card-confirm_.8s_ease-out_both]" : ""}`}
+                    >
+                        {showEmployeeConfirmation && (
+                            <div className="absolute right-4 top-4 z-20 rounded-full border border-emerald-200/60 bg-emerald-400/20 px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-100 shadow-[0_0_18px_rgba(52,211,153,.35)] [animation:attendance-confirm-badge_.65s_ease-out_.35s_both]">
+                                Attendance Recorded
+                            </div>
+                        )}
                         <div className="relative flex min-h-0 items-center justify-center bg-[#080f5c] p-5">
-                            <EmployeeAvatar
-                                employee={employee}
-                                name={employeeName}
-                                className="relative h-40 w-40 border border-blue-300/55 bg-[#06115d] 2xl:h-48 2xl:w-48"
-                                fallbackClassName="bg-[#06115d]"
-                                glowClassName="bg-transparent"
-                                iconClassName="text-blue-300"
-                                fallbackAnimationClassName=""
-                            />
+                            <div
+                                className={
+                                    showEmployeeConfirmation
+                                        ? "[animation:attendance-employee-avatar-confirm_.9s_ease-out_.1s_both]"
+                                        : ""
+                                }
+                            >
+                                <EmployeeAvatar
+                                    employee={employee}
+                                    name={employeeName}
+                                    className={`relative h-40 w-40 bg-[#06115d] 2xl:h-48 2xl:w-48 ${showEmployeeConfirmation ? "border-4 border-emerald-300/80 ring-4 ring-emerald-300/20" : "border border-blue-300/55"}`}
+                                    fallbackClassName="bg-[#06115d]"
+                                    glowClassName="bg-transparent"
+                                    iconClassName="text-blue-300"
+                                    fallbackAnimationClassName=""
+                                />
+                            </div>
                         </div>
 
                         <div className="flex min-w-0 flex-col justify-center p-5">
                             <EmployeeInfoRow
+                                animationClassName={
+                                    showEmployeeConfirmation
+                                        ? "[animation:attendance-employee-info-confirm_.65s_ease-out_.25s_both]"
+                                        : ""
+                                }
                                 icon={UserRound}
                                 label="Name"
                                 value={
@@ -213,6 +260,11 @@ const ScannerPanel = ({
                                 }
                             />
                             <EmployeeInfoRow
+                                animationClassName={
+                                    showEmployeeConfirmation
+                                        ? "[animation:attendance-employee-info-confirm_.65s_ease-out_.4s_both]"
+                                        : ""
+                                }
                                 className="mt-3"
                                 icon={Building2}
                                 label="Office"
@@ -223,6 +275,11 @@ const ScannerPanel = ({
                                 }
                             />
                             <EmployeeInfoRow
+                                animationClassName={
+                                    showEmployeeConfirmation
+                                        ? "[animation:attendance-employee-info-confirm_.65s_ease-out_.55s_both]"
+                                        : ""
+                                }
                                 className="mt-3"
                                 icon={BriefcaseBusiness}
                                 label="Position"
@@ -239,9 +296,15 @@ const ScannerPanel = ({
     );
 };
 
-const EmployeeInfoRow = ({ className = "", icon: Icon, label, value }) => (
+const EmployeeInfoRow = ({
+    animationClassName = "",
+    className = "",
+    icon: Icon,
+    label,
+    value,
+}) => (
     <div
-        className={`flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-2.5 2xl:py-3 ${className}`}
+        className={`flex items-center gap-3 rounded-2xl border border-blue-300/25 bg-[#080f5c] px-4 py-2.5 2xl:py-3 ${className} ${animationClassName}`}
     >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-950/55 text-blue-100 ring-1 ring-blue-200/20">
             <Icon className="h-5 w-5" />

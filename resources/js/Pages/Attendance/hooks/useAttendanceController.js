@@ -3,6 +3,7 @@ import { router } from "@inertiajs/react";
 import { toast } from "sonner";
 import { getEmployeeName } from "@/lib/utils";
 import useEmployeeSearchSuggestions from "../../Admin/EmployeeManagement/hooks/useEmployeeSearchSuggestions";
+import AlreadyRecordedToast from "../Partials/AlreadyRecordedToast";
 import ScanCooldownToast from "../Partials/ScanCooldownToast";
 import {
     attendanceChoice,
@@ -19,6 +20,7 @@ import {
 } from "../utils";
 
 const MANUAL_SCANNER_SELECTION_MS = 60 * 1000;
+const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
 
 const useAttendanceController = ({
     attendances,
@@ -45,6 +47,7 @@ const useAttendanceController = ({
         : defaultLogAction(initialNow, initialScannerSession);
     const [time, setTime] = useState(new Date());
     const [employee, setEmployee] = useState(null);
+    const [employeeConfirmationKey, setEmployeeConfirmationKey] = useState(0);
     const [scanMessage, setScanMessage] = useState(scannerMessages.placeFinger);
     const [scanStatus, setScanStatus] = useState("idle");
     const [retryCountdown, setRetryCountdown] = useState(null);
@@ -75,6 +78,7 @@ const useAttendanceController = ({
     const successTimerRef = useRef(null);
     const reconnectTimerRef = useRef(null);
     const manualSelectionTimerRef = useRef(null);
+    const employeeClearTimerRef = useRef(null);
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
@@ -119,6 +123,11 @@ const useAttendanceController = ({
             changed = true;
         }
 
+        if (params.has("search") && params.has("employee_id")) {
+            params.delete("employee_id");
+            changed = true;
+        }
+
         if (changed) {
             window.history.replaceState(
                 window.history.state,
@@ -144,6 +153,8 @@ const useAttendanceController = ({
         } else {
             params.delete("search");
         }
+
+        params.delete("employee_id");
 
         params.set("logs", nextSession.toLowerCase());
         params.delete("attendancelogs");
@@ -297,6 +308,7 @@ const useAttendanceController = ({
             clearInterval(successTimerRef.current);
             clearTimeout(reconnectTimerRef.current);
             clearTimeout(manualSelectionTimerRef.current);
+            clearTimeout(employeeClearTimerRef.current);
         };
     }, [canUseScanner, stationQuery]);
 
@@ -304,7 +316,13 @@ const useAttendanceController = ({
         const session = data.session;
         const scannedEmployee = employeePayload(data.employee);
 
+        clearTimeout(employeeClearTimerRef.current);
         setEmployee(scannedEmployee);
+        setEmployeeConfirmationKey((current) => current + 1);
+        employeeClearTimerRef.current = setTimeout(() => {
+            setEmployee(null);
+            employeeClearTimerRef.current = null;
+        }, EMPLOYEE_CONFIRMATION_DISPLAY_MS);
         setDailyAttendance((prev) => {
             const updated = [...prev];
             const existing = updated.find(
@@ -394,7 +412,7 @@ const useAttendanceController = ({
 
     const startSuccessCountdown = (callback = null) => {
         clearInterval(successTimerRef.current);
-        let count = 3;
+        let count = 2;
         setSuccessCountdown(count);
         successTimerRef.current = setInterval(() => {
             count -= 1;
@@ -413,8 +431,8 @@ const useAttendanceController = ({
         setScannerFeedback("scanning", scannerMessages.placeFinger);
     };
 
-    const retryScanner = (restartScanner = true) => {
-        startRetryCountdown(3, () => {
+    const retryScanner = (restartScanner = true, seconds = 3) => {
+        startRetryCountdown(seconds, () => {
             resetScannerState();
             if (restartScanner) startAttendanceFingerprintScan();
         });
@@ -456,12 +474,38 @@ const useAttendanceController = ({
                         remainingMinutes: data.remaining_minutes,
                     }),
                 {
-                    duration: 5000,
+                    duration: 3000,
                     position: "top-center",
+                    style: {
+                        width: "min(500px, calc(100vw - 2rem))",
+                    },
                 },
             );
             resetScannerState();
-            retryScanner(restartScanner);
+            retryScanner(restartScanner, 3);
+            return;
+        }
+
+        if (data.already_recorded && data.employee) {
+            closeFingerprintStream();
+            setScannerFeedback("error", data.message);
+            toast.custom(
+                () =>
+                    React.createElement(AlreadyRecordedToast, {
+                        employee: data.employee,
+                        recordedAction: data.recorded_action,
+                        recordedAt: data.recorded_at,
+                    }),
+                {
+                    duration: 3000,
+                    position: "top-center",
+                    style: {
+                        width: "min(500px, calc(100vw - 2rem))",
+                    },
+                },
+            );
+            resetScannerState();
+            retryScanner(restartScanner, 3);
             return;
         }
 
@@ -686,16 +730,37 @@ const useAttendanceController = ({
         setShowSuggestions(true);
     };
 
+    const applyAttendanceSearch = () => {
+        if (filterLoading) return;
+
+        setShowSuggestions(false);
+        updateAttendanceQuery({
+            search,
+            employeeId: filtersRef.current.employeeId,
+        });
+    };
+
+    const clearAttendanceSearch = () => {
+        if (filterLoading) return;
+
+        setSearch("");
+        setShowSuggestions(false);
+        updateAttendanceQuery({ search: "", employeeId: null });
+    };
+
     return {
         activeTab,
+        applyAttendanceSearch,
         amPromptData,
         currentStatus,
         dailyAttendance,
         employee,
+        employeeConfirmationKey,
         employeeName,
         filterLoading,
         fingerprintColor: fingerprintColor(scanStatus),
         formattedDate,
+        clearAttendanceSearch,
         handleLogActionChange,
         handleLogSessionToggle,
         handlePromptChoice,
