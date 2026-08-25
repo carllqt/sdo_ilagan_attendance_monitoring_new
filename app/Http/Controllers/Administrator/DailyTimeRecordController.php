@@ -73,6 +73,30 @@ class DailyTimeRecordController extends Controller
         );
     }
 
+    public function printPreview(Request $request, $employeeId)
+    {
+        $month = (int) $request->query('month', now()->month);
+        $year = (int) $request->query('year', now()->year);
+
+        if ($month < 1 || $month > 12) {
+            $month = now()->month;
+        }
+
+        if ($year < 2000 || $year > 2100) {
+            $year = now()->year;
+        }
+
+        return Inertia::render(
+            'Admin/DailyTimeRecord/DtrPrintPreview',
+            $this->dailyTimeRecords->printPreviewData(
+                (int) $employeeId,
+                $this->stationId(),
+                $month,
+                $year,
+            ),
+        );
+    }
+
     public function recompute(RecomputeDtrRequest $request, $employeeId)
     {
         $validated = $request->validated();

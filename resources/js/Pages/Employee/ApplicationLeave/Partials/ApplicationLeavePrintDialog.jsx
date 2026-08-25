@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import React, { useRef, useState } from "react";
-import html2pdf from "html2pdf.js";
+import { useReactToPrint } from "react-to-print";
 import dayjs from "dayjs";
 import {
     Dialog,
@@ -32,6 +32,11 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
         approvingOfficerName: "CHERYL R. RAMIRO, PhD, CESO VI",
         approvingOfficerTitle: "ASSISTANT SCHOOLS DIVISION SUPERINTENDENT",
     });
+    const printLeaveApplication = useReactToPrint({
+        contentRef: pdfRef,
+        documentTitle: "Application_For_Leave",
+        pageStyle: `@page { size: ${paperSize} portrait; margin: 0; }`,
+    });
 
     const updateSignatory = (field, value) => {
         setSignatories((current) => ({
@@ -43,34 +48,8 @@ const ApplicationLeavePrintDialog = ({ open, onClose, application }) => {
     const handleDownloadPDF = async () => {
         if (!pdfRef.current || !application) return;
 
-        const selectedPaper = paperSizeOptions[paperSize];
         setIsGenerating(true);
-        await new Promise((resolve) => setTimeout(resolve, 150));
-
-        await html2pdf()
-            .set({
-                margin: 0,
-                filename: `Application_For_Leave_${(
-                    application.employee_name ||
-                    application.employee?.full_name ||
-                    "Employee"
-                ).replace(/\s+/g, "_")}.pdf`,
-                image: { type: "jpeg", quality: 1 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    scrollX: 0,
-                    scrollY: 0,
-                },
-                jsPDF: {
-                    unit: "px",
-                    format: [selectedPaper.width, selectedPaper.height],
-                    orientation: "portrait",
-                },
-            })
-            .from(pdfRef.current)
-            .save();
-
+        printLeaveApplication();
         setIsGenerating(false);
         onClose();
     };

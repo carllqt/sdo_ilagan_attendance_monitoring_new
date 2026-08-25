@@ -1,30 +1,16 @@
 import { useRef } from "react";
-import html2pdf from "html2pdf.js";
-import { getPrintSummaryFilename } from "../utils";
+import { useReactToPrint } from "react-to-print";
 
 const useTardinessSummaryPdfExport = () => {
     const pdfRef = useRef();
+    const printSummary = useReactToPrint({
+        contentRef: pdfRef,
+        documentTitle: "Tardiness_Summary",
+        pageStyle: "@page { size: letter portrait; margin: 0.5in; }",
+    });
 
     const downloadPDF = ({ selectedMonth, selectedYear }) => {
-        const element = pdfRef.current;
-
-        html2pdf()
-            .set({
-                margin: 0.5,
-                filename: getPrintSummaryFilename({
-                    selectedMonth,
-                    selectedYear,
-                }),
-                image: { type: "jpeg", quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: {
-                    unit: "in",
-                    format: "letter",
-                    orientation: "portrait",
-                },
-            })
-            .from(element)
-            .save();
+        printSummary();
     };
 
     return {

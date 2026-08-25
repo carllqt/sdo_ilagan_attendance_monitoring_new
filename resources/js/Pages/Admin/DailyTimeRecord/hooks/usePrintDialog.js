@@ -1,5 +1,33 @@
 import { useEffect, useRef, useState } from "react";
-import html2pdf from "html2pdf.js";
+import { useReactToPrint } from "react-to-print";
+
+const legalDtrPageStyle = `
+    @page { size: 8.5in 13in; margin: 0; }
+    @media print {
+        html, body {
+            width: 8.5in !important;
+            min-height: 13in !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        #dtr-print-content {
+            position: static !important;
+            top: auto !important;
+            left: auto !important;
+            width: 8.5in !important;
+            min-height: 13in !important;
+            box-sizing: border-box;
+            padding: 0.5in;
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
+        }
+        #dtr-print-content * {
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
+        }
+    }
+`;
 
 export const signatoryChoices = [
     { value: "office_head", label: "Office Head" },
@@ -55,7 +83,12 @@ const usePrintDialog = ({
         initialEmployeeData[initialEmployee.id]?.signatory?.type ||
             "office_head",
     );
-    const pdfRefs = useRef({});
+    const printContainerRef = useRef(null);
+    const printDtr = useReactToPrint({
+        contentRef: printContainerRef,
+        documentTitle: "Daily_Time_Record",
+        pageStyle: legalDtrPageStyle,
+    });
     const printEmployees = selectedEmployees;
     const firstEmployee = printEmployees[0] || {};
     const selectedEmployeeData = employeeData[firstEmployee.id];
@@ -116,33 +149,7 @@ const usePrintDialog = ({
     const handleDownloadPDF = async () => {
         setIsGenerating(true);
 
-        for (const employee of printEmployees) {
-            const element = pdfRefs.current[employee.id];
-            if (!element) continue;
-
-            await new Promise((resolve) => setTimeout(resolve, 50));
-
-            await html2pdf()
-                .set({
-                    margin: 0.5,
-                    filename: `DTR_${(employee.full_name || "employee").replace(
-                        /\s+/g,
-                        "_",
-                    )}_${selectedYear}-${String(selectedMonth).padStart(
-                        2,
-                        "0",
-                    )}.pdf`,
-                    image: { type: "jpeg", quality: 0.98 },
-                    html2canvas: { scale: 2 },
-                    jsPDF: {
-                        unit: "in",
-                        format: "letter",
-                        orientation: "portrait",
-                    },
-                })
-                .from(element)
-                .save();
-        }
+        printDtr();
 
         setIsGenerating(false);
         onClose();
@@ -155,7 +162,7 @@ const usePrintDialog = ({
         isGenerating,
         isLoadingEmployeeData,
         isSignatoryLoading,
-        pdfRefs,
+        printContainerRef,
         printEmployees,
         selectedSignatoryKey,
         setSignatoryType,
@@ -165,4 +172,3 @@ const usePrintDialog = ({
 };
 
 export default usePrintDialog;
-

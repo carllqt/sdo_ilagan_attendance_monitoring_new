@@ -28,7 +28,7 @@ const DepartmentPrintDialog = ({
     selectedYear,
 }) => {
     const dialogContentRef = useRef(null);
-    const pdfRefs = useRef({});
+    const printContainerRef = useRef(null);
 
     const {
         departmentSearch,
@@ -77,7 +77,7 @@ const DepartmentPrintDialog = ({
 
     const { handleDownloadPDF, isGenerating } = useDtrPdfExport({
         onClose,
-        pdfRefs,
+        printContainerRef,
         selectedMonth,
         selectedYear,
     });
@@ -144,8 +144,8 @@ const DepartmentPrintDialog = ({
                         </div>
 
                         <HiddenDtrReports
+                            printContainerRef={printContainerRef}
                             employeeData={employeeData}
-                            pdfRefs={pdfRefs}
                             printEmployees={printEmployees}
                             selectedEmployeeSignatory={selectedEmployeeSignatory}
                             selectedMonth={selectedMonth}
@@ -177,7 +177,7 @@ const DepartmentPrintDialog = ({
                             <Button
                                 type="button"
                                 variant="blue"
-                                onClick={() => handleDownloadPDF(printEmployees)}
+                                onClick={handleDownloadPDF}
                                 disabled={
                                     !printEmployees.length ||
                                     isGenerating ||

@@ -5,21 +5,24 @@ import { generateLogs } from "./utils";
 
 const HiddenDtrReports = ({
     employeeData,
-    pdfRefs,
+    printContainerRef,
     printEmployees,
     selectedEmployeeSignatory,
     selectedMonth,
     selectedYear,
 }) => (
-    <div className="absolute left-[-9999px] top-0">
+    <div
+        ref={printContainerRef}
+        id="dtr-print-content"
+        className="absolute left-[-9999px] top-0"
+    >
         {printEmployees.map((employee) => {
             const data = employeeData[employee.id];
             if (!data) return null;
 
             return (
-                <DTRReport
-                    key={employee.id}
-                    ref={(element) => (pdfRefs.current[employee.id] = element)}
+                <div key={employee.id} style={{ breakAfter: "page" }}>
+                    <DTRReport
                     name={employee.full_name}
                     dateRange={{
                         start: dayjs(
@@ -46,8 +49,9 @@ const HiddenDtrReports = ({
                     )}
                     monthlyTotals={data.monthly_totals}
                     workSchedule={employee.work_schedule}
-                    signatory={selectedEmployeeSignatory(employee)}
-                />
+                        signatory={selectedEmployeeSignatory(employee)}
+                    />
+                </div>
             );
         })}
     </div>

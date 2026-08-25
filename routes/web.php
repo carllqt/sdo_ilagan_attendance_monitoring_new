@@ -86,6 +86,7 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
             Route::get('/offices', 'offices')->name('daily-time-record.offices');
             Route::post('/tardiness/compute', 'computeTardiness')->name('daily-time-record.tardiness.compute');
             Route::get('/employees/{employeeId}/details', 'details')->name('daily-time-record.details');
+            Route::get('/employees/{employeeId}/print-preview', 'printPreview')->name('daily-time-record.print-preview');
             Route::post('/employees/{employeeId}/recompute', 'recompute')->name('daily-time-record.recompute');
             Route::post('/employees/{employeeId}/recompute/undo', 'undoRecompute')->name('daily-time-record.recompute.undo');
             Route::post('/work-types', 'storeWorkType')->name('daily-time-record.work-types.store');

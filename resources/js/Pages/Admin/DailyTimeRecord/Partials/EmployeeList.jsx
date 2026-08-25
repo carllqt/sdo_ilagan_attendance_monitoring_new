@@ -477,6 +477,24 @@ const EmployeeList = ({
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                         <Button
+                                                            asChild
+                                                            size="icon"
+                                                            variant="outline"
+                                                            className="h-8 w-8 rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                                            title="Open print layout preview"
+                                                        >
+                                                            <a
+                                                                href={route(
+                                                                    "daily-time-record.print-preview",
+                                                                    emp.id,
+                                                                ) + `?month=${selectedMonth}&year=${selectedYear}`}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                            >
+                                                                <Printer className="h-4 w-4" />
+                                                            </a>
+                                                        </Button>
+                                                        <Button
                                                             type="button"
                                                             size="icon"
                                                             variant="outline"

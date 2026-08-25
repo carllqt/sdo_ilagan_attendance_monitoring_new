@@ -39,7 +39,7 @@ const PrintDialog = ({
         isGenerating,
         isLoadingEmployeeData,
         isSignatoryLoading,
-        pdfRefs,
+        printContainerRef,
         printEmployees,
         selectedSignatoryKey,
         setSignatoryType,
@@ -238,17 +238,21 @@ const PrintDialog = ({
                         </div>
                     </div>
 
-                    <div className="absolute left-[-9999px] top-0">
+                    <div
+                        ref={printContainerRef}
+                        id="dtr-print-content"
+                        className="absolute left-[-9999px] top-0"
+                    >
                         {printEmployees.map((employee) => {
                             const data = employeeData[employee.id];
                             if (!data) return null;
 
                             return (
-                                <DTRReport
+                                <div
                                     key={employee.id}
-                                    ref={(element) =>
-                                        (pdfRefs.current[employee.id] = element)
-                                    }
+                                    style={{ breakAfter: "page" }}
+                                >
+                                    <DTRReport
                                     name={getEmployeeName(employee)}
                                     dateRange={{
                                         start: dayjs(
@@ -273,12 +277,13 @@ const PrintDialog = ({
                                     )}
                                     monthlyTotals={data.monthly_totals}
                                     workSchedule={employee.work_schedule}
-                                    signatory={resolveSignatory(
-                                        employee,
-                                        employeeData,
-                                        signatoryType,
-                                    )}
-                                />
+                                        signatory={resolveSignatory(
+                                            employee,
+                                            employeeData,
+                                            signatoryType,
+                                        )}
+                                    />
+                                </div>
                             );
                         })}
                     </div>

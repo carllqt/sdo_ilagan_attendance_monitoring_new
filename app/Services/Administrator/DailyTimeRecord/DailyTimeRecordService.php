@@ -339,6 +339,32 @@ class DailyTimeRecordService
         ];
     }
 
+    public function printPreviewData(
+        int $employeeId,
+        int $stationId,
+        int $month,
+        int $year,
+    ): array {
+        $employee = $this->repository->employeeTimeRecordForStation(
+            $employeeId,
+            $stationId,
+            $month,
+            $year,
+        );
+
+        if (! $employee) {
+            abort(404, 'DTR print record not found.');
+        }
+
+        return [
+            'employee' => $this->formatPrintEmployee($employee),
+            'time_record' => $employee,
+            'signatory' => $this->defaultSignatory($employee),
+            'month' => $month,
+            'year' => $year,
+        ];
+    }
+
     public function departmentPrintModal(Request $request): ?array
     {
         if ($request->query('modal') !== 'print-department') {
