@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('extension_name')->nullable();
             $table->string('employee_name');
-            $table->string('email');
             $table->string('position');
             $table->foreignId('station_id')->constrained('stations')->cascadeOnUpdate()->restrictOnDelete();
             $table->text('purpose_of_travel');

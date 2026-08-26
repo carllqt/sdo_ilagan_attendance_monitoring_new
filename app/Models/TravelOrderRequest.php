@@ -14,7 +14,6 @@ class TravelOrderRequest extends Model
         'last_name',
         'extension_name',
         'employee_name',
-        'email',
         'position',
         'station_id',
         'purpose_of_travel',

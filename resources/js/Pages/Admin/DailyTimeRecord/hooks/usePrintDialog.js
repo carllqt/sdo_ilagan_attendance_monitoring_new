@@ -146,7 +146,7 @@ const usePrintDialog = ({
         setSignatoryType(defaultSignatoryType);
     }, [open, defaultSignatoryType]);
 
-    const handleDownloadPDF = async () => {
+    const handlePrint = async () => {
         setIsGenerating(true);
 
         printDtr();
@@ -158,7 +158,7 @@ const usePrintDialog = ({
     return {
         employeeData,
         firstEmployee,
-        handleDownloadPDF,
+        handlePrint,
         isGenerating,
         isLoadingEmployeeData,
         isSignatoryLoading,

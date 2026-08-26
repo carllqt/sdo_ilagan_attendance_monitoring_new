@@ -1,23 +1,24 @@
 import { useMemo, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 
+import documentTemplatePageStyle from "@/Components/Reports/documentTemplatePageStyle";
 import { getEmployeeName } from "@/lib/utils";
 import { toBatchReportRecords } from "../utils";
 
-const useBatchDetailsPdf = (batch) => {
-    const pdfRef = useRef(null);
+const useBatchDetailsPrint = (batch) => {
+    const printRef = useRef(null);
     const printBatch = useReactToPrint({
-        contentRef: pdfRef,
+        contentRef: printRef,
         documentTitle: "Converted_Tardiness_Records",
-        pageStyle: "@page { size: letter portrait; margin: 0.5in; }",
+        pageStyle: documentTemplatePageStyle,
     });
     const reportRecords = useMemo(
         () => toBatchReportRecords(batch, getEmployeeName),
         [batch],
     );
 
-    const handlePrintPDF = () => {
-        if (!pdfRef.current || reportRecords.length === 0) {
+    const handlePrint = () => {
+        if (!printRef.current || reportRecords.length === 0) {
             return;
         }
 
@@ -25,10 +26,10 @@ const useBatchDetailsPdf = (batch) => {
     };
 
     return {
-        handlePrintPDF,
-        pdfRef,
+        handlePrint,
+        printRef,
         reportRecords,
     };
 };
 
-export default useBatchDetailsPdf;
+export default useBatchDetailsPrint;

@@ -5,27 +5,30 @@ import path from "path";
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "");
-    const devServerUrl = env.VITE_DEV_SERVER_URL || "http://localhost:5173";
-    const devServerHost = env.VITE_DEV_SERVER_HOST || new URL(devServerUrl).hostname;
+    const serverUrl = new URL(
+        env.VITE_DEV_SERVER_URL || "http://localhost:5173",
+    );
 
     return {
         server: {
             host: "0.0.0.0",
-            port: 5173,
+            port: Number(serverUrl.port) || 5173,
             strictPort: true,
-            origin: devServerUrl,
+            origin: serverUrl.origin,
             cors: true,
             hmr: {
-                host: devServerHost,
+                host: serverUrl.hostname,
             },
         },
+
         plugins: [
             laravel({
-                input: ["resources/js/app.jsx"],
+                input: "resources/js/app.jsx",
                 refresh: true,
             }),
             react(),
         ],
+
         resolve: {
             alias: {
                 "@": path.resolve("resources/js"),

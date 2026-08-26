@@ -29,7 +29,7 @@ const legalDtrPageStyle = `
     }
 `;
 
-const useDtrPdfExport = ({ onClose, printContainerRef }) => {
+const useDtrPrint = ({ onClose, printContainerRef }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const printDtr = useReactToPrint({
         contentRef: printContainerRef,
@@ -37,7 +37,7 @@ const useDtrPdfExport = ({ onClose, printContainerRef }) => {
         pageStyle: legalDtrPageStyle,
     });
 
-    const handleDownloadPDF = async () => {
+    const handlePrint = async () => {
         setIsGenerating(true);
         printDtr();
         setIsGenerating(false);
@@ -45,9 +45,9 @@ const useDtrPdfExport = ({ onClose, printContainerRef }) => {
     };
 
     return {
-        handleDownloadPDF,
+        handlePrint,
         isGenerating,
     };
 };
 
-export default useDtrPdfExport;
+export default useDtrPrint;

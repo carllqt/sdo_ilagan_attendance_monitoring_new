@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Mail;
-
 use App\Http\Controllers\Administrator\{
     AttendanceController,
     DailyTimeRecordController,
@@ -20,7 +18,7 @@ use App\Http\Controllers\HumanResource\{
 };
 use App\Http\Controllers\AttendanceMonitoringController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\DocumentPdfController;
+use App\Http\Controllers\DocumentPrintController;
 use App\Http\Controllers\EmployeeProfileImageController;
 use App\Http\Controllers\DocumentRequestController;
 use App\Http\Controllers\PositionController;
@@ -43,9 +41,6 @@ Route::get('/attendance-monitoring/employees-page', [AttendanceMonitoringControl
 Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringController::class, 'stationSuggestions'])->name('attendance-monitoring.stations.suggestions');
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
 Route::post('/document-requests', [DocumentRequestController::class, 'store'])->name('document-requests.store');
-Route::post('/document-pdfs/{type}', [DocumentPdfController::class, 'store'])
-    ->whereIn('type', ['locator-slip', 'travel-order'])
-    ->name('document-pdfs.store');
 
 
 /*
@@ -55,6 +50,9 @@ Route::post('/document-pdfs/{type}', [DocumentPdfController::class, 'store'])
 */
 
 Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(function () {
+
+    Route::get('/document-samples/travel-order', [DocumentPrintController::class, 'travelOrderSample'])
+        ->name('document-samples.travel-order');
 
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
     Route::get('/attendance/keep-alive', [AttendanceController::class, 'keepAlive'])->name('attendance.keep-alive');
@@ -162,15 +160,6 @@ Route::middleware(['role:sdo_admin'])->group(function () {
 Route::get('/test-role', function () {
     dd(auth()->user()->getRoleNames());
 })->middleware('auth');
-
-Route::get('/test-mail', function () {
-    Mail::raw('This is a test email from Laravel.', function ($message) {
-        $message->to('reycarlmedico@gmail.com')
-                ->subject('Laravel SMTP Test');
-    });
-
-    return 'Mail sent.';
-});
 
 /*
 |--------------------------------------------------------------------------

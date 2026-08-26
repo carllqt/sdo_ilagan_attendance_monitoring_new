@@ -41,7 +41,7 @@ const EmployeeList = ({
     selectedOffice,
     setSelectedOffice,
     applyFilters,
-    onDownloadPDF,
+    onPrint,
     currentPage,
     handlePageChange,
     pageNumbers,
@@ -201,7 +201,7 @@ const EmployeeList = ({
                     />
                     <Button
                         type="button"
-                        onClick={onDownloadPDF}
+                        onClick={onPrint}
                         disabled={isLoading}
                         className="h-10 shrink-0 gap-2 whitespace-nowrap bg-blue-700 text-white hover:bg-blue-800"
                     >

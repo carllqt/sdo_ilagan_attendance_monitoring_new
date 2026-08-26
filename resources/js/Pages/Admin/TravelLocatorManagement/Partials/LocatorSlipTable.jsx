@@ -6,7 +6,6 @@ import { formatDateTime, humanize, statusClassName } from "../util";
 
 const columns = [
     "Employee",
-    "Email",
     "Position",
     "Station",
     "Destination",
@@ -36,7 +35,6 @@ const LocatorSlipTable = ({
                 <TableCell className="px-3 font-medium">
                     {request.employee_name || "-"}
                 </TableCell>
-                <TableCell className="px-3">{request.email || "-"}</TableCell>
                 <TableCell className="px-3">
                     {request.position || "-"}
                 </TableCell>

@@ -17,6 +17,7 @@ import useTravelLocatorSuggestions from "../hooks/useTravelLocatorSuggestions";
 const RequestTableSection = ({
     columns,
     filters,
+    headerAction,
     isLoading,
     onFilterChange,
     records = emptyPagination,
@@ -92,6 +93,7 @@ const RequestTableSection = ({
                 </div>
 
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    {headerAction}
                     <div
                         ref={searchBoxRef}
                         className="relative w-full sm:w-[360px]"

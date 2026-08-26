@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import { Link } from "@inertiajs/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { UserCheck } from "lucide-react";
+import { FileSearch, UserCheck } from "lucide-react";
 import RequestTableSection from "./RequestTableSection";
 import ApproveTravelOrderDialog from "./ApproveTravelOrderDialog";
 import {
@@ -42,6 +43,15 @@ const TravelOrderTable = ({
                 onFilterChange={onFilterChange}
                 type="travel_order"
                 columns={columns}
+                headerAction={
+                    <Link
+                        href="/document-samples/travel-order"
+                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                    >
+                        <FileSearch className="h-4 w-4" />
+                        Test Document
+                    </Link>
+                }
                 renderRow={(request) => {
                     const isApproved = request.status === "approved";
 

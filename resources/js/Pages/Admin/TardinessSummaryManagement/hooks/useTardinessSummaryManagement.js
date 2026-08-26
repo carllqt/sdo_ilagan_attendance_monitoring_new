@@ -3,7 +3,7 @@ import { usePage } from "@inertiajs/react";
 
 import useTardinessSummaryFilters from "./useTardinessSummaryFilters";
 import useTardinessSummaryPageData from "./useTardinessSummaryPageData";
-import useTardinessSummaryPdfExport from "./useTardinessSummaryPdfExport";
+import useTardinessSummaryPrint from "./useTardinessSummaryPrint";
 import useTardinessSummarySuggestions from "./useTardinessSummarySuggestions";
 import { wholeYearLabel } from "../utils";
 
@@ -50,15 +50,12 @@ const useTardinessSummaryManagement = ({
         selectedYear: filters.selectedYear,
     });
 
-    const { downloadPDF, pdfRef } = useTardinessSummaryPdfExport();
+    const { print, printRef } = useTardinessSummaryPrint();
 
     const downloadAfterPrintSummaryRender = () => {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                downloadPDF({
-                    selectedMonth,
-                    selectedYear: filters.selectedYear,
-                });
+                print();
             });
         });
     };
@@ -98,7 +95,7 @@ const useTardinessSummaryManagement = ({
         filters.applySearch(`${suggestion.id} ${nextValue}`.trim());
     };
 
-    const handleDownloadPDF = () => {
+    const handlePrint = () => {
         if (filters.summaryLoading) return;
 
         filters.loadPrintSummary({
@@ -110,14 +107,14 @@ const useTardinessSummaryManagement = ({
         applyFilters: filters.applyFilters,
         applySearch: filters.applySearch,
         filteredSummary: pageData.filteredSummary,
-        handleDownloadPDF,
+        handlePrint,
         handleSummaryPageChange,
         handleSuggestionSelect,
         handleVerificationPageChange,
         handleVerificationStationChange,
         isSchoolAdmin,
         offices: pageData.offices,
-        pdfRef,
+        printRef,
         searchBoxRef: suggestions.searchBoxRef,
         searchInput: filters.searchInput,
         selectedMonth,

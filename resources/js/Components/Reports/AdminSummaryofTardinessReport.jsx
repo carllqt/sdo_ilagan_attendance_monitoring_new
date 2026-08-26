@@ -23,47 +23,37 @@ const AdminSummaryofTardinessReport = React.forwardRef(
 
         // Get unique departments
         const departments = Array.from(
-            new Set(summary.map((e) => e.employee.department))
+            new Set(summary.map((e) => e.employee.department)),
         );
 
         return (
-            <div
+            <section
                 ref={ref}
-                className="px-4 py-2 text-[10px] font-sans leading-tight"
+                className="document-template-page text-[10px] font-sans leading-tight"
             >
-                <div className="relative flex items-center mb-3 justify-between">
-                    {/* Left Logo */}
-                    <div>
-                        <img
-                            src="/sdo-pic.jpg"
-                            alt="Left Logo"
-                            className="w-16 h-16 object-contain"
-                        />
-                    </div>
+                <img
+                    src="/images/document-template/sdo-header.png"
+                    alt="Schools Division of the City of Ilagan document header"
+                    className="document-template-header"
+                />
+                <img
+                    src="/images/document-template/sdo-footer.png"
+                    alt="Schools Division of the City of Ilagan document footer"
+                    className="document-template-footer"
+                />
 
-                    {/* Center Title */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
-                        <h1 className="text-[12px] font-bold uppercase tracking-wide">
-                            SUMMARY OF TARDINESS
-                        </h1>
-                        <h2 className="text-[10px] font-semibold tracking-wider">
-                            {selectedMonth === "Whole Year"
-                                ? selectedYear
-                                : `${selectedMonth} ${selectedYear}`}
-                        </h2>
-                    </div>
-
-                    {/* Right Logo */}
-                    <div>
-                        <img
-                            src="/logo-copy.png"
-                            alt="Right Logo"
-                            className="w-16 h-16 object-contain"
-                        />
-                    </div>
+                <div className="mb-3 text-center">
+                    <h1 className="text-[14px] font-bold uppercase tracking-wide">
+                        Summary of Tardiness
+                    </h1>
+                    <h2 className="text-[10px] font-semibold tracking-wider">
+                        {selectedMonth === "Whole Year"
+                            ? selectedYear
+                            : `${selectedMonth} ${selectedYear}`}
+                    </h2>
                 </div>
 
-                <table className="w-full table-fixed border border-black border-collapse text-center">
+                <table className="tardiness-summary-table w-full table-fixed border border-black border-collapse text-center">
                     <thead className="bg-gray-200">
                         <tr>
                             <th
@@ -105,7 +95,7 @@ const AdminSummaryofTardinessReport = React.forwardRef(
 
                     {departments.map((dept, deptIndex) => {
                         const deptEmployees = summary.filter(
-                            (e) => e.employee.department === dept
+                            (e) => e.employee.department === dept,
                         );
                         if (!deptEmployees.length) return null;
 
@@ -140,9 +130,8 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                                             >
                                                 {emp.tardyPerMonths[
                                                     selectedYear
-                                                ]?.[month.number]?.toFixed(
-                                                    2
-                                                ) || "0.00"}
+                                                ]?.[month.number]?.toFixed(2) ||
+                                                    "0.00"}
                                             </td>
                                         ))}
                                         <td className="border border-black px-2 py-2 text-center">
@@ -154,9 +143,9 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                                                             emp.tardyPerMonths[
                                                                 selectedYear
                                                             ]?.[month.number] ||
-                                                                0
+                                                                0,
                                                         ),
-                                                    0
+                                                    0,
                                                 )
                                                 .toFixed(2)}
                                         </td>
@@ -166,10 +155,9 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                         );
                     })}
                 </table>
-            </div>
+            </section>
         );
-    }
+    },
 );
 
 export default AdminSummaryofTardinessReport;
-

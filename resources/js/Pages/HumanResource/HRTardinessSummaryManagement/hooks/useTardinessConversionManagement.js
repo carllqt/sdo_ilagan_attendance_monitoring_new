@@ -1,6 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 
+import documentTemplatePageStyle from "@/Components/Reports/documentTemplatePageStyle";
 import useToastResponse from "@/hooks/useToastResponse";
 import useTardinessConversionFilters from "./useTardinessConversionFilters";
 import useTardinessConversionSuggestions from "./useTardinessConversionSuggestions";
@@ -20,11 +21,11 @@ const useTardinessConversionManagement = ({
 }) => {
     useToastResponse();
 
-    const pdfRef = useRef();
+    const printRef = useRef();
     const printSummary = useReactToPrint({
-        contentRef: pdfRef,
+        contentRef: printRef,
         documentTitle: "Tardiness_Conversion",
-        pageStyle: "@page { size: letter portrait; margin: 0.5in; }",
+        pageStyle: documentTemplatePageStyle,
     });
     const offices = useMemo(
         () => getSortedOffices(officeOptions),
@@ -57,16 +58,16 @@ const useTardinessConversionManagement = ({
         filters.applySearch(nextValue);
     };
 
-    const handlePrintPDF = () => {
+    const handlePrint = () => {
         printSummary();
     };
 
     return {
         ...filters,
-        handlePrintPDF,
+        handlePrint,
         handleSuggestionSelect,
         offices,
-        pdfRef,
+        printRef,
         searchBoxRef: suggestions.searchBoxRef,
         setShowSuggestions: suggestions.setShowSuggestions,
         showSuggestions: suggestions.showSuggestions,

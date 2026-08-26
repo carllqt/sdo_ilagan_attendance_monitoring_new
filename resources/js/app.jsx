@@ -1,7 +1,7 @@
 import React from "react";
 import "../css/app.css";
 import "./bootstrap";
-import "../css/pdf.css";
+import "../css/print.css";
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { createRoot } from "react-dom/client";

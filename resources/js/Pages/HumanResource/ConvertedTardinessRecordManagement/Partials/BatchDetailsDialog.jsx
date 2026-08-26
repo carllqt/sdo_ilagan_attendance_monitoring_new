@@ -21,11 +21,11 @@ import {
 } from "@/components/ui/table";
 import { getEmployeeName } from "@/lib/utils";
 import { formatDateTime, formatNumber } from "../utils";
-import useBatchDetailsPdf from "../hooks/useBatchDetailsPdf";
+import useBatchDetailsPrint from "../hooks/useBatchDetailsPrint";
 
 const BatchDetailsDialog = ({ batch, onClose }) => {
-    const { handlePrintPDF, pdfRef, reportRecords } =
-        useBatchDetailsPdf(batch);
+    const { handlePrint, printRef, reportRecords } =
+        useBatchDetailsPrint(batch);
 
     return (
         <Dialog open={!!batch} onOpenChange={(open) => !open && onClose()}>
@@ -135,16 +135,16 @@ const BatchDetailsDialog = ({ batch, onClose }) => {
                         type="button"
                         className="h-9 gap-2 bg-blue-900 text-white hover:bg-blue-800"
                         disabled={reportRecords.length === 0}
-                        onClick={handlePrintPDF}
+                        onClick={handlePrint}
                     >
                         <Printer className="h-4 w-4" />
-                        Print PDF
+                        Print
                     </Button>
                 </div>
 
                 <div className="pointer-events-none fixed -left-[9999px] top-0 w-[8.5in] bg-white">
                     <HrSummaryofTardinessReport
-                        ref={pdfRef}
+                        ref={printRef}
                         groupedByEmployee={reportRecords}
                         monthRangeLabel={batch?.month_range || ""}
                     />

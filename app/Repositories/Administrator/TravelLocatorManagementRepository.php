@@ -20,7 +20,6 @@ class TravelLocatorManagementRepository
         $this->applyStation($query, $filter);
         $this->applySearch($query, $filter, [
             'employee_name',
-            'email',
             'position',
             'purpose_of_travel',
             'destination',
@@ -127,7 +126,6 @@ class TravelLocatorManagementRepository
             $this->applyStation($query, $filter);
             $this->applySearch($query, $filter, [
                 'employee_name',
-                'email',
                 'position',
                 'purpose_of_travel',
                 'destination',
@@ -138,14 +136,14 @@ class TravelLocatorManagementRepository
             return $query
                 ->latest()
                 ->limit(8)
-                ->get(['id', 'employee_name', 'email', 'destination', 'station_id'])
+                ->get(['id', 'employee_name', 'destination', 'station_id'])
                 ->map(fn (LocatorSlipRequest $request) => [
                     'id' => $request->id,
                     'label' => $request->employee_name ?: 'Unnamed Request',
-                    'meta' => collect([$request->email, $request->station?->name, $request->destination])
+                    'meta' => collect([$request->station?->name, $request->destination])
                         ->filter()
                         ->join(' - '),
-                    'search' => $request->employee_name ?: $request->email,
+                    'search' => $request->employee_name ?: '',
                 ])
                 ->values()
                 ->all();

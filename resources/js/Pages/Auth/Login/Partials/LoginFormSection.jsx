@@ -1,6 +1,6 @@
 import ApplicationLogo from "@/Components/ApplicationLogo";
+import FloatingInput from "@/Components/floating-input";
 import InputError from "@/Components/InputError";
-import TextInput from "@/Components/TextInput";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Link } from "@inertiajs/react";
@@ -8,9 +8,11 @@ import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 
 import DocumentRequestButtons from "./DocumentRequestButtons";
 
+const loginFloatingInputClassName =
+    "[&>div>div]:!border-slate-300/80 [&>div>div]:!bg-white [&>div>div]:focus-within:!border-[#1f55ff] [&>div>div]:focus-within:!ring-4 [&>div>div]:focus-within:!ring-blue-100/80 [&_input]:!h-7 [&_input]:!text-slate-800 [&_label]:!bg-white [&>div>div>svg]:!h-[18px] [&>div>div>svg]:!w-[18px] [&>div>div>svg]:!text-blue-500/80";
+
 const LoginFormSection = ({
     status,
-    flash = {},
     canResetPassword,
     showPassword,
     onTogglePassword,
@@ -78,85 +80,70 @@ const LoginFormSection = ({
                     />
                 </div>
 
-                <div className="bg-transparent px-4 py-6 sm:px-6 lg:p-0">
-                    <div className="mb-6 text-center sm:mb-8">
-                        <ApplicationLogo className="mx-auto h-16 w-auto object-contain sm:h-20" />
-                        <h2 className="mt-4 text-xl font-black text-slate-900 sm:mt-6 sm:text-2xl">
+                <div className="bg-transparent px-4 py-5 sm:px-6 sm:py-7 lg:p-0">
+                    <div className="mb-4 flex w-full flex-col items-center justify-center text-center sm:mb-7 lg:mb-8">
+                        <ApplicationLogo className="mx-auto h-20 w-auto object-contain" />
+                        <h2 className="mt-1 text-lg font-black text-slate-900 sm:mt-2 sm:text-xl lg:mt-4 lg:text-2xl">
                             Welcome Back! {"\uD83D\uDC4B"}
                         </h2>
-                        <p className="mt-2 text-sm font-medium text-slate-500">
+                        <p className="text-xs font-medium text-slate-500 sm:text-sm">
                             Sign in to continue to your account
                         </p>
                     </div>
 
                     {status && (
-                        <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700">
+                        <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-center text-xs font-medium text-emerald-700 sm:mb-5 sm:px-4 sm:py-3 sm:text-sm">
                             {status}
                         </div>
                     )}
-                    {flash.success && (
-                        <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700">
-                            {flash.success}
-                        </div>
-                    )}
-                    {flash.error && (
-                        <div className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700">
-                            {flash.error}
-                        </div>
-                    )}
 
-                    <form onSubmit={submit} className="space-y-4 sm:space-y-5">
+                    <form
+                        onSubmit={submit}
+                        className="space-y-3.5 sm:space-y-4 lg:space-y-5"
+                    >
                         <div>
-                            <label
-                                htmlFor="email"
-                                className="text-sm font-bold text-slate-800"
-                            >
-                                Email Address
-                            </label>
-                            <div className="relative mt-2">
-                                <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                                <TextInput
-                                    id="email"
-                                    type="text"
+                            <div className={loginFloatingInputClassName}>
+                                <FloatingInput
+                                    label="Email Address"
+                                    icon={Mail}
                                     name="email"
+                                    type="email"
                                     value={data.email}
-                                    className="block h-11 w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-700 shadow-sm placeholder:text-slate-400 focus:border-[#1f55ff] focus:ring-4 focus:ring-blue-100 sm:h-12 sm:pl-12"
-                                    placeholder="Enter your email"
                                     autoComplete="username"
-                                    isFocused={true}
+                                    autoFocus
                                     onChange={(e) =>
                                         setData("email", e.target.value)
                                     }
                                 />
                             </div>
-                            <InputError message={errors.email} className="mt-2" />
+                            <InputError
+                                message={errors.email}
+                                className="mt-1.5 !text-[11px] sm:mt-2 sm:!text-xs"
+                            />
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="password"
-                                className="text-sm font-bold text-slate-800"
-                            >
-                                Password
-                            </label>
-                            <div className="relative mt-2">
-                                <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                                <TextInput
-                                    id="password"
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
-                                    value={data.password}
-                                    className="block h-11 w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-12 text-sm font-medium text-slate-700 shadow-sm placeholder:text-slate-400 focus:border-[#1f55ff] focus:ring-4 focus:ring-blue-100 sm:h-12 sm:pl-12"
-                                    placeholder="Enter your password"
-                                    autoComplete="current-password"
-                                    onChange={(e) =>
-                                        setData("password", e.target.value)
-                                    }
-                                />
+                            <div className="relative">
+                                <div className={loginFloatingInputClassName}>
+                                    <FloatingInput
+                                        label="Password"
+                                        icon={Lock}
+                                        name="password"
+                                        type={
+                                            showPassword ? "text" : "password"
+                                        }
+                                        value={data.password}
+                                        autoComplete="current-password"
+                                        inputClassName="pr-8"
+                                        onChange={(e) =>
+                                            setData("password", e.target.value)
+                                        }
+                                    />
+                                </div>
                                 <button
                                     type="button"
                                     onClick={onTogglePassword}
-                                    className="absolute right-4 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                                    className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-blue-50 hover:text-[#1f55ff]"
                                     aria-label={
                                         showPassword
                                             ? "Hide password"
@@ -164,21 +151,21 @@ const LoginFormSection = ({
                                     }
                                 >
                                     {showPassword ? (
-                                        <EyeOff className="h-4 w-4" />
+                                        <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                     ) : (
-                                        <Eye className="h-4 w-4" />
+                                        <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                     )}
                                 </button>
                             </div>
                             <InputError
                                 message={errors.password}
-                                className="mt-2"
+                                className="mt-1.5 !text-[11px] sm:mt-2 sm:!text-xs"
                             />
                         </div>
 
                         <label
                             htmlFor="remember"
-                            className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700"
+                            className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-700 sm:gap-2 sm:text-sm"
                         >
                             <Checkbox
                                 id="remember"
@@ -192,7 +179,7 @@ const LoginFormSection = ({
                             {canResetPassword && (
                                 <Link
                                     href={route("password.request")}
-                                    className="ml-auto text-sm font-bold text-[#1f55ff] transition hover:text-[#2c20d9]"
+                                    className="ml-auto text-xs font-bold text-[#1f55ff] transition hover:text-[#2c20d9] sm:text-sm"
                                 >
                                     Forgot password?
                                 </Link>
@@ -202,14 +189,14 @@ const LoginFormSection = ({
                         <Button
                             variant="blue"
                             disabled={processing}
-                            className="h-11 w-full rounded-lg bg-[linear-gradient(135deg,#075fff,#3024df)] text-sm font-black shadow-[0_12px_24px_rgba(37,99,235,0.28)] transition hover:translate-y-[-1px] hover:shadow-[0_16px_28px_rgba(37,99,235,0.34)] sm:h-12"
+                            className="h-10 w-full rounded-lg bg-[linear-gradient(135deg,#075fff,#3024df)] text-xs font-black shadow-[0_12px_24px_rgba(37,99,235,0.28)] transition hover:translate-y-[-1px] hover:shadow-[0_16px_28px_rgba(37,99,235,0.34)] sm:h-11 sm:text-sm lg:h-12"
                         >
-                            <LogIn className="mr-2 h-4 w-4" />
+                            <LogIn className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
                             Sign In
                         </Button>
                     </form>
 
-                    <div className="mt-6 text-center text-[11px] font-medium leading-relaxed text-slate-400 sm:mt-8 sm:text-xs">
+                    <div className="mt-4 text-center text-[9px] font-medium leading-relaxed text-slate-400 sm:mt-6 sm:text-[11px] lg:mt-8 lg:text-xs">
                         &copy; 2025 Isabela State University &mdash; Ilagan
                         Campus
                         <br />

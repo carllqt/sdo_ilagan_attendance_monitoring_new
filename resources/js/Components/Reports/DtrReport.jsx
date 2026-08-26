@@ -361,7 +361,7 @@ const DTRReport = React.forwardRef(
                     <div
                         className="dtr-certification"
                         style={{
-                            marginTop: "40px",
+                            marginTop: "30px",
                             fontSize: "13px",
                             lineHeight: "18px",
                             textAlign: "center",
@@ -370,7 +370,7 @@ const DTRReport = React.forwardRef(
                         <p
                             className="dtr-certification-copy"
                             style={{
-                                margin: "0 0 60px",
+                                margin: "0 0 50px",
                                 fontSize: "15px",
                             }}
                         >
@@ -410,7 +410,7 @@ const DTRReport = React.forwardRef(
                                 textAlign: "center",
                                 fontSize: "21px",
                                 lineHeight: 1.2,
-                                marginTop: "60px",
+                                marginTop: "50px",
                             }}
                         >
                             <div style={{ marginBottom: "4px" }}>

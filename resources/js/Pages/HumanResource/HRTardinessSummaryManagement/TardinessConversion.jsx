@@ -27,13 +27,13 @@ const TardinessConversion = ({
         handleFirstMonthChange,
         handleOfficeChange,
         handlePageChange,
-        handlePrintPDF,
+        handlePrint,
         handleSecondMonthChange,
         handleSuggestionSelect,
         isLoading,
         monthRangeLabel,
         offices,
-        pdfRef,
+        printRef,
         searchBoxRef,
         searchInput,
         secondMonthList,
@@ -95,7 +95,7 @@ const TardinessConversion = ({
                     selectedSecondMonth={selectedSecondMonthValue}
                     setSelectedSecondMonth={handleSecondMonthChange}
                     secondMonthList={secondMonthList}
-                    onSaveSuccess={handlePrintPDF}
+                    onSaveSuccess={handlePrint}
                     summaryPayload={summaryPayload}
                     isLoading={isLoading}
                     pagination={records}
@@ -104,7 +104,7 @@ const TardinessConversion = ({
 
                 <div style={{ display: "none" }}>
                     <HrSummaryofTardinessReport
-                        ref={pdfRef}
+                        ref={printRef}
                         groupedByEmployee={printRecords}
                         monthRangeLabel={monthRangeLabel}
                     />

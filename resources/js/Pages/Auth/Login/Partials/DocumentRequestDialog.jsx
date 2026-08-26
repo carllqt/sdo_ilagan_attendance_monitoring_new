@@ -26,7 +26,6 @@ import {
     Users,
     Wallet,
     MapPin,
-    Mail,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -77,12 +76,12 @@ const DocumentRequestDialog = ({
                 }
             }}
         >
-            <DialogContent className="max-h-[92vh] w-[calc(100%-1rem)] max-w-4xl overflow-y-auto border-0 p-0 shadow-2xl">
-                <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-white">
+            <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-4xl overflow-hidden border-0 p-0 shadow-2xl">
+                <div className="relative max-h-[calc(100dvh-1rem)] w-full overflow-y-auto overscroll-contain rounded-2xl border border-blue-100 bg-white">
                     <div className="absolute inset-x-0 top-0 h-24 bg-blue-700" />
 
-                    <div className="relative px-5 py-4 sm:px-6 sm:py-5">
-                        <DialogHeader className="mb-10 text-white">
+                    <div className="relative px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:py-5">
+                        <DialogHeader className="mb-8 text-white sm:mb-10">
                             <div className="flex items-start gap-4">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-3xl bg-white/15 backdrop-blur">
                                     <RequestTypeIcon className="h-6 w-6" />
@@ -98,7 +97,7 @@ const DocumentRequestDialog = ({
                             </div>
                         </DialogHeader>
 
-                        <form onSubmit={submit} className="space-y-5">
+                        <form onSubmit={submit} className="space-y-4 sm:space-y-5">
                             {processing && (
                                 <div className="overflow-hidden rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
                                     <div className="flex items-center gap-3 px-4 py-3 text-blue-900">
@@ -107,12 +106,12 @@ const DocumentRequestDialog = ({
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-bold">
-                                                Sending request email...
+                                                Submitting request...
                                             </p>
                                             <p className="text-xs text-blue-700">
                                                 Please wait while we submit your{" "}
                                                 {requestLabel.title.toLowerCase()}{" "}
-                                                and notify the approver.
+                                                for processing.
                                             </p>
                                         </div>
                                         <div className="text-sm font-bold text-blue-700">
@@ -163,18 +162,6 @@ const DocumentRequestDialog = ({
                                                     "",
                                                 ),
                                             )
-                                        }
-                                    />
-                                    <RequestTextField
-                                        id="request_email"
-                                        label="Email Address"
-                                        type="email"
-                                        icon={Mail}
-                                        value={data.email}
-                                        error={errors.email}
-                                        disabled={processing}
-                                        onChange={(value) =>
-                                            setData("email", value)
                                         }
                                     />
                                     <RequestTextField
@@ -502,7 +489,7 @@ const DocumentRequestDialog = ({
                                     {processing ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Sending Email...
+                                            Submitting...
                                         </>
                                     ) : (
                                         "Submit Request"

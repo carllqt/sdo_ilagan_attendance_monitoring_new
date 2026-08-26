@@ -1,4 +1,4 @@
-/* Repeat table headers on each page */
+/* Repeat table headers on each printed page */
 thead {
     display: table-header-group;
 }

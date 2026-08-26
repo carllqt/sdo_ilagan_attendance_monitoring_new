@@ -25,14 +25,14 @@ const TardinessSummary = ({
         applyFilters,
         applySearch,
         filteredSummary,
-        handleDownloadPDF,
+        handlePrint,
         handleSummaryPageChange,
         handleSuggestionSelect,
         handleVerificationPageChange,
         handleVerificationStationChange,
         isSchoolAdmin,
         offices,
-        pdfRef,
+        printRef,
         searchBoxRef,
         searchInput,
         selectedMonth,
@@ -98,7 +98,7 @@ const TardinessSummary = ({
                         selectedOffice={selectedOffice}
                         setSelectedOffice={setSelectedOffice}
                         applyFilters={applyFilters}
-                        onDownloadPDF={handleDownloadPDF}
+                        onPrint={handlePrint}
                         currentPage={summaryPagination.currentPage}
                         handlePageChange={handleSummaryPageChange}
                         pageNumbers={summaryPagination.pageNumbers}
@@ -133,7 +133,7 @@ const TardinessSummary = ({
 
                 <div style={{ display: "none" }}>
                     <SummaryofTardinessReport
-                        ref={pdfRef}
+                        ref={printRef}
                         summary={printSummary}
                         selectedMonth={selectedMonth}
                         selectedYear={selectedYear}

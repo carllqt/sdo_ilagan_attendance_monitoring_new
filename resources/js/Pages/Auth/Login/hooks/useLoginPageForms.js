@@ -1,11 +1,22 @@
-import { useForm } from "@inertiajs/react";
-import { useState } from "react";
+import { router, useForm } from "@inertiajs/react";
+import { useEffect, useState } from "react";
 
-import { defaultDocumentRequestData } from "../util";
+import {
+    defaultDocumentRequestData,
+    validateDocumentRequestData,
+} from "../util";
 
-const useLoginPageForms = ({ stations = [] }) => {
+const modalQueryValues = {
+    locator_slip: "locator-slip",
+    travel_order: "travel-order",
+};
+
+const useLoginPageForms = ({ documentRequestModal = null, stations = [] }) => {
     const [showPassword, setShowPassword] = useState(false);
-    const [requestModalType, setRequestModalType] = useState(null);
+    const [requestModalType, setRequestModalType] = useState(
+        documentRequestModal,
+    );
+    const [requestPreviewOpen, setRequestPreviewOpen] = useState(false);
 
     const {
         data,
@@ -28,7 +39,29 @@ const useLoginPageForms = ({ stations = [] }) => {
         errors: requestErrors,
         reset: resetRequest,
         clearErrors: clearRequestErrors,
-    } = useForm(defaultDocumentRequestData);
+        setError: setRequestError,
+    } = useForm({
+        ...defaultDocumentRequestData,
+        request_type: documentRequestModal || "",
+        station_id: stations[0]?.id || "",
+    });
+
+    useEffect(() => {
+        setRequestPreviewOpen(false);
+        setRequestModalType(documentRequestModal);
+        clearRequestErrors();
+
+        if (documentRequestModal) {
+            setRequestData({
+                ...defaultDocumentRequestData,
+                request_type: documentRequestModal,
+                station_id: stations[0]?.id || "",
+            });
+            return;
+        }
+
+        resetRequest();
+    }, [documentRequestModal]);
 
     const submitLogin = (e) => {
         e.preventDefault();
@@ -38,27 +71,50 @@ const useLoginPageForms = ({ stations = [] }) => {
     };
 
     const openDocumentRequest = (type) => {
-        clearRequestErrors();
-        setRequestData({
-            ...defaultDocumentRequestData,
-            request_type: type,
-            station_id: stations[0]?.id || "",
+        const modal = modalQueryValues[type];
+
+        if (!modal) return;
+
+        const params = new URLSearchParams(window.location.search);
+        params.set("modal", modal);
+
+        router.get(route("login"), Object.fromEntries(params), {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
         });
-        setRequestModalType(type);
     };
 
     const closeDocumentRequest = () => {
-        setRequestModalType(null);
-        resetRequest();
-        clearRequestErrors();
+        const params = new URLSearchParams(window.location.search);
+        params.delete("modal");
+
+        router.get(route("login"), Object.fromEntries(params), {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
     };
 
     const submitDocumentRequest = (e) => {
         e.preventDefault();
 
+        clearRequestErrors();
+        const validationErrors = validateDocumentRequestData(requestData);
+
+        if (Object.keys(validationErrors).length > 0) {
+            setRequestError(validationErrors);
+            return;
+        }
+
+        setRequestPreviewOpen(true);
+    };
+
+    const saveDocumentRequest = () => {
         postRequest("/document-requests", {
             preserveScroll: true,
             onSuccess: closeDocumentRequest,
+            onError: () => setRequestPreviewOpen(false),
         });
     };
 
@@ -80,6 +136,9 @@ const useLoginPageForms = ({ stations = [] }) => {
             errors: requestErrors,
             open: openDocumentRequest,
             close: closeDocumentRequest,
+            previewOpen: requestPreviewOpen,
+            backToForm: () => setRequestPreviewOpen(false),
+            save: saveDocumentRequest,
             submit: submitDocumentRequest,
         },
     };

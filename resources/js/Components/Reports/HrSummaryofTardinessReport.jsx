@@ -12,45 +12,32 @@ const HrSummaryofTardinessReport = React.forwardRef(
         );
 
         return (
-            <div
+            <section
                 ref={ref}
-                className="px-4 py-2 text-[10px] font-sans leading-tight"
+                className="document-template-page text-[10px] font-sans leading-tight"
             >
-                <div className="relative flex items-center mb-3 justify-between">
-                    {/* Left Logo */}
-                    <div>
-                        <img
-                            src="/sdo-pic.jpg"
-                            alt="Left Logo"
-                            className="w-16 h-16 object-contain"
-                        />
-                    </div>
+                <img
+                    src="/images/document-template/sdo-header.png"
+                    alt="Schools Division of the City of Ilagan document header"
+                    className="document-template-header"
+                />
+                <img
+                    src="/images/document-template/sdo-footer.png"
+                    alt="Schools Division of the City of Ilagan document footer"
+                    className="document-template-footer"
+                />
 
-                    {/* Center Title */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
-                        <h1 className="text-[12px] font-bold uppercase tracking-wide">
-                            Tardiness Summary Report
-                        </h1>
-                        <h2 className="text-[10px] font-semibold tracking-wider">
-                            {monthRangeLabel}
-                        </h2>
-                    </div>
-
-                    {/* Right Logo */}
-                    <div>
-                        <img
-                            src="/logo-copy.png"
-                            alt="Right Logo"
-                            className="w-16 h-16 object-contain"
-                        />
-                    </div>
+                <div className="mb-3 text-center">
+                    <h1 className="text-[14px] font-bold uppercase tracking-wide">
+                        Tardiness Summary Report
+                    </h1>
+                    <h2 className="text-[10px] font-semibold tracking-wider">
+                        {monthRangeLabel}
+                    </h2>
                 </div>
 
-                <div
-                    ref={ref}
-                    className="px-4 py-2 text-[10px] font-sans leading-tight"
-                >
-                    <table className="w-full table-fixed border border-black border-collapse text-center">
+                <div>
+                    <table className="tardiness-summary-table w-full table-fixed border border-black border-collapse text-center">
                         <thead className="bg-gray-200">
                             <tr>
                                 <th className="border border-black px-2 py-2 w-[30px]">
@@ -126,7 +113,7 @@ const HrSummaryofTardinessReport = React.forwardRef(
                         })}
                     </table>
                 </div>
-            </div>
+            </section>
         );
     }
 );

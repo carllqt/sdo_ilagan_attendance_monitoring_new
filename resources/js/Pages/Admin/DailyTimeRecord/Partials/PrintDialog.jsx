@@ -35,7 +35,7 @@ const PrintDialog = ({
     const {
         employeeData,
         firstEmployee,
-        handleDownloadPDF,
+        handlePrint,
         isGenerating,
         isLoadingEmployeeData,
         isSignatoryLoading,
@@ -300,7 +300,7 @@ const PrintDialog = ({
                         <Button
                             type="button"
                             variant="blue"
-                            onClick={handleDownloadPDF}
+                            onClick={handlePrint}
                             disabled={
                                 !printEmployees.length ||
                                 isGenerating ||

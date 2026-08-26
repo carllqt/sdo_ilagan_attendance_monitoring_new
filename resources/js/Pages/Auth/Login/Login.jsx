@@ -3,9 +3,10 @@ import { useEffect } from "react";
 import { Toaster, toast } from "sonner";
 
 import TalaBackground from "@/Components/TalaBackground";
+import DocumentRequestPreviewDialog from "@/Pages/RequestForm/DocumentRequestPreviewDialog";
 
 import DocumentRequestDialog from "./Partials/DocumentRequestDialog";
-import DocumentRequestSuccessToast from "./Partials/DocumentRequestSuccessToast";
+import DocumentRequestFeedbackToast from "./Partials/DocumentRequestFeedbackToast";
 import DesktopBrandPanel from "./Partials/DesktopBrandPanel";
 import LoginFormSection from "./Partials/LoginFormSection";
 import useLoginPageForms from "./hooks/useLoginPageForms";
@@ -16,14 +17,20 @@ import {
     requestLabels,
 } from "./util";
 
-const Login = ({ status, canResetPassword, flash = {}, stations = [] }) => {
+const Login = ({
+    status,
+    canResetPassword,
+    documentRequestModal = null,
+    flash = {},
+    stations = [],
+}) => {
     const {
         showPassword,
         setShowPassword,
         requestModalType,
         loginForm,
         documentRequestForm,
-    } = useLoginPageForms({ stations });
+    } = useLoginPageForms({ documentRequestModal, stations });
 
     const requestLabel =
         requestLabels[requestModalType] || requestLabels.locator_slip;
@@ -35,23 +42,33 @@ const Login = ({ status, canResetPassword, flash = {}, stations = [] }) => {
         stationItems,
         documentRequestForm.data.station_id,
     );
-
     useEffect(() => {
-        if (!flash.success) return;
+        const feedback = flash.error
+            ? { message: flash.error, type: "error" }
+            : flash.success
+              ? { message: flash.success, type: "success" }
+              : null;
+
+        if (!feedback) return;
 
         toast.custom(
-            () => <DocumentRequestSuccessToast message={flash.success} />,
+            () => (
+                <DocumentRequestFeedbackToast
+                    message={feedback.message}
+                    type={feedback.type}
+                />
+            ),
             {
-                id: "document-request-success",
                 duration: 4500,
+                id: "document-request-feedback",
             },
         );
-    }, [flash.success]);
+    }, [flash.error, flash.success]);
 
     return (
         <>
             <Head title="Log in" />
-            <Toaster position="top-center" visibleToasts={1} gap={10} />
+            <Toaster position="top-right" visibleToasts={1} gap={10} />
 
             <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#02062f] px-3 py-5 text-slate-900 sm:px-4 sm:py-8">
                 <TalaBackground />
@@ -62,7 +79,6 @@ const Login = ({ status, canResetPassword, flash = {}, stations = [] }) => {
                     />
                     <LoginFormSection
                         status={status}
-                        flash={flash}
                         canResetPassword={canResetPassword}
                         showPassword={showPassword}
                         onTogglePassword={() =>
@@ -74,14 +90,25 @@ const Login = ({ status, canResetPassword, flash = {}, stations = [] }) => {
                 </div>
             </div>
 
-            <DocumentRequestDialog
-                requestModalType={requestModalType}
-                requestLabel={requestLabel}
-                RequestTypeIcon={RequestTypeIcon}
-                isLocatorSlip={isLocatorSlip}
-                stationItems={stationItems}
+            {!documentRequestForm.previewOpen && (
+                <DocumentRequestDialog
+                    requestModalType={requestModalType}
+                    requestLabel={requestLabel}
+                    RequestTypeIcon={RequestTypeIcon}
+                    isLocatorSlip={isLocatorSlip}
+                    stationItems={stationItems}
+                    selectedStation={selectedStation}
+                    documentRequestForm={documentRequestForm}
+                />
+            )}
+
+            <DocumentRequestPreviewDialog
+                open={documentRequestForm.previewOpen}
+                data={documentRequestForm.data}
                 selectedStation={selectedStation}
-                documentRequestForm={documentRequestForm}
+                processing={documentRequestForm.processing}
+                onBack={documentRequestForm.backToForm}
+                onSubmit={documentRequestForm.save}
             />
         </>
     );

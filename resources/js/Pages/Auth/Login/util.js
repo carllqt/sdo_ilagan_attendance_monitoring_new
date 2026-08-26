@@ -7,7 +7,6 @@ export const defaultDocumentRequestData = {
     middle_name: "",
     last_name: "",
     extension_name: "",
-    email: "",
     position: "",
     station_id: "",
     purpose_of_travel: "",
@@ -43,3 +42,35 @@ export const getStationItems = (stations = []) =>
 
 export const getSelectedStation = (stationItems = [], stationId) =>
     stationItems.find((station) => Number(station.id) === Number(stationId));
+
+export const validateDocumentRequestData = (data) => {
+    const errors = {};
+    const required = (field, label) => {
+        if (!String(data[field] || "").trim()) {
+            errors[field] = `The ${label} field is required.`;
+        }
+    };
+
+    required("employee_id", "employee id");
+    required("first_name", "first name");
+    required("last_name", "last name");
+    required("position", "position / designation");
+    required("station_id", "permanent station");
+    required("purpose_of_travel", "purpose of travel");
+    required("destination", "destination");
+
+    if (data.employee_id && !/^\d+$/.test(String(data.employee_id))) {
+        errors.employee_id = "The employee id must be a valid number.";
+    }
+
+    if (data.request_type === "locator_slip") {
+        required("travel_datetime", "date and time");
+        required("travel_type", "travel type");
+    } else {
+        required("host_of_activity", "host of activity");
+        required("inclusive_dates", "inclusive dates");
+        required("fund_source", "fund source");
+    }
+
+    return errors;
+};

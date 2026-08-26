@@ -17,14 +17,21 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */ 
-    public function create(): Response|RedirectResponse
+    public function create(Request $request): Response|RedirectResponse
     {
         if (Auth::check()) {
             return redirect()->route('employee-management');
         }
 
+        $documentRequestModal = match ($request->query('modal')) {
+            'locator-slip' => 'locator_slip',
+            'travel-order' => 'travel_order',
+            default => null,
+        };
+
         return Inertia::render('Auth/Login/Login', [
             'canResetPassword' => Route::has('password.request'),
+            'documentRequestModal' => $documentRequestModal,
             'status' => session('status'),
             'stations' => fn () => Station::query()
                 ->select('id', 'name', 'code')

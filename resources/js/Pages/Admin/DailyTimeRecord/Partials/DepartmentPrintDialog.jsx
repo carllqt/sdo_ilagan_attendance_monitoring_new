@@ -17,7 +17,7 @@ import SignatoriesSummary from "./DepartmentPrint/SignatoriesSummary";
 import SignatoryPopover from "./DepartmentPrint/SignatoryPopover";
 import useDepartmentPrintData from "./DepartmentPrint/hooks/useDepartmentPrintData";
 import useDepartmentSignatories from "./DepartmentPrint/hooks/useDepartmentSignatories";
-import useDtrPdfExport from "./DepartmentPrint/hooks/useDtrPdfExport";
+import useDtrPrint from "./DepartmentPrint/hooks/useDtrPrint";
 import { formatMonth } from "./DepartmentPrint/utils";
 
 const DepartmentPrintDialog = ({
@@ -75,7 +75,7 @@ const DepartmentPrintDialog = ({
         selectedDepartment,
     });
 
-    const { handleDownloadPDF, isGenerating } = useDtrPdfExport({
+    const { handlePrint, isGenerating } = useDtrPrint({
         onClose,
         printContainerRef,
         selectedMonth,
@@ -177,7 +177,7 @@ const DepartmentPrintDialog = ({
                             <Button
                                 type="button"
                                 variant="blue"
-                                onClick={handleDownloadPDF}
+                                onClick={handlePrint}
                                 disabled={
                                     !printEmployees.length ||
                                     isGenerating ||

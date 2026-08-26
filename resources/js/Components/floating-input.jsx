@@ -12,6 +12,8 @@ export default function FloatingInput({
     onFocus,
     onBlur,
     type = "text",
+    autoComplete,
+    autoFocus = false,
     readOnly = false,
     disabled = false,
     inputClassName = "",
@@ -52,7 +54,7 @@ export default function FloatingInput({
           ? "text-[11px] font-medium text-blue-600"
           : "text-sm text-slate-400";
     const labelBgClassName = isGlass
-        ? "bg-transparent px-1 drop-shadow-sm"
+        ? "bg-[#081452] px-2 drop-shadow-sm"
         : `bg-slate-50 px-1 ${isFocused ? "bg-white" : ""}`;
     const clearButtonClassName = isGlass
         ? "bg-white/90 text-slate-500 hover:bg-[#141b6d] hover:text-white"
@@ -73,6 +75,8 @@ export default function FloatingInput({
                     type={type}
                     id={name}
                     name={name}
+                    autoComplete={autoComplete}
+                    autoFocus={autoFocus}
                     value={value}
                     onChange={onChange}
                     onKeyDown={(event) => {
@@ -129,4 +133,3 @@ export default function FloatingInput({
         </div>
     );
 }
-
