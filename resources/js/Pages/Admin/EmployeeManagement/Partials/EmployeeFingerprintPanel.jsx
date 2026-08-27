@@ -124,9 +124,14 @@ const EmployeeFingerprintPanel = ({
         isSchoolAdmin
             ? employee?.station?.name || "-"
             : employee?.meta || employee?.office?.name || "-";
+    const registrationInProgress = scanning || scanStatus === "success";
+    const controlsDisabled =
+        fingerprintEmployeeLoading || registrationInProgress;
     const registrationDisabled =
-        !selectedEmployee || fingerprintEmployeeLoading;
-    const hasOpenSuggestions = showSuggestions && !fingerprintEmployeeLoading;
+        !selectedEmployee ||
+        fingerprintEmployeeLoading ||
+        scanStatus === "success";
+    const hasOpenSuggestions = showSuggestions && !controlsDisabled;
 
     return (
         <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg">
@@ -160,7 +165,7 @@ const EmployeeFingerprintPanel = ({
                             }}
                             onFocus={() => setShowSuggestions(true)}
                             onClick={() => setShowSuggestions(true)}
-                            disabled={fingerprintEmployeeLoading}
+                            disabled={controlsDisabled}
                         />
 
                         {showSuggestions ? (
@@ -187,7 +192,7 @@ const EmployeeFingerprintPanel = ({
                                                         type="button"
                                                         onMouseDown={() => {
                                                             if (
-                                                                fingerprintEmployeeLoading
+                                                                controlsDisabled
                                                             ) {
                                                                 return;
                                                             }
@@ -207,7 +212,7 @@ const EmployeeFingerprintPanel = ({
                                                             );
                                                         }}
                                                         disabled={
-                                                            fingerprintEmployeeLoading
+                                                            controlsDisabled
                                                         }
                                                         className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-60"
                                                     >
@@ -255,7 +260,7 @@ const EmployeeFingerprintPanel = ({
                             setSearchValue("");
                             setShowSuggestions(false);
                         }}
-                        disabled={fingerprintEmployeeLoading}
+                        disabled={controlsDisabled}
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-200 bg-white text-red-500 shadow-sm transition hover:bg-red-100"
                         aria-label="Clear selected employee"
                     >
@@ -366,7 +371,7 @@ const EmployeeFingerprintPanel = ({
                             <AlertDialogTrigger asChild>
                                 <Button
                                     variant="blue"
-                                    disabled={fingerprintEmployeeLoading}
+                                    disabled={controlsDisabled}
                                     className="h-10 flex-1 rounded-xl text-sm font-semibold"
                                 >
                                     {fingerprintEmployeeLoading

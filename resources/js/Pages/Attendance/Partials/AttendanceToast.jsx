@@ -7,9 +7,14 @@ const toneClasses = {
     error: "border-rose-300/30 bg-rose-400/15 text-rose-200",
 };
 
-export const AttendanceCountdown = ({ seconds }) => {
+export const AttendanceCountdown = ({
+    seconds,
+    className = "absolute right-4 top-4",
+}) => {
     return (
-        <div className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/35 shadow-inner ring-1 ring-amber-200/25">
+        <div
+            className={`${className} flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/35 shadow-inner ring-1 ring-amber-200/25`}
+        >
             <style>{`
                 @keyframes attendance-toast-countdown {
                     from { stroke-dashoffset: 0; }

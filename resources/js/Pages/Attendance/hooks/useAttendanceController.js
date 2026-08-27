@@ -707,6 +707,15 @@ const useAttendanceController = ({
         }
     };
 
+    const handlePromptTimeout = () => {
+        setShowAMPromptModal(false);
+        setShowPMPromptModal(false);
+        setAMPromptData(null);
+        setPMPromptData(null);
+        resetScannerState();
+        startAttendanceFingerprintScan();
+    };
+
     const currentStatus = statusConfig[scanStatus] || statusConfig.idle;
     const StatusIcon = currentStatus.icon;
     const selectedChoice = attendanceChoice(logSession, logAction);
@@ -764,6 +773,7 @@ const useAttendanceController = ({
         handleLogActionChange,
         handleLogSessionToggle,
         handlePromptChoice,
+        handlePromptTimeout,
         handleSearchChange,
         handleSessionChange,
         hasOpenSuggestions,

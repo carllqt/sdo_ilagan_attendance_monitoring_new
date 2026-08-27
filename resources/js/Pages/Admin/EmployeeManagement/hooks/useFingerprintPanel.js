@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
+import { toast } from "sonner";
 import {
     clampAvailableFingers,
     fingerprintMessages,
@@ -14,6 +15,7 @@ const useFingerprintPanel = ({
     selectedFingerprintEmployeeProp,
     testFingerprintModal,
 }) => {
+    const registrationToastId = "fingerprint-registration";
     const [selectedEmployee, setSelectedEmployee] = useState(
         selectedFingerprintEmployeeProp?.id || "",
     );
@@ -24,6 +26,8 @@ const useFingerprintPanel = ({
     const [scanFeedbackKey, setScanFeedbackKey] = useState(0);
     const [scanning, setScanning] = useState(false);
     const registerSourceRef = useRef(null);
+    const registrationInProgressRef = useRef(false);
+    const registrationSuccessMessageRef = useRef("");
     const [testOpen, setTestOpen] = useState(Boolean(testFingerprintModal));
     const testOpenRef = useRef(Boolean(testFingerprintModal));
     const [testMessage, setTestMessage] = useState(
@@ -92,6 +96,14 @@ const useFingerprintPanel = ({
         setScanMessage(message);
     };
 
+    const showRegistrationErrorToast = (message) => {
+        toast.dismiss(registrationToastId);
+
+        window.requestAnimationFrame(() => {
+            toast.error(message);
+        });
+    };
+
     const setTestFeedback = (status, message) => {
         setTestStatus(status);
         setTestMessage(message);
@@ -106,7 +118,9 @@ const useFingerprintPanel = ({
         testResetTimerRef.current = setTimeout(resetTestFeedback, 3000);
     };
 
-    const clearFingerprintEmployee = () => {
+    const clearFingerprintEmployee = ({ onSuccess, onError } = {}) => {
+        let querySucceeded = false;
+
         setFingerprintEmployeeLoading(true);
         setSelectedEmployee("");
         setSelectedFingerprintEmployee(null);
@@ -119,23 +133,19 @@ const useFingerprintPanel = ({
             preserveState: false,
             preserveScroll: true,
             replace: true,
-            onFinish: () => setFingerprintEmployeeLoading(false),
+            onSuccess: () => {
+                querySucceeded = true;
+            },
+            onError,
+            onFinish: () => {
+                setFingerprintEmployeeLoading(false);
+
+                if (querySucceeded) {
+                    window.requestAnimationFrame(() => onSuccess?.());
+                }
+            },
         });
     };
-
-    useEffect(() => {
-        let timer;
-
-        if (scanStatus === "success") {
-            timer = setTimeout(() => {
-                setScanning(false);
-                setRegistrationFeedback("idle", fingerprintMessages.placeFinger);
-                clearFingerprintEmployee();
-            }, 5000);
-        }
-
-        return () => clearTimeout(timer);
-    }, [scanStatus]);
 
     useEffect(() => {
         return () => {
@@ -147,19 +157,31 @@ const useFingerprintPanel = ({
 
     const cancelScan = () => {
         stopRegisterSource();
+        registrationInProgressRef.current = false;
+        toast.dismiss(registrationToastId);
         setScanning(false);
         setRegistrationFeedback("idle", fingerprintMessages.cancelled);
     };
 
     const registerFingerprint = () => {
-        if (!selectedEmployee) return;
+        if (
+            !selectedEmployee ||
+            registerSourceRef.current ||
+            registrationInProgressRef.current
+        ) {
+            return;
+        }
 
         stopRegisterSource();
+        registrationInProgressRef.current = true;
         setScanning(true);
         setRegistrationFeedback(
             "scanning",
             fingerprintMessages.registrationStarting,
         );
+        toast.loading(fingerprintMessages.registrationStarting, {
+            id: registrationToastId,
+        });
 
         const source = new EventSource(
             `${fingerprintServiceUrl}/bioRegisterSSE/${selectedEmployee}`,
@@ -177,12 +199,15 @@ const useFingerprintPanel = ({
 
                 if (data.success === null) {
                     setRegistrationFeedback("scanning", data.message);
+                    toast.loading(data.message, { id: registrationToastId });
                 } else if (data.success === true) {
                     setRegistrationFeedback("success", data.message);
+                    registrationSuccessMessageRef.current = data.message;
                     setScanning(false);
                     stopRegisterSource(source);
-
-                    const emp = findCurrentEmployee(selectedEmployee);
+                    toast.loading("Updating fingerprint registration...", {
+                        id: registrationToastId,
+                    });
 
                     setSelectedFingerprintEmployee((current) =>
                         String(current?.id) === String(selectedEmployee)
@@ -197,11 +222,26 @@ const useFingerprintPanel = ({
                             : current,
                     );
 
-                    if (emp && Number(emp.available_fingers ?? 3) - 1 <= 0) {
-                        clearFingerprintEmployee();
-                    }
+                    clearFingerprintEmployee({
+                        onSuccess: () => {
+                            toast.success(
+                                registrationSuccessMessageRef.current ||
+                                    "Fingerprint registered successfully.",
+                                { id: registrationToastId },
+                            );
+                            registrationInProgressRef.current = false;
+                        },
+                        onError: () => {
+                            showRegistrationErrorToast(
+                                "Fingerprint registered, but the employee list could not be updated.",
+                            );
+                            registrationInProgressRef.current = false;
+                        },
+                    });
                 } else if (data.success === false) {
                     setRegistrationFeedback("error", data.message);
+                    showRegistrationErrorToast(data.message);
+                    registrationInProgressRef.current = false;
                     setScanning(false);
                     stopRegisterSource(source);
                 }
@@ -212,6 +252,10 @@ const useFingerprintPanel = ({
                     "error",
                     fingerprintMessages.unexpectedError,
                 );
+                showRegistrationErrorToast(
+                    fingerprintMessages.unexpectedError,
+                );
+                registrationInProgressRef.current = false;
                 setScanning(false);
                 stopRegisterSource(source);
             }
@@ -226,6 +270,10 @@ const useFingerprintPanel = ({
                 "error",
                 fingerprintMessages.serviceUnavailable,
             );
+            showRegistrationErrorToast(
+                fingerprintMessages.serviceUnavailable,
+            );
+            registrationInProgressRef.current = false;
             setScanning(false);
             stopRegisterSource(source);
         };
@@ -362,4 +410,3 @@ const useFingerprintPanel = ({
 };
 
 export default useFingerprintPanel;
-

@@ -98,6 +98,7 @@ const Attendance = ({
                         onPrimary={() =>
                             attendance.handlePromptChoice("PM Time-In")
                         }
+                        onExpire={attendance.handlePromptTimeout}
                     />
                 )}
 
@@ -113,6 +114,7 @@ const Attendance = ({
                         onPrimary={() =>
                             attendance.handlePromptChoice("PM Time-Out")
                         }
+                        onExpire={attendance.handlePromptTimeout}
                     />
                 )}
 

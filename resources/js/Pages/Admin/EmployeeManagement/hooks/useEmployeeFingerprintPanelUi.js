@@ -7,7 +7,6 @@ const useEmployeeFingerprintPanelUi = ({
     availableFingers,
     employees,
     isSchoolAdmin = false,
-    scanFeedbackKey,
     scanMessage,
     scanStatus,
     scanning,
@@ -20,7 +19,6 @@ const useEmployeeFingerprintPanelUi = ({
 }) => {
     const [searchValue, setSearchValue] = useState("");
     const testStartedRef = useRef(false);
-    const lastScanToastRef = useRef("");
     const lastTestToastRef = useRef("");
     const {
         searchBoxRef,
@@ -75,39 +73,6 @@ const useEmployeeFingerprintPanelUi = ({
         testStartedRef.current = true;
         startTestFingerprint();
     }, [testOpen, startTestFingerprint]);
-
-    useEffect(() => {
-        const cleanMessage = String(scanMessage || "").trim();
-
-        if (
-            !selectedEmployeeRecord ||
-            !cleanMessage ||
-            cleanMessage === fingerprintMessages.placeFinger
-        ) {
-            return;
-        }
-
-        const toastKey = `${scanFeedbackKey}:${scanStatus}:${cleanMessage}`;
-        if (lastScanToastRef.current === toastKey) {
-            return;
-        }
-
-        lastScanToastRef.current = toastKey;
-
-        if (scanStatus === "success") {
-            toast.success(cleanMessage);
-        } else if (scanStatus === "error") {
-            toast.error(cleanMessage);
-        } else if (scanning) {
-            toast(cleanMessage);
-        }
-    }, [
-        scanStatus,
-        scanMessage,
-        scanFeedbackKey,
-        scanning,
-        selectedEmployeeRecord,
-    ]);
 
     useEffect(() => {
         const cleanMessage = String(testMessage || "").trim();
