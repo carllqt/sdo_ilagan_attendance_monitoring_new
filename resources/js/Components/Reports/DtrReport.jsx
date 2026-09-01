@@ -82,19 +82,22 @@ const DTRReport = React.forwardRef(
         const cellStyle = (i, opts = {}) => ({
             width: colW[i],
             boxSizing: "border-box",
-            padding: "0 2px",
-            fontSize: "14px",
-            lineHeight: "18px",
-            height: "18px",
+            padding: "0 3px",
+            fontSize: "12px",
+            lineHeight: "15px",
+            height: "15px",
             verticalAlign: "middle",
             textAlign: opts.align || "center",
+            fontWeight: "normal",
         });
+
         const detailsRowStyle = {
             display: "flex",
             alignItems: "baseline",
             margin: "0 0 10px",
             whiteSpace: "nowrap",
         };
+
         const detailsValueStyle = {
             flex: 1,
             minWidth: 0,
@@ -118,41 +121,66 @@ const DTRReport = React.forwardRef(
             >
                 <style>
                     {`
-                    table.dtr-table {
-                        border-collapse: collapse !important;
-                        table-layout: fixed !important;
-                        width: ${totalWidth} !important;
-                        margin: 0 auto;
-                    }
                     table.dtr-table th {
-                        font-weight: bold;
-                        font-size: 14px;
-                        line-height: 18px;
+                        font-weight: normal;
+                        font-size: 12px;
+                        line-height: 15px;
                         padding: 0 4px 8px;
                     }
-                    table.dtr-table td {
-                        font-size: 14px !important;
-                        padding: 0 4px !important;
-                        line-height: 18px !important;
-                        height: 18px !important;
+
+                    table.dtr-table th {
+                        font-weight: bold;
+                        font-size: 12px;
+                        line-height: 15px;
+                        padding: 0 4px 8px;
                     }
+
+                    table.dtr-table td {
+                        font-size: 12px !important;
+                        padding: 0 4px !important;
+                        line-height: 15px !important;
+                        height: 15px !important;
+                    }
+
                     table.dtr-table td:first-child {
                         text-align: left;
                     }
+
                     @media print {
-                        .dtr-report h5 { font-size: 13px !important; }
-                        .dtr-report h2 { font-size: 16px !important; }
-                        .dtr-report .dtr-details { font-size: 15px !important; }
+                        .dtr-report h5 {
+                            font-size: 12px !important;
+                        }
+
+                        .dtr-report h2 {
+                            font-size: 12px !important;
+                        }
+
+                        .dtr-report .dtr-details {
+                            font-size: 12px !important;
+                        }
+
                         .dtr-report table.dtr-table th,
                         .dtr-report table.dtr-table td {
-                            font-size: 13px !important;
-                            line-height: 17px !important;
-                            height: 17px !important;
+                            font-size: 12px !important;
+                            line-height: 15px !important;
+                            height: 15px !important;
                         }
-                        .dtr-report .dtr-certification { font-size: 12px !important; }
-                        .dtr-report .dtr-certification-copy { font-size: 13px !important; }
-                        .dtr-report .dtr-signature { font-size: 18px !important; }
-                        .dtr-report .dtr-generated-footer { font-size: 12px !important; }
+
+                        .dtr-report .dtr-certification {
+                            font-size: 10px !important;
+                        }
+
+                        .dtr-report .dtr-certification-copy {
+                            font-size: 14px !important;
+                        }
+
+                        .dtr-report .dtr-signature {
+                            font-size: 18px !important;
+                        }
+
+                        .dtr-report .dtr-generated-footer {
+                            font-size: 12px !important;
+                        }
                     }
                 `}
                 </style>
@@ -162,11 +190,11 @@ const DTRReport = React.forwardRef(
                     alt="Watermark"
                     style={{
                         position: "absolute",
-                        top: "50%",
+                        top: "42%",
                         left: "50%",
                         transform: "translate(-50%, -50%)",
                         width: "70%",
-                        opacity: 0.15,
+                        opacity: 0.2,
                         zIndex: 0,
                     }}
                 />
@@ -176,21 +204,22 @@ const DTRReport = React.forwardRef(
                         <h5
                             style={{
                                 margin: 0,
-                                fontSize: "14px",
-                                lineHeight: "18px",
+                                fontSize: "10px",
+                                lineHeight: "10px",
                             }}
                         >
                             CS Form 48
                         </h5>
+
                         <h2
                             style={{
                                 margin: 0,
-                                fontSize: "18px",
-                                lineHeight: "23px",
+                                fontSize: "12px",
+                                lineHeight: "18px",
                                 color: "#aaa",
                             }}
                         >
-                            DAILY TIME RECORD
+                            <strong>DAILY TIME RECORD</strong>
                         </h2>
                     </div>
 
@@ -200,22 +229,24 @@ const DTRReport = React.forwardRef(
                             display: "flex",
                             justifyContent: "space-between",
                             marginBottom: "30px",
-                            fontSize: "16px",
-                            lineHeight: "20px",
+                            fontSize: "12px",
+                            lineHeight: "17px",
                         }}
                     >
                         <div style={{ width: "53.33%" }}>
-                            <p style={{ margin: "0 0 15px", fontWeight: 600 }}>
+                            <p style={{ margin: "0 0 12px", fontWeight: 600 }}>
                                 <strong>
                                     SDO City Of Ilagan Daily Time Record
                                 </strong>
                             </p>
+
                             <p style={{ margin: "0 0 10px" }}>
                                 Start Date:{" "}
                                 {new Date(dateRange.start).toLocaleDateString(
                                     "en-US",
                                 )}
                             </p>
+
                             <p style={{ margin: 0 }}>
                                 End Date:{" "}
                                 {new Date(dateRange.end).toLocaleDateString(
@@ -223,6 +254,7 @@ const DTRReport = React.forwardRef(
                                 )}
                             </p>
                         </div>
+
                         <div
                             style={{
                                 width: "calc(46.67% - 12px)",
@@ -231,20 +263,31 @@ const DTRReport = React.forwardRef(
                         >
                             <div style={detailsRowStyle}>
                                 <span>Name:</span>
-                                <span style={detailsValueStyle}>{name}</span>
+                                <span
+                                    style={{
+                                        ...detailsValueStyle,
+                                        textTransform: "uppercase",
+                                        fontWeight: "normal",
+                                    }}
+                                >
+                                    {name}
+                                </span>
                             </div>
+
                             <div style={detailsRowStyle}>
                                 <span>For the Month of:</span>
                                 <span style={detailsValueStyle}>
                                     {formattedMonth}
                                 </span>
                             </div>
+
                             <div style={detailsRowStyle}>
                                 <span>Official Hour for arrival:</span>
                                 <span style={detailsValueStyle}>
                                     {officialTimeIn}
                                 </span>
                             </div>
+
                             <div
                                 style={{ ...detailsRowStyle, marginBottom: 0 }}
                             >
@@ -262,9 +305,11 @@ const DTRReport = React.forwardRef(
                                 <col key={i} style={{ width: w }} />
                             ))}
                         </colgroup>
+
                         <thead>
                             <tr>
                                 <th style={cellStyle(0)} />
+
                                 {[
                                     "AM IN",
                                     "AM OUT",
@@ -285,19 +330,23 @@ const DTRReport = React.forwardRef(
                                     </th>
                                 ))}
                             </tr>
+
                             <tr>
                                 <th
                                     style={{
                                         ...cellStyle(0, { align: "left" }),
-                                        paddingTop: "7px",
-                                        paddingBottom: "7px",
+                                        paddingTop: "8px",
+                                        paddingBottom: "8px",
+                                        textTransform: "uppercase",
                                     }}
                                 >
                                     {name}
                                 </th>
+
                                 <th colSpan={7} />
                             </tr>
                         </thead>
+
                         <tbody>
                             {allDates.map((d) => {
                                 const iso = d.toISOString().split("T")[0];
@@ -316,6 +365,7 @@ const DTRReport = React.forwardRef(
                                         >
                                             {formatted} {weekday}
                                         </td>
+
                                         {log.isTravelOrder ? (
                                             <td
                                                 colSpan={7}
@@ -332,21 +382,27 @@ const DTRReport = React.forwardRef(
                                                 <td style={cellStyle(1)}>
                                                     {formatLogTime(log.amIn)}
                                                 </td>
+
                                                 <td style={cellStyle(2)}>
                                                     {formatLogTime(log.amOut)}
                                                 </td>
+
                                                 <td style={cellStyle(3)}>
                                                     {formatLogTime(log.pmIn)}
                                                 </td>
+
                                                 <td style={cellStyle(4)}>
                                                     {formatLogTime(log.pmOut)}
                                                 </td>
+
                                                 <td style={cellStyle(5)}>
                                                     {formatLogTime(log.otIn)}
                                                 </td>
+
                                                 <td style={cellStyle(6)}>
                                                     {formatLogTime(log.otOut)}
                                                 </td>
+
                                                 <td style={cellStyle(7)}>
                                                     {log.undertime || ""}
                                                 </td>
@@ -362,8 +418,7 @@ const DTRReport = React.forwardRef(
                         className="dtr-certification"
                         style={{
                             marginTop: "30px",
-                            fontSize: "13px",
-                            lineHeight: "18px",
+                            lineHeight: "15px",
                             textAlign: "center",
                         }}
                     >
@@ -371,7 +426,7 @@ const DTRReport = React.forwardRef(
                             className="dtr-certification-copy"
                             style={{
                                 margin: "0 0 50px",
-                                fontSize: "15px",
+                                fontSize: "14px",
                             }}
                         >
                             I certify on my honor that the above is true and
@@ -384,7 +439,7 @@ const DTRReport = React.forwardRef(
                             className="dtr-signature"
                             style={{
                                 textAlign: "center",
-                                fontSize: "21px",
+                                fontSize: "18px",
                                 marginBottom: 0,
                                 lineHeight: 1.2,
                             }}
@@ -392,6 +447,7 @@ const DTRReport = React.forwardRef(
                             <div style={{ marginBottom: "4px" }}>
                                 <strong>{name.toUpperCase()}</strong>
                             </div>
+
                             <div
                                 style={{
                                     borderBottom: "1px solid black",
@@ -399,7 +455,13 @@ const DTRReport = React.forwardRef(
                                     margin: "0 auto 2px auto",
                                 }}
                             />
-                            <small style={{ display: "block", marginTop: "0" }}>
+
+                            <small
+                                style={{
+                                    display: "block",
+                                    marginTop: "0",
+                                }}
+                            >
                                 Printed Name and Signature of Employee
                             </small>
                         </div>
@@ -408,7 +470,7 @@ const DTRReport = React.forwardRef(
                             className="dtr-signature"
                             style={{
                                 textAlign: "center",
-                                fontSize: "21px",
+                                fontSize: "18px",
                                 lineHeight: 1.2,
                                 marginTop: "50px",
                             }}
@@ -421,6 +483,7 @@ const DTRReport = React.forwardRef(
                                     ).toUpperCase()}
                                 </strong>
                             </div>
+
                             <div
                                 style={{
                                     borderBottom: "1px solid black",
@@ -428,12 +491,19 @@ const DTRReport = React.forwardRef(
                                     margin: "0 auto 2px auto",
                                 }}
                             />
-                            <small style={{ display: "block", marginTop: "0" }}>
+
+                            <small
+                                style={{
+                                    display: "block",
+                                    marginTop: "0",
+                                }}
+                            >
                                 {signatoryPosition}
                             </small>
                         </div>
                     </div>
                 </div>
+
                 <div
                     className="dtr-generated-footer"
                     style={{
@@ -441,7 +511,7 @@ const DTRReport = React.forwardRef(
                         right: 0,
                         bottom: 0,
                         left: 0,
-                        fontSize: "13px",
+                        fontSize: "12px",
                         textAlign: "left",
                         fontStyle: "italic",
                         fontFamily: "Times New Roman",
