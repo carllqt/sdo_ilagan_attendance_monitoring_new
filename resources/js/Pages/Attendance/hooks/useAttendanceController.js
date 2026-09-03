@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
 import { getEmployeeName } from "@/lib/utils";
@@ -21,6 +21,7 @@ import {
 
 const MANUAL_SCANNER_SELECTION_MS = 60 * 1000;
 const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
+const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
 
 const useAttendanceController = ({
     attendances,
@@ -79,6 +80,7 @@ const useAttendanceController = ({
     const reconnectTimerRef = useRef(null);
     const manualSelectionTimerRef = useRef(null);
     const employeeClearTimerRef = useRef(null);
+    const sessionRefreshStartedRef = useRef(false);
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
@@ -193,6 +195,24 @@ const useAttendanceController = ({
         setShowSuggestions(false);
     };
 
+    const showLogsForSession = (session) => {
+        if (session !== "AM" && session !== "PM") return;
+
+        filtersRef.current = {
+            ...filtersRef.current,
+            session,
+        };
+        setActiveTab(session);
+
+        const params = new URLSearchParams(window.location.search);
+        params.set("logs", session.toLowerCase());
+        window.history.replaceState(
+            window.history.state,
+            "",
+            `${window.location.pathname}?${params.toString()}`,
+        );
+    };
+
     useEffect(() => {
         const syncClock = () => {
             const now = new Date();
@@ -251,11 +271,24 @@ const useAttendanceController = ({
         setDailyAttendance(attendanceItems(attendances));
     }, [attendances]);
 
+    const refreshExpiredSession = useCallback((error) => {
+        const status = error.response?.status;
+
+        if (status !== 401 && status !== 419) return false;
+
+        if (!sessionRefreshStartedRef.current) {
+            sessionRefreshStartedRef.current = true;
+            window.location.reload();
+        }
+
+        return true;
+    }, []);
+
     useEffect(() => {
         const keepSessionAlive = () => {
             window.axios
                 .get(route("attendance.keep-alive"))
-                .catch(() => undefined);
+                .catch((error) => refreshExpiredSession(error));
         };
 
         const handleVisibilityChange = () => {
@@ -265,7 +298,7 @@ const useAttendanceController = ({
         };
 
         keepSessionAlive();
-        const timer = setInterval(keepSessionAlive, 30 * 60 * 1000);
+        const timer = setInterval(keepSessionAlive, SESSION_KEEP_ALIVE_MS);
         document.addEventListener("visibilitychange", handleVisibilityChange);
 
         return () => {
@@ -275,7 +308,7 @@ const useAttendanceController = ({
                 handleVisibilityChange,
             );
         };
-    }, []);
+    }, [refreshExpiredSession]);
 
     useEffect(() => {
         const now = new Date();
@@ -512,6 +545,7 @@ const useAttendanceController = ({
         if (data.success && data.employee && data.session && data.action) {
             const timeStr = data.time || new Date().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
+            showLogsForSession(data.session);
             setScannerFeedback("success", data.message);
             startSuccessCountdown(() => {
                 if (restartScanner) startAttendanceFingerprintScan();
@@ -544,6 +578,8 @@ const useAttendanceController = ({
 
             applyAttendanceResult(response.data);
         } catch (error) {
+            if (refreshExpiredSession(error)) return;
+
             const message =
                 error.response?.data?.message ||
                 "Unable to record attendance.";
@@ -696,11 +732,11 @@ const useAttendanceController = ({
 
             applyAttendanceResult(response.data);
         } catch (error) {
+            if (refreshExpiredSession(error)) return;
+
             const message =
-                error.response?.status === 419
-                    ? "Your attendance session expired. Refresh the page and sign in again."
-                    : error.response?.data?.message ||
-                      "Failed to send choice to server.";
+                error.response?.data?.message ||
+                "Failed to send choice to server.";
 
             setScannerFeedback("error", message);
             retryScanner();

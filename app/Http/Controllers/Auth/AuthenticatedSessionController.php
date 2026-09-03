@@ -8,6 +8,7 @@ use App\Models\Administrator\Station;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +17,7 @@ class AuthenticatedSessionController extends Controller
 {
     /**
      * Display the login view.
-     */ 
+     */
     public function create(Request $request): Response|RedirectResponse
     {
         if (Auth::check()) {
@@ -49,6 +50,14 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+        Auth::logoutOtherDevices((string) $request->input('password'));
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $request->user()->getAuthIdentifier())
+                ->where('id', '!=', $request->session()->getId())
+                ->delete();
+        }
 
         return redirect()->route('employee-management');
     }

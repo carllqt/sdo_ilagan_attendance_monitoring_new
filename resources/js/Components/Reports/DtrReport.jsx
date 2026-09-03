@@ -368,14 +368,16 @@ const DTRReport = React.forwardRef(
 
                                         {log.isTravelOrder ? (
                                             <td
-                                                colSpan={7}
+                                                colSpan={4}
                                                 style={{
-                                                    ...cellStyle(1),
+                                                    ...cellStyle(0),
                                                     textAlign: "center",
-                                                    fontWeight: "bold",
+                                                    fontStyle: "italic",
+                                                    color: "#666",
+                                                    fontWeight: "600",
                                                 }}
                                             >
-                                                ON TRAVEL
+                                                — TRAVEL ORDER (TO) —
                                             </td>
                                         ) : (
                                             <>
