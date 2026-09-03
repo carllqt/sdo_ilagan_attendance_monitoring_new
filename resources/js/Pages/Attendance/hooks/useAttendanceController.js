@@ -10,6 +10,7 @@ import {
     attendanceItems,
     canSwitchToAmSession,
     defaultLogAction,
+    defaultLogsSession,
     defaultSession,
     employeePayload,
     emptyAM,
@@ -22,6 +23,7 @@ import {
 const MANUAL_SCANNER_SELECTION_MS = 60 * 1000;
 const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
 const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
+const SCANNED_LOGS_DISPLAY_MS = 5 * 1000;
 
 const useAttendanceController = ({
     attendances,
@@ -81,6 +83,8 @@ const useAttendanceController = ({
     const manualSelectionTimerRef = useRef(null);
     const employeeClearTimerRef = useRef(null);
     const sessionRefreshStartedRef = useRef(false);
+    const automaticLogsSessionRef = useRef(null);
+    const scannedLogsResetTimerRef = useRef(null);
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
@@ -195,7 +199,7 @@ const useAttendanceController = ({
         setShowSuggestions(false);
     };
 
-    const showLogsForSession = (session) => {
+    const showLogsForSession = useCallback((session) => {
         if (session !== "AM" && session !== "PM") return;
 
         filtersRef.current = {
@@ -211,7 +215,22 @@ const useAttendanceController = ({
             "",
             `${window.location.pathname}?${params.toString()}`,
         );
-    };
+    }, []);
+
+    const showScannedLogsForSession = useCallback(
+        (session) => {
+            clearTimeout(scannedLogsResetTimerRef.current);
+            showLogsForSession(session);
+
+            scannedLogsResetTimerRef.current = setTimeout(() => {
+                scannedLogsResetTimerRef.current = null;
+                const configuredSession = defaultLogsSession(new Date());
+                automaticLogsSessionRef.current = configuredSession;
+                showLogsForSession(configuredSession);
+            }, SCANNED_LOGS_DISPLAY_MS);
+        },
+        [showLogsForSession],
+    );
 
     useEffect(() => {
         const syncClock = () => {
@@ -327,6 +346,18 @@ const useAttendanceController = ({
     }, [attendanceFilters]);
 
     useEffect(() => {
+        const nextLogsSession = defaultLogsSession(time);
+
+        if (automaticLogsSessionRef.current !== nextLogsSession) {
+            automaticLogsSessionRef.current = nextLogsSession;
+
+            if (!scannedLogsResetTimerRef.current) {
+                showLogsForSession(nextLogsSession);
+            }
+        }
+    }, [showLogsForSession, time]);
+
+    useEffect(() => {
         scannerEnabledRef.current = canUseScanner;
 
         if (!canUseScanner) {
@@ -342,6 +373,7 @@ const useAttendanceController = ({
             clearTimeout(reconnectTimerRef.current);
             clearTimeout(manualSelectionTimerRef.current);
             clearTimeout(employeeClearTimerRef.current);
+            clearTimeout(scannedLogsResetTimerRef.current);
         };
     }, [canUseScanner, stationQuery]);
 
@@ -545,7 +577,7 @@ const useAttendanceController = ({
         if (data.success && data.employee && data.session && data.action) {
             const timeStr = data.time || new Date().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
-            showLogsForSession(data.session);
+            showScannedLogsForSession(data.session);
             setScannerFeedback("success", data.message);
             startSuccessCountdown(() => {
                 if (restartScanner) startAttendanceFingerprintScan();
@@ -663,6 +695,8 @@ const useAttendanceController = ({
     };
 
     const handleSessionChange = (session) => {
+        clearTimeout(scannedLogsResetTimerRef.current);
+        scannedLogsResetTimerRef.current = null;
         setActiveTab(session);
         updateAttendanceQuery({ session });
     };

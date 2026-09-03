@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 
 class AttendanceFilter
 {
+    private const PM_LOGS_START_MINUTES = 12 * 60 + 15;
+
     public function __construct(
         public readonly string $search,
         public readonly ?int $employeeId,
@@ -14,13 +16,17 @@ class AttendanceFilter
 
     public static function fromRequest(Request $request): self
     {
+        $now = now();
+        $defaultSession = ($now->hour * 60) + $now->minute < self::PM_LOGS_START_MINUTES
+            ? 'AM'
+            : 'PM';
         $session = strtoupper((string) $request->query(
             'logs',
-            now()->hour < 12 ? 'AM' : 'PM',
+            $defaultSession,
         ));
 
         if (! in_array($session, ['AM', 'PM'], true)) {
-            $session = now()->hour < 12 ? 'AM' : 'PM';
+            $session = $defaultSession;
         }
 
         return new self(

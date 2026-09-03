@@ -78,6 +78,9 @@ const minutesSinceMidnight = (date) =>
 export const defaultSession = (date = new Date()) =>
     minutesSinceMidnight(date) < 12 * 60 + 20 ? "AM" : "PM";
 
+export const defaultLogsSession = (date = new Date()) =>
+    minutesSinceMidnight(date) < 12 * 60 + 15 ? "AM" : "PM";
+
 export const defaultLogAction = (date, session = defaultSession(date)) => {
     const minutes = minutesSinceMidnight(date);
 
