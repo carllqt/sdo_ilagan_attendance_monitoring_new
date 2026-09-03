@@ -23,7 +23,7 @@ import {
 const MANUAL_SCANNER_SELECTION_MS = 60 * 1000;
 const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
 const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
-const SCANNED_LOGS_DISPLAY_MS = 5 * 1000;
+const TEMPORARY_LOGS_DISPLAY_MS = 5 * 1000;
 
 const useAttendanceController = ({
     attendances,
@@ -84,7 +84,7 @@ const useAttendanceController = ({
     const employeeClearTimerRef = useRef(null);
     const sessionRefreshStartedRef = useRef(false);
     const automaticLogsSessionRef = useRef(null);
-    const scannedLogsResetTimerRef = useRef(null);
+    const logsResetTimerRef = useRef(null);
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
@@ -217,17 +217,17 @@ const useAttendanceController = ({
         );
     }, []);
 
-    const showScannedLogsForSession = useCallback(
+    const showTemporaryLogsForSession = useCallback(
         (session) => {
-            clearTimeout(scannedLogsResetTimerRef.current);
+            clearTimeout(logsResetTimerRef.current);
             showLogsForSession(session);
 
-            scannedLogsResetTimerRef.current = setTimeout(() => {
-                scannedLogsResetTimerRef.current = null;
+            logsResetTimerRef.current = setTimeout(() => {
+                logsResetTimerRef.current = null;
                 const configuredSession = defaultLogsSession(new Date());
                 automaticLogsSessionRef.current = configuredSession;
                 showLogsForSession(configuredSession);
-            }, SCANNED_LOGS_DISPLAY_MS);
+            }, TEMPORARY_LOGS_DISPLAY_MS);
         },
         [showLogsForSession],
     );
@@ -351,7 +351,7 @@ const useAttendanceController = ({
         if (automaticLogsSessionRef.current !== nextLogsSession) {
             automaticLogsSessionRef.current = nextLogsSession;
 
-            if (!scannedLogsResetTimerRef.current) {
+            if (!logsResetTimerRef.current) {
                 showLogsForSession(nextLogsSession);
             }
         }
@@ -373,7 +373,7 @@ const useAttendanceController = ({
             clearTimeout(reconnectTimerRef.current);
             clearTimeout(manualSelectionTimerRef.current);
             clearTimeout(employeeClearTimerRef.current);
-            clearTimeout(scannedLogsResetTimerRef.current);
+            clearTimeout(logsResetTimerRef.current);
         };
     }, [canUseScanner, stationQuery]);
 
@@ -577,7 +577,7 @@ const useAttendanceController = ({
         if (data.success && data.employee && data.session && data.action) {
             const timeStr = data.time || new Date().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
-            showScannedLogsForSession(data.session);
+            showTemporaryLogsForSession(data.session);
             setScannerFeedback("success", data.message);
             startSuccessCountdown(() => {
                 if (restartScanner) startAttendanceFingerprintScan();
@@ -695,10 +695,7 @@ const useAttendanceController = ({
     };
 
     const handleSessionChange = (session) => {
-        clearTimeout(scannedLogsResetTimerRef.current);
-        scannedLogsResetTimerRef.current = null;
-        setActiveTab(session);
-        updateAttendanceQuery({ session });
+        showTemporaryLogsForSession(session);
     };
 
     const enableManualLogMode = () => {
