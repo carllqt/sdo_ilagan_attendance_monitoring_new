@@ -5,6 +5,7 @@ namespace App\Services\Administrator;
 use App\Data\Administrator\Attendance\AttendanceFilter;
 use App\Models\Administrator\Attendance;
 use App\Models\Administrator\Employee;
+use App\Models\Administrator\Station;
 use App\Models\User;
 use App\Repositories\Administrator\AttendanceRepository;
 use App\Services\AttendanceMonitoringRealtimeService;
@@ -46,12 +47,12 @@ class AttendanceService
             'fingerprintServiceUrl' => $this->fingerprintServiceUrl($request),
             'attendanceAccess' => [
                 'station' => [
-                    'id' => $user->employee?->station?->id,
-                    'name' => $user->employee?->station?->name,
+                    'id' => $user?->employee?->station?->id,
+                    'name' => $user?->employee?->station?->name,
                 ],
                 'admin' => [
-                    'id' => $user->employee?->id,
-                    'name' => $user->employee?->full_name,
+                    'id' => $user?->employee?->id,
+                    'name' => $user?->employee?->full_name,
                 ],
             ],
         ];
@@ -277,8 +278,18 @@ class AttendanceService
         ]);
     }
 
-    public function stationId(User $user): int
+    public function stationId(?User $user): ?int
     {
+        if (! $user) {
+            $sdoStationId = Station::query()->where('code', 'SDO')->value('id');
+
+            if (! $sdoStationId) {
+                abort(404, 'SDO station is not configured.');
+            }
+
+            return (int) $sdoStationId;
+        }
+
         $employee = $user->employee;
 
         if (! $employee?->station_id) {
@@ -303,7 +314,7 @@ class AttendanceService
         );
     }
 
-    private function employeeForAttendance(int $employeeId, int $stationId): Employee
+    private function employeeForAttendance(int $employeeId, ?int $stationId): Employee
     {
         $employee = Employee::query()
             ->with(['office:id,name'])
@@ -325,7 +336,7 @@ class AttendanceService
             abort(404, 'Employee not found.');
         }
 
-        if ((int) $employee->station_id !== $stationId) {
+        if ($stationId !== null && (int) $employee->station_id !== $stationId) {
             abort(403, 'Employee is not assigned to this station.');
         }
 

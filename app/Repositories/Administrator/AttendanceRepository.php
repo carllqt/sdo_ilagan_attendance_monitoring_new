@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 class AttendanceRepository
 {
-    public function todayAttendancesForStation(int $stationId, AttendanceFilter $filter)
+    public function todayAttendancesForStation(?int $stationId, AttendanceFilter $filter)
     {
         $timeInColumn = $filter->session === 'AM'
             ? 'attendance_ams.am_time_in'
@@ -30,9 +30,12 @@ class AttendanceRepository
             ->leftJoin('offices', 'offices.id', '=', 'employees.office_id')
             ->leftJoin('attendance_ams', 'attendance_ams.attendance_id', '=', 'attendances.id')
             ->leftJoin('attendance_pms', 'attendance_pms.attendance_id', '=', 'attendances.id')
-            ->where('employees.station_id', $stationId)
             ->where('employees.active_status', 1)
             ->whereDate('attendances.date', Carbon::today());
+
+        if ($stationId !== null) {
+            $query->where('employees.station_id', $stationId);
+        }
 
         if ($filter->employeeId) {
             $query->where('employees.id', $filter->employeeId);
@@ -62,13 +65,13 @@ class AttendanceRepository
             ->get();
     }
 
-    public function attendanceEmployeeSuggestions(int $stationId, string $search)
+    public function attendanceEmployeeSuggestions(?int $stationId, string $search)
     {
         if ($search === '') {
             return collect();
         }
 
-        return Employee::with(['office:id,name'])
+        $query = Employee::with(['office:id,name'])
             ->select(
                 'id',
                 'first_name',
@@ -80,7 +83,6 @@ class AttendanceRepository
                 'station_id',
                 'active_status',
             )
-            ->where('station_id', $stationId)
             ->where('active_status', 1)
             ->where(function ($query) use ($search) {
                 $query->where('id', $search)
@@ -99,8 +101,13 @@ class AttendanceRepository
                     ->orWhereHas('office', function ($officeQuery) use ($search) {
                         $officeQuery->where('name', 'like', "%{$search}%");
                     });
-            })
-            ->orderByName()
+            });
+
+        if ($stationId !== null) {
+            $query->where('station_id', $stationId);
+        }
+
+        return $query->orderByName()
             ->limit(6)
             ->get();
     }

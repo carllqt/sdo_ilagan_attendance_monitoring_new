@@ -42,6 +42,13 @@ Route::get('/attendance-monitoring/stations/suggestions', [AttendanceMonitoringC
 Route::get('/attendance-monitoring/employees/suggestions', [AttendanceMonitoringController::class, 'employeeSuggestions'])->name('attendance-monitoring.employees.suggestions');
 Route::post('/document-requests', [DocumentRequestController::class, 'store'])->name('document-requests.store');
 
+// Attendance kiosk routes are public so employees can record their own time.
+Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
+Route::get('/attendance/keep-alive', [AttendanceController::class, 'keepAlive'])->name('attendance.keep-alive');
+Route::get('/attendance/suggestions', [AttendanceController::class, 'suggestions'])->name('attendance.suggestions');
+Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
+Route::post('/attendance/choice', [AttendanceController::class, 'choice'])->name('attendance.choice');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -54,11 +61,6 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::get('/document-samples/travel-order', [DocumentPrintController::class, 'travelOrderSample'])
         ->name('document-samples.travel-order');
 
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
-    Route::get('/attendance/keep-alive', [AttendanceController::class, 'keepAlive'])->name('attendance.keep-alive');
-    Route::get('/attendance/suggestions', [AttendanceController::class, 'suggestions'])->name('attendance.suggestions');
-    Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
-    Route::post('/attendance/choice', [AttendanceController::class, 'choice'])->name('attendance.choice');
     Route::post('/attendance-monitoring/broadcast', [AttendanceMonitoringController::class, 'broadcast'])->name('attendance-monitoring.broadcast');
     Route::get('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'liveTest'])->name('attendance-monitoring.live-test');
     Route::post('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'triggerLiveTest'])->name('attendance-monitoring.live-test.trigger');
