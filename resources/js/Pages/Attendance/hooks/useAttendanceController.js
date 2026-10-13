@@ -25,6 +25,9 @@ const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
 const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
 const TEMPORARY_LOGS_DISPLAY_MS = 5 * 1000;
 
+const localDateKey = (date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
 const useAttendanceController = ({
     attendances,
     attendanceAccess = {},
@@ -85,6 +88,7 @@ const useAttendanceController = ({
     const sessionRefreshStartedRef = useRef(false);
     const automaticLogsSessionRef = useRef(null);
     const logsResetTimerRef = useRef(null);
+    const attendanceDateRef = useRef(localDateKey(initialNow));
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
@@ -289,6 +293,31 @@ const useAttendanceController = ({
     useEffect(() => {
         setDailyAttendance(attendanceItems(attendances));
     }, [attendances]);
+
+    const refreshAttendanceForDateChange = useCallback(() => {
+        const currentDate = localDateKey(new Date());
+
+        if (attendanceDateRef.current === currentDate) return;
+
+        attendanceDateRef.current = currentDate;
+        router.reload({
+            only: ["attendances"],
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, []);
+
+    useEffect(() => {
+        const checkDateChange = () => refreshAttendanceForDateChange();
+        const timer = setInterval(checkDateChange, 60 * 1000);
+
+        document.addEventListener("visibilitychange", checkDateChange);
+
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", checkDateChange);
+        };
+    }, [refreshAttendanceForDateChange]);
 
     const refreshExpiredSession = useCallback((error) => {
         const status = error.response?.status;
