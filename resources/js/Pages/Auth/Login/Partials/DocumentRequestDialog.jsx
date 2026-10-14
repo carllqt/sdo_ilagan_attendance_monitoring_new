@@ -13,6 +13,14 @@ import {
     CustomDropdownCheckboxObject,
 } from "@/components/dropdown-menu-main";
 import { extensionNameOptions } from "@/Pages/Admin/EmployeeManagement/utils";
+import { Calendar } from "@/Components/ui/calendar";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/Components/ui/popover";
+import { format } from "date-fns";
+import FloatingInput from "@/Components/floating-input";
 import {
     Briefcase,
     Building2,
@@ -22,6 +30,7 @@ import {
     Hash,
     Loader2,
     ShieldCheck,
+    CalendarIcon,
     User,
     Users,
     Wallet,
@@ -30,6 +39,14 @@ import {
 import { useEffect, useState } from "react";
 
 import { RequestDropdownField, RequestTextField } from "./RequestFields";
+
+const toLocalDate = (value) =>
+    value ? new Date(`${value}T00:00:00`) : undefined;
+
+const toDateInput = (date) =>
+    date
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+        : "";
 
 const DocumentRequestDialog = ({
     requestModalType,
@@ -434,23 +451,59 @@ const DocumentRequestDialog = ({
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                <RequestTextField
-                                                    id="request_inclusive_dates"
-                                                    label="Inclusive Dates"
-                                                    type="date"
-                                                    icon={CalendarDays}
-                                                    value={data.inclusive_dates}
-                                                    error={
-                                                        errors.inclusive_dates
-                                                    }
-                                                    disabled={processing}
-                                                    onChange={(value) =>
-                                                        setData(
-                                                            "inclusive_dates",
-                                                            value,
-                                                        )
-                                                    }
-                                                />
+                                                <div>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <div
+                                                                role="button"
+                                                                aria-label="Select travel date range"
+                                                                tabIndex={processing ? -1 : 0}
+                                                                className={processing ? "cursor-not-allowed" : "cursor-pointer"}
+                                                            >
+                                                                <FloatingInput
+                                                                    label="Travel Date Range"
+                                                                    labelOnValue
+                                                                    placeholderAlways
+                                                                    icon={CalendarIcon}
+                                                                    name="travel_date_range"
+                                                                    value={data.start_date
+                                                                        ? `${format(toLocalDate(data.start_date), "LLL dd, y")}${data.end_date ? ` - ${format(toLocalDate(data.end_date), "LLL dd, y")}` : ""}`
+                                                                        : ""}
+                                                                    placeholder="Pick travel dates"
+                                                                    readOnly
+                                                                    disabled={processing}
+                                                                    tabIndex={-1}
+                                                                    inputClassName="cursor-pointer"
+                                                                />
+                                                            </div>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <Calendar
+                                                                mode="range"
+                                                                numberOfMonths={2}
+                                                                defaultMonth={toLocalDate(data.start_date)}
+                                                                selected={data.start_date
+                                                                    ? {
+                                                                          from: toLocalDate(data.start_date),
+                                                                          to: toLocalDate(data.end_date),
+                                                                      }
+                                                                    : undefined}
+                                                                onSelect={(range) => {
+                                                                    setData({
+                                                                        ...data,
+                                                                        start_date: toDateInput(range?.from),
+                                                                        end_date: toDateInput(range?.to),
+                                                                    });
+                                                                }}
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    {(errors.start_date || errors.end_date) && (
+                                                        <p className="mt-1 text-sm text-red-600">
+                                                            {errors.start_date || errors.end_date}
+                                                        </p>
+                                                    )}
+                                                </div>
                                                 <RequestTextField
                                                     id="request_fund_source"
                                                     label="Fund Source"

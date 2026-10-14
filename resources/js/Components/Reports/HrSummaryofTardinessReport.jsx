@@ -1,4 +1,5 @@
 import React from "react";
+import { formatPrintedEmployeeName } from "@/lib/printedName";
 
 const HrSummaryofTardinessReport = React.forwardRef(
     ({ groupedByEmployee, monthRangeLabel }, ref) => {
@@ -88,7 +89,7 @@ const HrSummaryofTardinessReport = React.forwardRef(
                                                 {index + 1}
                                             </td>
                                             <td className="border border-black px-2 py-2 text-center">
-                                                {emp.name}
+                                                {formatPrintedEmployeeName(emp.employee || emp)}
                                             </td>
                                             <td className="border border-black px-2 py-2 text-center">
                                                 {emp.month_label ||

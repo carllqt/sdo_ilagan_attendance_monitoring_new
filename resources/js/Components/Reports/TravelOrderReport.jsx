@@ -1,4 +1,5 @@
 import { Document, Image, Page, Text, View } from "@react-pdf/renderer";
+import { formatPrintedEmployeeName } from "@/lib/printedName";
 
 const rows = [
     ["NAME", "employee_name"],
@@ -6,7 +7,7 @@ const rows = [
     ["Permanent Station", "permanent_station"],
     ["Purpose of Travel", "purpose_of_travel"],
     ["Host of Activity", "host_of_activity"],
-    ["Inclusive Dates", "inclusive_dates"],
+    ["Inclusive Dates", "travel_dates"],
     ["Destination", "destination"],
     ["Fund Source", "fund_source"],
 ];
@@ -26,6 +27,16 @@ const formatDate = (value) => {
         month: "long",
         year: "numeric",
     }).format(date);
+};
+
+const formatDateRange = (startDate, endDate) => {
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+
+    if (startDate && endDate && startDate === endDate) return start;
+    if (start && end) return `${start} - ${end}`;
+
+    return start || end;
 };
 
 const SignatureBlock = ({
@@ -271,9 +282,12 @@ const TravelOrderReport = ({ data = {} }) => (
                                         : null
                                 }
                             >
-                                {field === "inclusive_dates"
-                                    ? formatDate(data[field])
-                                    : valueOf(data[field])}
+                                {field === "travel_dates"
+                                    ? formatDateRange(
+                                          data.start_date,
+                                          data.end_date,
+                                      )
+                                    : field === "employee_name" ? formatPrintedEmployeeName(data) : valueOf(data[field])}
                             </Text>
                         </View>
                     </View>
@@ -303,7 +317,7 @@ const TravelOrderReport = ({ data = {} }) => (
                     </Text>
                     <SignatureBlock
                         caption="Name and Signature of Requesting Employee"
-                        name={valueOf(data.employee_name).toUpperCase()}
+                        name={formatPrintedEmployeeName(data).toLocaleUpperCase("en-PH")}
                         style={{ marginTop: 24 }}
                         matchTitleUnderline
                     />

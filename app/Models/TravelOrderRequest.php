@@ -19,13 +19,15 @@ class TravelOrderRequest extends Model
         'purpose_of_travel',
         'destination',
         'host_of_activity',
-        'inclusive_dates',
+        'start_date',
+        'end_date',
         'fund_source',
         'status',
     ];
 
     protected $casts = [
-        'inclusive_dates' => 'date',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
     public function station()

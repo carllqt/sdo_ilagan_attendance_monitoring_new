@@ -1,4 +1,5 @@
 import { Document, Image, Page, Text, View } from "@react-pdf/renderer";
+import { formatPrintedEmployeeName } from "@/lib/printedName";
 
 const valueOf = (value) => (value == null ? "" : String(value));
 
@@ -129,7 +130,7 @@ const LocatorSlipReport = ({ data = {} }) => (
                     width: "100%",
                 }}
             >
-                <TableRow label="NAME" value={data.employee_name} />
+                <TableRow label="NAME" value={formatPrintedEmployeeName(data)} />
                 <TableRow
                     label="Position/Designation"
                     value={data.position}

@@ -14,9 +14,9 @@ const DtrPrintPreview = ({ employee, time_record, signatory, month, year }) => {
                 <div className="mx-auto mb-4 max-w-[8.5in] text-center text-sm text-slate-600 print:hidden">
                     Print-layout preview only. Refresh this page after changing the DTR design.
                 </div>
-                <section className="mx-auto box-border w-[8.5in] bg-white p-[0.5in] shadow-xl print:shadow-none">
+                <section className="dtr-print-page mx-auto shadow-xl print:shadow-none">
                     <DTRReport
-                        name={employee.full_name}
+                        name={employee}
                         dateRange={{
                             start: start.startOf("month").format("YYYY-MM-DD"),
                             end: start.endOf("month").format("YYYY-MM-DD"),

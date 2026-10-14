@@ -1,4 +1,6 @@
 import React from "react";
+import { formatPrintedEmployeeName } from "@/lib/printedName";
+import dtrPageStyle from "./dtrPageStyle";
 
 const formatWorkHour = (time) => {
     if (!time) {
@@ -39,6 +41,14 @@ const DTRReport = React.forwardRef(
     ({ name, dateRange, logs, signatory, workSchedule }, ref) => {
         const signatoryPosition =
             signatory && !signatory.missing ? signatory.position : "";
+        const printedName = formatPrintedEmployeeName(name);
+        const signatorySource = signatory?.employee || signatory?.name;
+        const printedSignatoryName =
+            signatory?.missing || !signatorySource
+                ? signatory?.name || "NO OFFICE HEAD ASSIGNED"
+                : formatPrintedEmployeeName(signatorySource, {
+                      parsePlainName: !signatory?.employee,
+                  });
         const officialTimeIn =
             formatWorkHour(workSchedule?.time_in) || "08:00 am";
         const officialTimeOut =
@@ -120,6 +130,7 @@ const DTRReport = React.forwardRef(
                 }}
             >
                 <style>
+                    {dtrPageStyle}
                     {`
                     table.dtr-table th {
                         font-weight: normal;
@@ -270,7 +281,7 @@ const DTRReport = React.forwardRef(
                                         fontWeight: "normal",
                                     }}
                                 >
-                                    {name}
+                                    {printedName}
                                 </span>
                             </div>
 
@@ -340,7 +351,7 @@ const DTRReport = React.forwardRef(
                                         textTransform: "uppercase",
                                     }}
                                 >
-                                    {name}
+                                    {printedName}
                                 </th>
 
                                 <th colSpan={7} />
@@ -447,7 +458,7 @@ const DTRReport = React.forwardRef(
                             }}
                         >
                             <div style={{ marginBottom: "4px" }}>
-                                <strong>{name.toUpperCase()}</strong>
+                                <strong>{printedName.toLocaleUpperCase("en-PH")}</strong>
                             </div>
 
                             <div
@@ -479,10 +490,7 @@ const DTRReport = React.forwardRef(
                         >
                             <div style={{ marginBottom: "4px" }}>
                                 <strong>
-                                    {(
-                                        signatory?.name ||
-                                        "NO OFFICE HEAD ASSIGNED"
-                                    ).toUpperCase()}
+                                    {printedSignatoryName.toLocaleUpperCase("en-PH")}
                                 </strong>
                             </div>
 

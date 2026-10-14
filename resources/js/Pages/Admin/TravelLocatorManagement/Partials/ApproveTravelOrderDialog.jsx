@@ -142,10 +142,14 @@ const ApproveTravelOrderDialog = ({ onClose, onApproved, request }) => {
                         <div className="min-w-0">
                             <div className="flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
                                 <CalendarDays className="h-3.5 w-3.5" />
-                                Travel Date
+                                Travel Dates
                             </div>
                             <div className="truncate font-medium text-slate-900">
-                                {formatDate(request?.inclusive_dates)}
+                                {request?.start_date && request?.end_date
+                                    ? request.start_date === request.end_date
+                                        ? formatDate(request.start_date)
+                                        : `${formatDate(request.start_date)} – ${formatDate(request.end_date)}`
+                                    : "-"}
                             </div>
                         </div>
                         <div className="min-w-0 sm:col-span-2">

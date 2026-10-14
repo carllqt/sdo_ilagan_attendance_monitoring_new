@@ -11,8 +11,10 @@ use App\Events\AttendanceMonitoringUpdated;
 use App\Models\Administrator\Attendance;
 use App\Models\Administrator\Employee;
 use App\Models\EmployeeTravelOrder;
+use Illuminate\Broadcasting\BroadcastException;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceMonitoringRealtimeService
 {
@@ -29,7 +31,7 @@ class AttendanceMonitoringRealtimeService
                 return;
             }
 
-            broadcast(new AttendanceMonitoringUpdated(
+            $this->broadcastSafely(new AttendanceMonitoringUpdated(
                 (int) $stationId,
                 $this->payload((int) $stationId, $employeeId, includeTravelOrders: false),
             ));
@@ -59,7 +61,7 @@ class AttendanceMonitoringRealtimeService
             return;
         }
 
-        broadcast(new AttendanceMonitoringUpdated(
+        $this->broadcastSafely(new AttendanceMonitoringUpdated(
             (int) $stationId,
             $this->payload(
                 (int) $stationId,
@@ -72,10 +74,21 @@ class AttendanceMonitoringRealtimeService
 
     public function broadcastForStation(int $stationId, ?int $employeeId = null): void
     {
-        broadcast(new AttendanceMonitoringUpdated(
+        $this->broadcastSafely(new AttendanceMonitoringUpdated(
             $stationId,
             $this->payload($stationId, $employeeId),
         ));
+    }
+
+    private function broadcastSafely(AttendanceMonitoringUpdated $event): void
+    {
+        try {
+            broadcast($event);
+        } catch (BroadcastException) {
+            Log::warning('Attendance monitoring broadcast failed.', [
+                'station_id' => $event->stationId,
+            ]);
+        }
     }
 
     private function payload(

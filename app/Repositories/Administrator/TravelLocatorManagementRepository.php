@@ -57,7 +57,8 @@ class TravelLocatorManagementRepository
                 'employee_name',
                 'destination',
                 'host_of_activity',
-                'inclusive_dates',
+                'start_date',
+                'end_date',
                 'fund_source',
                 'status',
                 'created_at',
@@ -189,8 +190,8 @@ class TravelLocatorManagementRepository
         return DB::transaction(function () use ($travelRequest, $employeeId) {
             $travelOrder = EmployeeTravelOrder::firstOrCreate([
                 'employee_id' => $employeeId,
-                'start_date' => $travelRequest->inclusive_dates,
-                'end_date' => $travelRequest->inclusive_dates,
+                'start_date' => $travelRequest->start_date,
+                'end_date' => $travelRequest->end_date,
             ]);
 
             $travelRequest->update(['status' => 'approved']);

@@ -22,6 +22,10 @@ export default function FloatingInput({
     clearable = false,
     onClear,
     clearAriaLabel = "Clear input",
+    hideLabel = false,
+    labelOnValue = false,
+    placeholderAlways = false,
+    tabIndex,
 }) {
     const [isFocused, setIsFocused] = useState(false);
     const inputRef = useRef(null);
@@ -36,7 +40,11 @@ export default function FloatingInput({
         ? "mr-2 h-4 w-4 text-white/75"
         : "mr-2 h-4 w-4 text-slate-400";
     const placeholderClassName =
-        placeholder === " "
+        (hideLabel || placeholderAlways) && placeholder !== " "
+            ? isGlass
+                ? "placeholder:text-white/45"
+                : "placeholder:text-slate-400"
+            : placeholder === " "
             ? "placeholder-transparent"
             : isFocused
               ? isGlass
@@ -100,6 +108,7 @@ export default function FloatingInput({
                     }}
                     readOnly={readOnly}
                     disabled={disabled}
+                    tabIndex={tabIndex}
                     placeholder={placeholder}
                     className={`peer h-6 min-w-0 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0 ${showClear ? "pr-7" : ""} ${inputTextClassName} ${inputClassName}`}
                 />
@@ -116,9 +125,10 @@ export default function FloatingInput({
                     </button>
                 ) : null}
 
-                <label
-                    htmlFor={name}
-                    className={`absolute transition-all pointer-events-none
+                {!hideLabel && (!labelOnValue || Boolean(value)) && (
+                    <label
+                        htmlFor={name}
+                        className={`absolute transition-all pointer-events-none
                         ${labelOffsetClasses}
                         ${
                             isFloated
@@ -127,8 +137,9 @@ export default function FloatingInput({
                         }
                         ${labelClassName} ${labelBgClassName}`}
                 >
-                    {label}
-                </label>
+                        {label}
+                    </label>
+                )}
             </div>
         </div>
     );

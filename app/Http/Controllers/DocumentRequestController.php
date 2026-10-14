@@ -42,7 +42,8 @@ class DocumentRequestController extends Controller
                 'purpose_of_travel' => $data['purpose_of_travel'],
                 'destination' => $data['destination'],
                 'host_of_activity' => $data['host_of_activity'],
-                'inclusive_dates' => $data['inclusive_dates'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
                 'fund_source' => $data['fund_source'],
             ]);
         }

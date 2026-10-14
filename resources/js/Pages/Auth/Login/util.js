@@ -14,7 +14,8 @@ export const defaultDocumentRequestData = {
     travel_datetime: "",
     travel_type: "",
     host_of_activity: "",
-    inclusive_dates: "",
+    start_date: "",
+    end_date: "",
     fund_source: "",
 };
 
@@ -68,7 +69,11 @@ export const validateDocumentRequestData = (data) => {
         required("travel_type", "travel type");
     } else {
         required("host_of_activity", "host of activity");
-        required("inclusive_dates", "inclusive dates");
+        required("start_date", "start date");
+        required("end_date", "end date");
+        if (data.start_date && data.end_date && data.end_date < data.start_date) {
+            errors.end_date = "The end date must be on or after the start date.";
+        }
         required("fund_source", "fund source");
     }
 

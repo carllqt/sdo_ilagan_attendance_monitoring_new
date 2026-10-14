@@ -9,7 +9,8 @@ const initialSample = {
     permanent_station: "Schools Division Office - City of Ilagan",
     purpose_of_travel: "Attend an official regional coordination meeting.",
     host_of_activity: "Department of Education Regional Office II",
-    inclusive_dates: "2026-08-25",
+    start_date: "2026-08-25",
+    end_date: "2026-08-27",
     destination: "Tuguegarao City, Cagayan",
     fund_source: "Local Funds",
 };
@@ -78,13 +79,25 @@ const TravelOrderSample = () => (
                 </label>
 
                 <label className="block text-sm font-medium text-slate-700">
-                    Inclusive Date
+                    Start Date
                     <input
                         type="date"
                         className={fieldClassName}
-                        value={sample.inclusive_dates}
+                        value={sample.start_date}
                         onChange={(event) =>
-                            updateField("inclusive_dates", event.target.value)
+                            updateField("start_date", event.target.value)
+                        }
+                    />
+                </label>
+
+                <label className="block text-sm font-medium text-slate-700">
+                    End Date
+                    <input
+                        type="date"
+                        className={fieldClassName}
+                        value={sample.end_date}
+                        onChange={(event) =>
+                            updateField("end_date", event.target.value)
                         }
                     />
                 </label>

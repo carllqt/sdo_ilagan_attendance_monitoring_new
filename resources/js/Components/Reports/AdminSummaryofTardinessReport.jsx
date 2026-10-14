@@ -1,4 +1,5 @@
 import React from "react";
+import { formatPrintedEmployeeName } from "@/lib/printedName";
 
 const AdminSummaryofTardinessReport = React.forwardRef(
     ({ summary, selectedMonth = "Whole Year", selectedYear }, ref) => {
@@ -121,7 +122,7 @@ const AdminSummaryofTardinessReport = React.forwardRef(
                                             {index + 1}
                                         </td>
                                         <td className="border border-black px-2 py-2 text-center">
-                                            {emp.employee.full_name}
+                                            {formatPrintedEmployeeName(emp.employee)}
                                         </td>
                                         {selectedMonths.map((month) => (
                                             <td

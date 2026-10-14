@@ -1,4 +1,5 @@
-﻿import React from "react";
+import React from "react";
+import { getPrintedEmployeeNameParts } from "@/lib/printedName";
 
 const box = (checked) => (
     <span
@@ -171,14 +172,7 @@ const ApplicationLeaveReport = React.forwardRef(
                 : nameParts.length > 1
                   ? nameParts[0]
                   : "";
-        const middleName =
-            commaNameParts.length > 1
-                ? nameParts.slice(1).join(" ")
-                : nameParts.length > 2
-                  ? nameParts.slice(1, -1).join(" ")
-                  : "";
-
-        return (
+        const middleName = getPrintedEmployeeNameParts(employeeName, { parsePlainName: true }).middleInitial;
             <div
                 ref={ref}
                 style={{

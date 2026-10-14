@@ -41,10 +41,16 @@ class StoreDocumentRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'inclusive_dates' => [
+            'start_date' => [
                 Rule::requiredIf($this->input('request_type') === 'travel_order'),
                 'nullable',
                 'date',
+            ],
+            'end_date' => [
+                Rule::requiredIf($this->input('request_type') === 'travel_order'),
+                'nullable',
+                'date',
+                'after_or_equal:start_date',
             ],
             'fund_source' => [
                 Rule::requiredIf($this->input('request_type') === 'travel_order'),
@@ -70,7 +76,8 @@ class StoreDocumentRequest extends FormRequest
             'travel_datetime' => 'date and time',
             'travel_type' => 'travel type',
             'host_of_activity' => 'host of activity',
-            'inclusive_dates' => 'inclusive dates',
+            'start_date' => 'start date',
+            'end_date' => 'end date',
             'fund_source' => 'fund source',
         ];
     }

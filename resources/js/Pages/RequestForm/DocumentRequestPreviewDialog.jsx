@@ -5,6 +5,7 @@ import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import LocatorSlipReport from "@/Components/Reports/LocatorSlipReport";
 import TravelOrderReport from "@/Components/Reports/TravelOrderReport";
 import { Button } from "@/Components/ui/button";
+import { formatPrintedEmployeeName } from "@/lib/printedName";
 import {
     Dialog,
     DialogContent,
@@ -14,15 +15,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-const employeeName = (data) =>
-    [
-        data.first_name,
-        data.middle_name,
-        data.last_name,
-        data.extension_name,
-    ]
-        .filter(Boolean)
-        .join(" ");
+const employeeName = (data) => formatPrintedEmployeeName(data);
 
 const safeFilenamePart = (value) =>
     (value || "Employee")

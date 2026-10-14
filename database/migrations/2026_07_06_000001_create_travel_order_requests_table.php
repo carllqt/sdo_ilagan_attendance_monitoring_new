@@ -24,12 +24,13 @@ return new class extends Migration
             $table->text('purpose_of_travel');
             $table->string('destination');
             $table->string('host_of_activity');
-            $table->date('inclusive_dates');
+            $table->date('start_date');
+            $table->date('end_date');
             $table->string('fund_source');
             $table->string('status')->default('pending');
             $table->timestamps();
 
-            $table->index(['inclusive_dates', 'status']);
+            $table->index(['start_date', 'end_date', 'status']);
         });
     }
 

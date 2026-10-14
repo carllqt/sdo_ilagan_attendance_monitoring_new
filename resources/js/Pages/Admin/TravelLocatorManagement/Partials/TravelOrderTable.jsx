@@ -17,7 +17,7 @@ const columns = [
     "Employee",
     "Destination",
     "Host",
-    "Inclusive Date",
+    "Travel Dates",
     "Fund Source",
     "Status",
     "Submitted",
@@ -70,7 +70,11 @@ const TravelOrderTable = ({
                                 {request.host_of_activity || "-"}
                             </TableCell>
                             <TableCell className="px-3">
-                                {formatDate(request.inclusive_dates)}
+                                {request.start_date && request.end_date
+                                    ? request.start_date === request.end_date
+                                        ? formatDate(request.start_date)
+                                        : `${formatDate(request.start_date)} – ${formatDate(request.end_date)}`
+                                    : "-"}
                             </TableCell>
                             <TableCell className="px-3">
                                 {request.fund_source || "-"}

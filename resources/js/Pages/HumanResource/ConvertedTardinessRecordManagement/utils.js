@@ -57,6 +57,7 @@ export const toBatchReportRecords = (batch, getEmployeeName) =>
         const employee = record.employee || {};
 
         return {
+            employee,
             name: getEmployeeName(employee) || "-",
             office: employee.office?.name || "-",
             month_label: batch?.month_range || "-",

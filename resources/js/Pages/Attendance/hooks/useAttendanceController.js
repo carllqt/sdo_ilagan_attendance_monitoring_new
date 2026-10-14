@@ -23,10 +23,20 @@ import {
 const MANUAL_SCANNER_SELECTION_MS = 60 * 1000;
 const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
 const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
+const ATTENDANCE_DATE_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
 const TEMPORARY_LOGS_DISPLAY_MS = 5 * 1000;
 
-const localDateKey = (date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const attendanceDateKey = (date) => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+
+    return `${values.year}-${values.month}-${values.day}`;
+};
 
 const useAttendanceController = ({
     attendances,
@@ -88,7 +98,8 @@ const useAttendanceController = ({
     const sessionRefreshStartedRef = useRef(false);
     const automaticLogsSessionRef = useRef(null);
     const logsResetTimerRef = useRef(null);
-    const attendanceDateRef = useRef(localDateKey(initialNow));
+    const attendanceDateRef = useRef(attendanceDateKey(initialNow));
+    const attendanceRefreshInFlightRef = useRef(false);
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
@@ -295,21 +306,35 @@ const useAttendanceController = ({
     }, [attendances]);
 
     const refreshAttendanceForDateChange = useCallback(() => {
-        const currentDate = localDateKey(new Date());
+        const currentDate = attendanceDateKey(new Date());
 
-        if (attendanceDateRef.current === currentDate) return;
+        if (
+            attendanceDateRef.current === currentDate ||
+            attendanceRefreshInFlightRef.current
+        ) {
+            return;
+        }
 
-        attendanceDateRef.current = currentDate;
+        attendanceRefreshInFlightRef.current = true;
         router.reload({
             only: ["attendances"],
             preserveState: true,
             preserveScroll: true,
+            onSuccess: () => {
+                attendanceDateRef.current = currentDate;
+            },
+            onFinish: () => {
+                attendanceRefreshInFlightRef.current = false;
+            },
         });
     }, []);
 
     useEffect(() => {
         const checkDateChange = () => refreshAttendanceForDateChange();
-        const timer = setInterval(checkDateChange, 60 * 1000);
+        const timer = setInterval(
+            checkDateChange,
+            ATTENDANCE_DATE_CHECK_INTERVAL_MS,
+        );
 
         document.addEventListener("visibilitychange", checkDateChange);
 
