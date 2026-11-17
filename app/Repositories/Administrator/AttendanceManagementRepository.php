@@ -138,18 +138,23 @@ class AttendanceManagementRepository
             ->withQueryString();
     }
 
-    public function attendanceForUpdate(int $id, int $stationId): Attendance
+    /** $stationId null = no station limit (SDO admin). */
+    public function attendanceForUpdate(int $id, ?int $stationId): Attendance
     {
         return Attendance::with([
             'am',
             'pm',
             'employee.workSchedule.workType',
         ])
-            ->whereHas('employee', fn ($query) => $query->where('station_id', $stationId))
+            ->when($stationId !== null, fn ($query) => $query->whereHas(
+                'employee',
+                fn ($query) => $query->where('station_id', $stationId),
+            ))
             ->findOrFail($id);
     }
 
-    public function editModalAttendance(int $attendanceId, int $stationId): ?Attendance
+    /** $stationId null = no station limit (SDO admin). */
+    public function editModalAttendance(int $attendanceId, ?int $stationId): ?Attendance
     {
         return Attendance::with([
             'employee:id,first_name,middle_name,last_name,profile_img,office_id,station_id,active_status',
@@ -158,7 +163,10 @@ class AttendanceManagementRepository
             'am:id,attendance_id,am_time_in,am_time_out',
             'pm:id,attendance_id,pm_time_in,pm_time_out',
         ])
-            ->whereHas('employee', fn ($query) => $query->where('station_id', $stationId))
+            ->when($stationId !== null, fn ($query) => $query->whereHas(
+                'employee',
+                fn ($query) => $query->where('station_id', $stationId),
+            ))
             ->find($attendanceId);
     }
 

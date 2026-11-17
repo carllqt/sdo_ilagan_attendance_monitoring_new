@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Administrator;
 
+use App\Http\Controllers\Concerns\ScopesToStation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administrator\AttendanceManagement\AttendanceManagementRequest;
 use App\Http\Requests\Administrator\AttendanceManagement\StoreEmployeeTravelOrderRequest;
@@ -12,6 +13,8 @@ use Inertia\Inertia;
 
 class AttendanceManagementController extends Controller
 {
+    use ScopesToStation;
+
     public function __construct(
         private readonly AttendanceManagementService $attendanceManagement,
     ) {}
@@ -20,7 +23,11 @@ class AttendanceManagementController extends Controller
     {
         return Inertia::render(
             'Admin/AttendanceManagement/AttendanceManagement',
-            $this->attendanceManagement->pageData($request, $this->stationId()),
+            $this->attendanceManagement->pageData(
+                $request,
+                $this->stationId(),
+                $this->editableStationId(),
+            ),
         );
     }
 
@@ -28,7 +35,7 @@ class AttendanceManagementController extends Controller
     {
         $this->attendanceManagement->updateAttendance(
             $id,
-            $this->stationId(),
+            $this->editableStationId(),
             $request->validated(),
         );
 
@@ -39,7 +46,7 @@ class AttendanceManagementController extends Controller
     {
         $this->attendanceManagement->storeAttendance(
             $request->validated(),
-            $this->stationId(),
+            $this->editableStationId(),
         );
 
         return back()->with('success', 'Attendance created and tardiness calculated!');

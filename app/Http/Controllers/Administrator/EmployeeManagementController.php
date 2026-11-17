@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Administrator;
 
+use App\Http\Controllers\Concerns\ScopesToStation;
 use App\Http\Controllers\Concerns\ValidatesPassword;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administrator\EmployeeManagement\{StoreEmployeeRequest, UpdateEmployeeRequest};
@@ -12,6 +13,7 @@ use Inertia\Inertia;
 
 class EmployeeManagementController extends Controller
 {
+    use ScopesToStation;
     use ValidatesPassword;
 
     public function __construct(
@@ -45,7 +47,7 @@ class EmployeeManagementController extends Controller
             'status' => fn () => $employeeListData()['status'],
             'officeName' => fn () => $employeeListData()['officeName'],
             'limit' => fn () => $employeeListData()['limit'],
-            'editEmployeeModal' => fn () => $this->employees->editModal($request, 'edit-employee', $stationId),
+            'editEmployeeModal' => fn () => $this->employees->editModal($request, 'edit-employee', $this->editableStationId()),
             'testFingerprintModal' => fn () => $this->employees->testFingerprintModal($request),
             'fingerprintServiceUrl' => fn () => $this->employees->fingerprintServiceUrl($request),
         ]);
@@ -67,7 +69,7 @@ class EmployeeManagementController extends Controller
         $this->employees->store(
             $validated,
             $request,
-            (int) auth()->user()->employee->station_id,
+            $this->editableStationId(),
         );
         $fullName = $this->employees->successName($validated);
 
@@ -86,7 +88,7 @@ class EmployeeManagementController extends Controller
 
         $this->employees->update(
             (int) $id,
-            (int) auth()->user()->employee->station_id,
+            $this->editableStationId(),
             $validated,
             $request,
         );

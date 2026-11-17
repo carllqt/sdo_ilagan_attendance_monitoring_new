@@ -11,12 +11,16 @@ use Spatie\Permission\Models\Role;
 
 /*
 | A school admin must only be able to read and change records that belong
-| to their own station. These tests pin that rule for attendance and
-| employee management.
+| to their own station. The SDO admin (super admin) can work across every
+| station. These tests pin both rules for attendance and employee
+| management.
 */
 
 beforeEach(function () {
+    config(['broadcasting.default' => 'null']);
+
     Role::create(['name' => 'school_admin', 'guard_name' => 'web']);
+    Role::create(['name' => 'sdo_admin', 'guard_name' => 'web']);
 
     $this->ownStation = Station::create(['name' => 'Own School', 'code' => 'OWN']);
     $this->otherStation = Station::create(['name' => 'Other School', 'code' => 'OTHER']);
@@ -48,6 +52,13 @@ beforeEach(function () {
         'password' => 'password',
     ]);
     $this->admin->assignRole('school_admin');
+
+    $this->superAdmin = User::create([
+        'employee_id' => $makeEmployee($this->ownStation, 'Super')->id,
+        'email' => 'sdo-admin@example.test',
+        'password' => 'password',
+    ]);
+    $this->superAdmin->assignRole('sdo_admin');
 
     $this->otherAttendance = Attendance::create([
         'employee_id' => $this->otherEmployee->id,
@@ -130,4 +141,57 @@ it('hides other stations from the edit modals', function () {
         ->not->toBeNull()
         ->and(app(AttendanceManagementRepository::class)->editModalAttendance($this->otherAttendance->id, $ownStationId))
         ->toBeNull();
+});
+
+it('lets the SDO admin update an employee in another station', function () {
+    $this->actingAs($this->superAdmin)
+        ->put(route('employees.update', $this->otherEmployee->id), employeePayload([
+            'station_id' => $this->otherStation->id,
+        ]))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($this->otherEmployee->fresh()->first_name)->toBe('Changed');
+});
+
+it('lets the SDO admin register an employee into another station', function () {
+    $this->actingAs($this->superAdmin)
+        ->post(route('employees.store'), array_merge(employeePayload([
+            'station_id' => $this->otherStation->id,
+        ]), ['id' => 99999]))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect(Employee::find(99999)?->station_id)->toBe($this->otherStation->id);
+});
+
+it('lets the SDO admin update attendance in another station', function () {
+    $this->actingAs($this->superAdmin)
+        ->post(route('attendance-management.update', $this->otherAttendance->id), [
+            'am_time_in' => '07:30',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect($this->otherAttendance->am()->first()->am_time_in)->toStartWith('07:30');
+});
+
+it('lets the SDO admin create attendance for an employee in another station', function () {
+    $this->actingAs($this->superAdmin)
+        ->post(route('attendance-management.create'), [
+            'employee_id' => $this->otherEmployee->id,
+            'date' => '2026-11-17',
+            'am_time_in' => '07:30',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect(Attendance::where('employee_id', $this->otherEmployee->id)->count())->toBe(2);
+});
+
+it('shows the SDO admin other stations in the edit modals', function () {
+    expect(app(EmployeeManagementRepository::class)->editModalEmployee($this->otherEmployee->id, null))
+        ->not->toBeNull()
+        ->and(app(AttendanceManagementRepository::class)->editModalAttendance($this->otherAttendance->id, null))
+        ->not->toBeNull();
 });

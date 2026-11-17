@@ -115,7 +115,8 @@ class EmployeeManagementRepository
             ->get();
     }
 
-    public function editModalEmployee(int $employeeId, int $stationId): ?Employee
+    /** $stationId null = no station limit (SDO admin). */
+    public function editModalEmployee(int $employeeId, ?int $stationId): ?Employee
     {
         return Employee::with([
             'office:id,name',
@@ -134,7 +135,7 @@ class EmployeeManagementRepository
                 'work_schedule_id',
                 'active_status',
             )
-            ->where('station_id', $stationId)
+            ->when($stationId !== null, fn ($query) => $query->where('station_id', $stationId))
             ->find($employeeId);
     }
 
@@ -166,10 +167,11 @@ class EmployeeManagementRepository
         return Employee::create($data);
     }
 
-    public function findInStationOrFail(int $id, int $stationId): Employee
+    /** $stationId null = no station limit (SDO admin). */
+    public function findInStationOrFail(int $id, ?int $stationId): Employee
     {
         return Employee::query()
-            ->where('station_id', $stationId)
+            ->when($stationId !== null, fn ($query) => $query->where('station_id', $stationId))
             ->findOrFail($id);
     }
 }

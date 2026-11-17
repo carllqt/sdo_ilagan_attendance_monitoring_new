@@ -19,7 +19,7 @@ class AttendanceManagementService
         private readonly AttendanceMonitoringRealtimeService $realtime,
     ) {}
 
-    public function pageData(Request $request, int $stationId): array
+    public function pageData(Request $request, int $stationId, ?int $editableStationId): array
     {
         $filter = AttendanceManagementFilter::fromRequest($request, $stationId);
         $offices = $this->repository->offices();
@@ -31,7 +31,7 @@ class AttendanceManagementService
             'offices' => $offices,
             'years' => fn () => $this->repository->attendanceYears($stationId),
             'filters' => $filter->toArray(),
-            'editAttendanceModal' => fn () => $this->editModal($request, $stationId),
+            'editAttendanceModal' => fn () => $this->editModal($request, $editableStationId),
         ];
     }
 
@@ -48,7 +48,11 @@ class AttendanceManagementService
         return $filter->withOfficeId($officeId);
     }
 
-    public function editModal(Request $request, int $stationId): ?array
+    /**
+     * $stationId limits which records can be opened; null means any
+     * station (SDO admin).
+     */
+    public function editModal(Request $request, ?int $stationId): ?array
     {
         if ($request->query('modal') !== 'edit') {
             return null;
@@ -73,9 +77,10 @@ class AttendanceManagementService
         ];
     }
 
-    public function updateAttendance(int $attendanceId, int $stationId, array $data): void
+    public function updateAttendance(int $attendanceId, ?int $stationId, array $data): void
     {
-        // Scoped to the admin's station: another station's record is a 404.
+        // Scoped to the admin's station (null = SDO admin, any station):
+        // another station's record is a 404.
         $attendance = $this->repository->attendanceForUpdate($attendanceId, $stationId);
 
         $this->updateMissingAttendanceTimes($attendance, $data);
@@ -84,9 +89,12 @@ class AttendanceManagementService
         $this->realtime->broadcastForAttendance($attendance);
     }
 
-    public function storeAttendance(array $data, int $stationId): void
+    public function storeAttendance(array $data, ?int $stationId): void
     {
-        if (! $this->repository->employeeIsInStation((int) $data['employee_id'], $stationId)) {
+        if (
+            $stationId !== null &&
+            ! $this->repository->employeeIsInStation((int) $data['employee_id'], $stationId)
+        ) {
             abort(403, 'Selected employee does not belong to your station.');
         }
 
