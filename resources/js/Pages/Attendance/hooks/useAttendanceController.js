@@ -20,7 +20,7 @@ import {
     statusConfig,
 } from "../utils";
 
-const MANUAL_SCANNER_SELECTION_MS = 60 * 1000;
+const MANUAL_SCANNER_SELECTION_MS = 10 * 1000;
 const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
 const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
 const ATTENDANCE_DATE_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
@@ -663,6 +663,12 @@ const useAttendanceController = ({
             });
 
             applyAttendanceResult(response.data);
+
+            // A prompt is still part of this scan; reset once it is answered
+            // or ignored instead.
+            if (!response.data?.prompt) {
+                resetManualSelection();
+            }
         } catch (error) {
             if (refreshExpiredSession(error)) return;
 
@@ -752,6 +758,24 @@ const useAttendanceController = ({
         showTemporaryLogsForSession(session);
     };
 
+    // A manual Time In/Out pick is for one person's scan. Once that scan is
+    // finished (recorded, prompt answered or prompt ignored), go back to the
+    // clock default so the next person does not inherit it.
+    const resetManualSelection = () => {
+        clearTimeout(manualSelectionTimerRef.current);
+        manualSelectionTimerRef.current = null;
+
+        const now = new Date();
+        const session = defaultSession(now);
+        const action = defaultLogAction(now, session);
+
+        logSessionRef.current = session;
+        logActionRef.current = action;
+        setLogSession(session);
+        setLogAction(action);
+        setManualLogMode(false);
+    };
+
     const enableManualLogMode = () => {
         clearTimeout(manualSelectionTimerRef.current);
         setManualLogMode(true);
@@ -807,6 +831,7 @@ const useAttendanceController = ({
 
         setShowAMPromptModal(false);
         setShowPMPromptModal(false);
+        resetManualSelection();
         setScannerFeedback("processing", `Recording ${choice}...`);
 
         try {
@@ -833,6 +858,7 @@ const useAttendanceController = ({
         setShowPMPromptModal(false);
         setAMPromptData(null);
         setPMPromptData(null);
+        resetManualSelection();
         resetScannerState();
         startAttendanceFingerprintScan();
     };
