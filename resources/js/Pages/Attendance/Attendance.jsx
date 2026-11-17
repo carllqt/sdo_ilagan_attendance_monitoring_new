@@ -86,37 +86,41 @@ const Attendance = ({
                     </div>
                 </div>
 
-                {attendance.showAMPromptModal && attendance.amPromptData && (
-                    <PromptModal
-                        employee={attendance.amPromptData.employee}
-                        message={attendance.amPromptData.message}
-                        secondaryLabel="AM Time-Out"
-                        primaryLabel="PM Time-In"
-                        onSecondary={() =>
-                            attendance.handlePromptChoice("AM Time-Out")
-                        }
-                        onPrimary={() =>
-                            attendance.handlePromptChoice("PM Time-In")
-                        }
-                        onExpire={attendance.handlePromptTimeout}
-                    />
-                )}
+                {[
+                    {
+                        show: attendance.showAMPromptModal,
+                        data: attendance.amPromptData,
+                        fallback: ["AM Time-Out", "PM Time-In"],
+                    },
+                    {
+                        show: attendance.showPMPromptModal,
+                        data: attendance.pmPromptData,
+                        fallback: ["PM Time-In", "PM Time-Out"],
+                    },
+                ].map(({ show, data, fallback }) => {
+                    if (!show || !data) return null;
 
-                {attendance.showPMPromptModal && attendance.pmPromptData && (
-                    <PromptModal
-                        employee={attendance.pmPromptData.employee}
-                        message={attendance.pmPromptData.message}
-                        secondaryLabel="PM Time-In"
-                        primaryLabel="PM Time-Out"
-                        onSecondary={() =>
-                            attendance.handlePromptChoice("PM Time-In")
-                        }
-                        onPrimary={() =>
-                            attendance.handlePromptChoice("PM Time-Out")
-                        }
-                        onExpire={attendance.handlePromptTimeout}
-                    />
-                )}
+                    // The server sends the two choices: [secondary, primary].
+                    const [secondary, primary] =
+                        data.options?.length === 2 ? data.options : fallback;
+
+                    return (
+                        <PromptModal
+                            key={`${secondary}-${primary}`}
+                            employee={data.employee}
+                            message={data.message}
+                            secondaryLabel={secondary}
+                            primaryLabel={primary}
+                            onSecondary={() =>
+                                attendance.handlePromptChoice(secondary)
+                            }
+                            onPrimary={() =>
+                                attendance.handlePromptChoice(primary)
+                            }
+                            onExpire={attendance.handlePromptTimeout}
+                        />
+                    );
+                })}
 
             </main>
         </>

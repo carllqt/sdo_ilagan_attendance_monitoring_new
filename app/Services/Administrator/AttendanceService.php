@@ -82,12 +82,14 @@ class AttendanceService
         }
 
         if (in_array($choice, self::ATTENDANCE_CHOICES, true)) {
-            if ($choice === 'PM Time-In') {
-                $prompt = $this->missingAmOutPrompt($employee, $now);
+            $prompt = match ($choice) {
+                'PM Time-In' => $this->missingAmOutPrompt($employee, $now),
+                'AM Time-Out', 'PM Time-Out' => $this->missingTimeInPrompt($employee, $choice, $now),
+                default => null,
+            };
 
-                if ($prompt) {
-                    return $prompt;
-                }
+            if ($prompt) {
+                return $prompt;
             }
 
             return $this->recordChoiceForEmployee($employee, $choice, $now);
@@ -104,7 +106,7 @@ class AttendanceService
 
             $pm = $attendance->pm;
 
-            if ($isPmSession && (! $am || ! $am->am_time_out) && ! $pm?->pm_time_in) {
+            if ($isPmSession && $am?->am_time_in && ! $am->am_time_out && ! $pm?->pm_time_in) {
                 return $this->missingAmOutPromptPayload($employee);
             }
 
@@ -205,13 +207,61 @@ class AttendanceService
             $pm = $attendance->pm;
 
             // Once PM Time-In exists, a missing AM Time-Out is intentional.
-            // Never offer to back-fill it on later scans.
-            if ($pm?->pm_time_in || ($am && $am->am_time_out)) {
+            // Never offer to back-fill it on later scans. With no AM Time-In
+            // at all (half day), there is nothing to time out from.
+            if ($pm?->pm_time_in || ! $am?->am_time_in || $am->am_time_out) {
                 return null;
             }
 
             return $this->missingAmOutPromptPayload($employee);
         });
+    }
+
+    /**
+     * The selected action defaults from the clock (e.g. Time-Out after
+     * 11:00), so a late arrival can scan while Time-Out is selected. If that
+     * session has no Time-In yet, ask instead of guessing.
+     */
+    private function missingTimeInPrompt(Employee $employee, string $choice, Carbon $now): ?array
+    {
+        $attendance = Attendance::query()
+            ->with(['am', 'pm'])
+            ->where('employee_id', $employee->id)
+            ->whereDate('date', $now->toDateString())
+            ->first();
+        $am = $attendance?->am;
+        $pm = $attendance?->pm;
+
+        if ($choice === 'AM Time-Out') {
+            // Has a Time-In, or Time-Out is already recorded (handled later).
+            if ($am?->am_time_in || $am?->am_time_out) {
+                return null;
+            }
+
+            return $this->missingTimeInPromptPayload($employee, 'AM');
+        }
+
+        if ($pm?->pm_time_in || $pm?->pm_time_out) {
+            return null;
+        }
+
+        // AM Time-In with no lunch scans: leaving for the day, no question.
+        if ($am?->am_time_in && ! $am->am_time_out) {
+            return null;
+        }
+
+        return $this->missingTimeInPromptPayload($employee, 'PM');
+    }
+
+    private function missingTimeInPromptPayload(Employee $employee, string $session): array
+    {
+        return $this->attendancePayload($employee, [
+            'success' => true,
+            'prompt' => true,
+            'prompt_type' => $session,
+            'message' => "No {$session} Time-In is recorded today. Are you timing in or timing out?",
+            'options' => ["{$session} Time-Out", "{$session} Time-In"],
+        ]);
     }
 
     private function missingAmOutPromptPayload(Employee $employee): array
