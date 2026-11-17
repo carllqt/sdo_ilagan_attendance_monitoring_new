@@ -68,6 +68,9 @@ class AttendanceService
         $user = $request->user();
         $stationId = $this->stationId($user);
         $filter = AttendanceFilter::fromRequest($request);
+        // The station this page records for: the admin's station, or SDO for
+        // a guest. The fingerprint scanner loads only this station's prints.
+        $station = Station::query()->select(['id', 'name'])->find($stationId);
 
         return [
             'attendances' => $this->repository->todayAttendancesForStation($stationId, $filter),
@@ -87,8 +90,8 @@ class AttendanceService
             ],
             'attendanceAccess' => [
                 'station' => [
-                    'id' => $user?->employee?->station?->id,
-                    'name' => $user?->employee?->station?->name,
+                    'id' => $station?->id,
+                    'name' => $station?->name,
                 ],
                 'admin' => [
                     'id' => $user?->employee?->id,

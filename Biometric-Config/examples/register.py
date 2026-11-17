@@ -14,6 +14,14 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
     templates = []
 
     try:
+        # Duplicate check: compare against every station's prints (the scanner
+        # memory holds only one station's), read once per registration.
+        try:
+            existing_prints = await asyncio.to_thread(service.templates.all_registered)
+        except Exception as exc:
+            logger.error("Could not read registered prints for the duplicate check: %s", exc)
+            existing_prints = []
+
         while len(templates) < 3:
             try:
                 async with service.scan_lock:
@@ -33,16 +41,9 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
                 continue
 
             try:
-                with service.db_cursor() as cursor:
-                    cursor.execute("SELECT employee_id, fingerprint_template FROM biometrics")
-                    rows = cursor.fetchall()
-
-                for existing_emp_id, existing_template in rows:
-                    if not existing_template or int(existing_emp_id) == int(emp_id):
+                for existing_emp_id, existing_template in existing_prints:
+                    if int(existing_emp_id) == int(emp_id):
                         continue
-
-                    if isinstance(existing_template, memoryview):
-                        existing_template = existing_template.tobytes()
 
                     score = service.zkfp2.DBMatch(tmp, existing_template)
                     if score >= duplicate_threshold:
@@ -85,6 +86,14 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
                 (emp_id, next_finger_index, final_template),
             )
             finger_id = cursor.lastrowid
+
+        # Make the new fingerprint scannable right away. The registration is
+        # already saved, so a failed reload is only logged (the next scan
+        # connection retries it).
+        try:
+            await service.templates.refresh()
+        except Exception as exc:
+            logger.error("Reloading fingerprints after registration failed: %s", exc)
 
         yield sse_success(
             message="Fingerprint registered successfully.",

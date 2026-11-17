@@ -9,31 +9,11 @@ last_scan_times = {}
 
 COOLDOWN_SECONDS = 3
 HEARTBEAT_INTERVAL = 15
+# How often an open scan connection checks whether fingerprints were added
+# or removed (one small query; the templates reload only on a change).
+TEMPLATE_CHECK_INTERVAL = 60
 MATCH_THRESHOLD = 60
 FINGER_RELEASE_SECONDS = 0.5
-
-def load_fingerprints(service):
-    service.zkfp2.DBClear()
-
-    with service.db_cursor() as cursor:
-        cursor.execute("SELECT id, employee_id, fingerprint_template FROM biometrics")
-        rows = cursor.fetchall()
-
-    fingerprint_employees = {}
-
-    for fid, employee_id, template in rows:
-        if not template:
-            continue
-
-        if isinstance(template, memoryview):
-            template = template.tobytes()
-
-        service.zkfp2.DBAdd(fid, template)
-        fingerprint_employees[int(fid)] = int(employee_id)
-        logger.info("Loaded fingerprint fid=%s employee_id=%s", fid, employee_id)
-
-    logger.info("Loaded %s fingerprints into SDK memory.", len(fingerprint_employees))
-    return fingerprint_employees
 
 
 async def scan_attendance_fingerprint(
@@ -42,16 +22,23 @@ async def scan_attendance_fingerprint(
     is_disconnected=None,
 ):
     """Identify a fingerprint and return employee data. Laravel records attendance."""
+    templates = service.templates
+
+    # Only this station's prints are matched. They stay in SDK memory between
+    # connections; this reloads them only if they changed since the last load.
     try:
-        fingerprint_employees = load_fingerprints(service)
+        await templates.refresh(station_id=station_id)
     except Exception as exc:
-        logger.error("Error loading fingerprints into SDK memory: %s", exc)
-        yield sse_error("Could not load registered fingerprints.")
-        return
+        logger.error("Error checking registered fingerprints: %s", exc)
+
+        if not templates.loaded:
+            yield sse_error("Could not load registered fingerprints.")
+            return
 
     try:
         yield sse_status("ready", "Fingerprint scanner ready.")
         last_heartbeat = datetime.now()
+        last_template_check = datetime.now()
         sensor_armed = False
         sensor_clear_since = None
         capture_error_count = 0
@@ -66,6 +53,13 @@ async def scan_attendance_fingerprint(
             if (now - last_heartbeat).total_seconds() >= HEARTBEAT_INTERVAL:
                 yield sse({})
                 last_heartbeat = now
+
+            if (now - last_template_check).total_seconds() >= TEMPLATE_CHECK_INTERVAL:
+                last_template_check = now
+                try:
+                    await templates.refresh(station_id=station_id)
+                except Exception as exc:
+                    logger.error("Error checking registered fingerprints: %s", exc)
 
             try:
                 async with service.scan_lock:
@@ -82,7 +76,8 @@ async def scan_attendance_fingerprint(
                     try:
                         async with service.scan_lock:
                             await asyncio.to_thread(service.reconnect)
-                        fingerprint_employees = load_fingerprints(service)
+                        # A reopened device starts with empty memory.
+                        await templates.refresh(station_id=station_id, force=True)
                         capture_error_count = 0
                         sensor_armed = False
                         sensor_clear_since = None
@@ -128,14 +123,16 @@ async def scan_attendance_fingerprint(
             yield sse_status("processing", "Fingerprint detected. Verifying...")
 
             try:
-                fid, score = service.zkfp2.DBIdentify(tmp)
+                # Not while the templates are being reloaded.
+                async with service.scan_lock:
+                    fid, score = service.zkfp2.DBIdentify(tmp)
 
                 if fid == -1 or score < MATCH_THRESHOLD:
                     logger.info("Scan result: no match score=%s", score)
                     yield sse_error("Fingerprint not recognized.")
                     continue
 
-                employee_id = fingerprint_employees.get(int(fid))
+                employee_id = templates.employee_for(fid)
                 if not employee_id:
                     yield sse_error("Fingerprint recognized but no employee linked.")
                     continue

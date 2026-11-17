@@ -13,6 +13,7 @@ from .register import register_fingerprint
 from .attendance_scan import scan_attendance_fingerprint
 from .fingerprint_choice import fingerprint_choice
 from .sse import stream_response
+from .templates import FingerprintTemplates
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("FingerprintService")
@@ -65,6 +66,10 @@ class FingerprintService:
         self.zkfp2 = ZKFP2()
         self.zkfp2.Init()
         self.scan_lock = asyncio.Lock()
+        # Registered fingerprints of the attendance page's station, kept in
+        # SDK memory. Loaded when the page first connects (before anyone
+        # scans) and reloaded only when that station's prints change.
+        self.templates = FingerprintTemplates(self)
 
         if self.zkfp2.GetDeviceCount() == 0:
             raise RuntimeError("No fingerprint devices found")

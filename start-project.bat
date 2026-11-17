@@ -9,7 +9,9 @@ timeout /t 10 /nobreak >nul
 
 start "" /min /D "%PROJECT%" "%PHP%" artisan serve --host=0.0.0.0 --port=8000
 start "" /min /D "%PROJECT%" "%PHP%" artisan reverb:start --host=0.0.0.0 --port=8080
-start "" /min /D "%BIOMETRIC%" python -m uvicorn examples.example:app --host=0.0.0.0 --port=5000 --reload
+rem --timeout-graceful-shutdown: a restart (e.g. --reload after a code change)
+rem would otherwise wait forever on the attendance page's open scanner stream.
+start "" /min /D "%BIOMETRIC%" python -m uvicorn examples.example:app --host=0.0.0.0 --port=5000 --reload --timeout-graceful-shutdown=5
 
 :waitForLaravel
 curl.exe -fsS http://127.0.0.1:8000/ >nul 2>&1

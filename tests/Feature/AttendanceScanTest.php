@@ -346,3 +346,13 @@ it('sends every session time to the attendance page', function () {
             ->where('attendanceRules.amSessionClosesAt', ['minutes' => 780, 'label' => '1:00 PM'])
         );
 });
+
+it('tells a guest attendance page which station it records for', function () {
+    // The fingerprint scanner loads only this station's prints.
+    $this->get(route('attendance'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('attendanceAccess.station.id', $this->employee->station_id)
+            ->where('attendanceAccess.station.name', 'School Division Office')
+        );
+});
