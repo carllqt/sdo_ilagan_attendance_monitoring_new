@@ -1,9 +1,23 @@
 import asyncio
 import logging
+from itertools import combinations
 
+from . import settings
 from .sse import sse_error, sse_progress, sse_success
 
 logger = logging.getLogger("FingerprintService")
+
+# Scans needed for one registration.
+CAPTURES_PER_REGISTRATION = 3
+# When the scans match each other only weakly, the person starts over; after
+# this many tries the best one is saved anyway (and reported as weak), so a
+# person with worn fingerprints can still be registered.
+MAX_REGISTRATION_ATTEMPTS = 3
+
+
+def registration_score(zkfp2, captures):
+    """How well the scans match each other: the weakest of all pairs."""
+    return min(zkfp2.DBMatch(a, b) for a, b in combinations(captures, 2))
 
 
 async def register_fingerprint(
@@ -17,11 +31,18 @@ async def register_fingerprint(
     Register a fingerprint for an employee.
     Requires 3 consistent scans and rejects duplicates assigned to other employees.
 
+    The 3 scans are then compared with each other; the weakest pair is the
+    registration score, saved with the fingerprint. Below
+    BIOMETRIC_WEAK_REGISTRATION_SCORE the person is asked to scan again.
+
     `lease` is this connection's use of the scanner (see scanner_owner.py):
-    if another page takes the scanner before the 3 scans are done, the
+    if another page takes the scanner before the scans are done, the
     registration stops and nothing is saved.
     """
     templates = []
+    attempt = 1
+    best = None  # (score, captures) of the best try so far
+    weak_score = settings.weak_registration_score()
 
     def taken():
         return lease is not None and lease.taken
@@ -35,7 +56,27 @@ async def register_fingerprint(
             logger.error("Could not read registered prints for the duplicate check: %s", exc)
             existing_prints = []
 
-        while len(templates) < 3:
+        while True:
+            if len(templates) == CAPTURES_PER_REGISTRATION:
+                score = registration_score(service.zkfp2, templates)
+                logger.info("Registration try %s for employee %s: score %s.", attempt, emp_id, score)
+
+                if best is None or score > best[0]:
+                    best = (score, list(templates))
+
+                if score >= weak_score or attempt >= MAX_REGISTRATION_ATTEMPTS:
+                    break
+
+                attempt += 1
+                templates = []
+                yield sse_progress(
+                    f"The 3 scans did not match each other well (score {score}). "
+                    f"Let's try again ({attempt} of {MAX_REGISTRATION_ATTEMPTS}): "
+                    "place the same finger flat on the scanner.",
+                    attempt=attempt,
+                )
+                continue
+
             if taken():
                 yield lease.taken_event()
                 return
@@ -87,6 +128,8 @@ async def register_fingerprint(
                 scan_number=len(templates),
             )
 
+        score, templates = best
+        weak = score < weak_score
         reg_temp, size = service.zkfp2.DBMerge(*templates)
         final_template = bytes(reg_temp)[:size]
 
@@ -100,11 +143,20 @@ async def register_fingerprint(
             next_finger_index = max_index + 1
 
             cursor.execute(
-                "INSERT INTO biometrics (employee_id, finger_index, fingerprint_template, created_at, updated_at) "
-                "VALUES (%s, %s, %s, NOW(), NOW())",
-                (emp_id, next_finger_index, final_template),
+                "INSERT INTO biometrics "
+                "(employee_id, finger_index, fingerprint_template, registration_score, created_at, updated_at) "
+                "VALUES (%s, %s, %s, %s, NOW(), NOW())",
+                (emp_id, next_finger_index, final_template, score),
             )
             finger_id = cursor.lastrowid
+
+        if weak:
+            logger.warning(
+                "Weak registration saved for employee %s (score %s, below %s).",
+                emp_id,
+                score,
+                weak_score,
+            )
 
         # Make the new fingerprint scannable right away. The registration is
         # already saved, so a failed reload is only logged (the next scan
@@ -115,9 +167,16 @@ async def register_fingerprint(
             logger.error("Reloading fingerprints after registration failed: %s", exc)
 
         yield sse_success(
-            message="Fingerprint registered successfully.",
+            message=(
+                f"Fingerprint registered, but the scans were weak (score {score}). "
+                "If this finger is often not recognized, register a different finger."
+                if weak
+                else "Fingerprint registered successfully."
+            ),
             finger_id=finger_id,
             finger_index=next_finger_index,
+            registration_score=score,
+            weak=weak,
         )
 
     except asyncio.CancelledError:

@@ -43,6 +43,8 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
             'choice' => ['nullable', 'string', 'in:AM Time-In,AM Time-Out,PM Time-In,PM Time-Out'],
+            // The fingerprint service's scan log row for this scan.
+            'scan_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         return response()->json(
@@ -55,6 +57,7 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
             'choice' => ['required', 'string', 'in:AM Time-In,AM Time-Out,PM Time-In,PM Time-Out'],
+            'scan_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         return response()->json(

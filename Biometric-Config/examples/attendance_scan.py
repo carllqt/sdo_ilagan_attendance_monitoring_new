@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 
+from . import scan_log, settings
 from .sse import sse, sse_error, sse_status, sse_success
 
 logger = logging.getLogger("FingerprintService")
@@ -12,7 +13,6 @@ HEARTBEAT_INTERVAL = 15
 # How often an open scan connection checks whether fingerprints were added
 # or removed (one small query; the templates reload only on a change).
 TEMPLATE_CHECK_INTERVAL = 60
-MATCH_THRESHOLD = 60
 FINGER_RELEASE_SECONDS = 0.5
 
 
@@ -21,13 +21,30 @@ async def scan_attendance_fingerprint(
     station_id=None,
     is_disconnected=None,
     lease=None,
+    purpose="attendance",
 ):
     """Identify a fingerprint and return employee data. Laravel records attendance.
 
     `lease` is this connection's use of the scanner (see scanner_owner.py):
     once another page takes the scanner, this stops and tells the page who.
+
+    Every identified finger is saved to the scan log with its match score
+    (see scan_log.py); `purpose` (attendance or test) goes with it.
     """
     templates = service.templates
+
+    async def log_scan(employee_id, fid, score, threshold, outcome):
+        return await asyncio.to_thread(
+            scan_log.record_scan,
+            service,
+            employee_id=employee_id,
+            biometric_id=fid,
+            score=score,
+            threshold=threshold,
+            station_id=station_id,
+            purpose=purpose,
+            outcome=outcome,
+        )
 
     def taken():
         return lease is not None and lease.taken
@@ -114,9 +131,10 @@ async def scan_attendance_fingerprint(
 
             if not sensor_armed:
                 if capture:
-                    # Discard a finger/capture left on the scanner during the
-                    # retry countdown. A new scan is accepted only after the
-                    # sensor has continuously reported no finger.
+                    # Discard a finger still on the scanner (the last person's,
+                    # or one placed before the page connected). A new scan is
+                    # accepted only after the sensor has continuously
+                    # reported no finger for FINGER_RELEASE_SECONDS.
                     sensor_clear_since = None
                     await asyncio.sleep(0.1)
                     continue
@@ -145,15 +163,29 @@ async def scan_attendance_fingerprint(
                 continue
 
             tmp, _ = capture
-            yield sse_status("processing", "Fingerprint detected. Verifying...")
+
+            # The page keeps this connection open from one person to the
+            # next, so the lift-your-finger check above is the only gap
+            # between scans: the next finger counts once this one is lifted.
+            sensor_armed = False
+            sensor_clear_since = None
 
             try:
                 # Not while the templates are being reloaded.
                 async with service.scan_lock:
                     fid, score = service.zkfp2.DBIdentify(tmp)
 
-                if fid == -1 or score < MATCH_THRESHOLD:
+                threshold = settings.match_threshold()
+
+                if fid == -1 or score < threshold:
                     logger.info("Scan result: no match score=%s", score)
+
+                    # A registered finger that matched too weakly: logged as
+                    # an early sign of a bad registration.
+                    weak_match = templates.employee_for(fid) if fid != -1 else None
+                    if weak_match:
+                        await log_scan(weak_match, fid, score, threshold, scan_log.REJECTED)
+
                     yield sse_error("Fingerprint not recognized.")
                     continue
 
@@ -174,13 +206,16 @@ async def scan_attendance_fingerprint(
                     )
                     continue
 
+                # The same finger tapped twice: ignored without a message, so
+                # the first scan's result stays on the page.
                 now = datetime.now()
                 if employee_id in last_scan_times:
                     elapsed = (now - last_scan_times[employee_id]).total_seconds()
                     if elapsed < COOLDOWN_SECONDS:
-                        yield sse_error(
-                            "Scan ignored: please wait a moment before scanning again.",
-                            employee=employee_data,
+                        logger.info(
+                            "Scan ignored: employee %s scanned again within %ss.",
+                            employee_id,
+                            COOLDOWN_SECONDS,
                         )
                         continue
 
@@ -191,9 +226,14 @@ async def scan_attendance_fingerprint(
                     employee_id,
                     score,
                 )
+                # The page sends scan_id with the attendance it records, so
+                # Laravel can add what this scan recorded to the log.
+                scan_id = await log_scan(employee_id, fid, score, threshold, scan_log.IDENTIFIED)
                 yield sse_success(
                     finger_id=fid,
                     score=score,
+                    threshold=threshold,
+                    scan_id=scan_id,
                     employee=employee_data,
                 )
 

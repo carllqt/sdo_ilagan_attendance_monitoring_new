@@ -38,6 +38,10 @@ const ATTENDANCE_DATE_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
 const TEMPORARY_LOGS_DISPLAY_MS = 5 * 1000;
 // While another page has the scanner, how often to check if it is free.
 const SCANNER_CHECK_MS = 5 * 1000;
+// How long a scan's result message stays before "Place your fingerprint".
+// The scanner does not wait for it: the next person can scan as soon as the
+// last finger is lifted.
+const RESULT_DISPLAY_MS = 3 * 1000;
 
 const attendanceDateKey = (date) => {
     const parts = new Intl.DateTimeFormat("en-US", {
@@ -97,8 +101,6 @@ const useAttendanceController = ({
     const [employeeConfirmationKey, setEmployeeConfirmationKey] = useState(0);
     const [scanMessage, setScanMessage] = useState(scannerMessages.placeFinger);
     const [scanStatus, setScanStatus] = useState("idle");
-    const [retryCountdown, setRetryCountdown] = useState(null);
-    const [successCountdown, setSuccessCountdown] = useState(null);
     const [dailyAttendance, setDailyAttendance] = useState(
         attendanceItems(attendances),
     );
@@ -127,10 +129,14 @@ const useAttendanceController = ({
     const logActionRef = useRef(initialScannerAction);
     const logSessionRef = useRef(initialScannerSession);
     const scannerEnabledRef = useRef(false);
-    const retryTimerRef = useRef(null);
-    const successTimerRef = useRef(null);
+    // Set while a scan's result message is on screen (see showScanResult).
+    const resultTimerRef = useRef(null);
+    // True while a prompt waits for its answer; scanning is paused then.
+    const promptOpenRef = useRef(false);
     const reconnectTimerRef = useRef(null);
     const manualSelectionTimerRef = useRef(null);
+    // The scan log id of the scan whose prompt is open, if any.
+    const promptScanIdRef = useRef(null);
     const employeeClearTimerRef = useRef(null);
     const sessionRefreshStartedRef = useRef(false);
     const automaticLogsSessionRef = useRef(null);
@@ -471,8 +477,7 @@ const useAttendanceController = ({
         return () => {
             closeFingerprintStream();
             releaseScanner(fingerprintServiceUrl);
-            clearInterval(retryTimerRef.current);
-            clearInterval(successTimerRef.current);
+            clearTimeout(resultTimerRef.current);
             clearTimeout(reconnectTimerRef.current);
             clearTimeout(scannerCheckTimerRef.current);
             clearTimeout(manualSelectionTimerRef.current);
@@ -567,59 +572,48 @@ const useAttendanceController = ({
         eventSourceRef.current = null;
     };
 
-    const startRetryCountdown = (seconds, callback) => {
-        clearInterval(retryTimerRef.current);
-        setRetryCountdown(seconds);
-        let count = seconds;
-        retryTimerRef.current = setInterval(() => {
-            count -= 1;
-            setRetryCountdown(count);
-
-            if (count <= 0) {
-                clearInterval(retryTimerRef.current);
-                setRetryCountdown(null);
-                callback();
-            }
-        }, 1000);
-    };
-
     const setScannerFeedback = (status, message) => {
         setScanStatus(status);
         setScanMessage(message);
-    };
-
-    const startSuccessCountdown = (callback = null) => {
-        clearInterval(successTimerRef.current);
-        let count = 2;
-        setSuccessCountdown(count);
-        successTimerRef.current = setInterval(() => {
-            count -= 1;
-            setSuccessCountdown(count);
-
-            if (count <= 0) {
-                clearInterval(successTimerRef.current);
-                setSuccessCountdown(null);
-                resetScannerState();
-                callback?.();
-            }
-        }, 1000);
     };
 
     const resetScannerState = () => {
         setScannerFeedback("scanning", scannerMessages.placeFinger);
     };
 
-    const retryScanner = (restartScanner = true, seconds = 3) => {
-        startRetryCountdown(seconds, () => {
-            resetScannerState();
-            if (restartScanner) startAttendanceFingerprintScan();
-        });
+    const clearScanResult = () => {
+        clearTimeout(resultTimerRef.current);
+        resultTimerRef.current = null;
     };
 
-    const applyAttendanceResult = (data, restartScanner = true) => {
+    // Show a scan's result for a moment, then go back to "Place your
+    // fingerprint". The scanner stays ready the whole time.
+    const showScanResult = (status, message) => {
+        clearScanResult();
+        setScannerFeedback(status, message);
+        resultTimerRef.current = setTimeout(() => {
+            resultTimerRef.current = null;
+            resetScannerState();
+        }, RESULT_DISPLAY_MS);
+    };
+
+    // The scanner connection stays open from one person to the next; it is
+    // closed only for a prompt (or when lost). Reopen it if it is closed,
+    // except while a prompt waits for its answer.
+    const ensureScannerRunning = () => {
+        if (eventSourceRef.current || promptOpenRef.current) return;
+
+        startAttendanceFingerprintScan({ keepFeedback: true });
+    };
+
+    const applyAttendanceResult = (data) => {
         if (!data || Object.keys(data).length === 0) return;
 
         if (data.prompt) {
+            // Pause scanning until this person answers: the answer belongs
+            // to their scan.
+            promptOpenRef.current = true;
+            clearScanResult();
             closeFingerprintStream();
             setScannerFeedback("prompt", data.message);
 
@@ -642,7 +636,6 @@ const useAttendanceController = ({
         }
 
         if (data.cooldown && data.employee) {
-            closeFingerprintStream();
             toast.custom(
                 () =>
                     React.createElement(ScanCooldownToast, {
@@ -659,14 +652,14 @@ const useAttendanceController = ({
                     },
                 },
             );
+            clearScanResult();
             resetScannerState();
-            retryScanner(restartScanner, 3);
+            ensureScannerRunning();
             return;
         }
 
         if (data.already_recorded && data.employee) {
-            closeFingerprintStream();
-            setScannerFeedback("error", data.message);
+            showScanResult("error", data.message);
             toast.custom(
                 () =>
                     React.createElement(AlreadyRecordedToast, {
@@ -682,8 +675,7 @@ const useAttendanceController = ({
                     },
                 },
             );
-            resetScannerState();
-            retryScanner(restartScanner, 3);
+            ensureScannerRunning();
             return;
         }
 
@@ -691,23 +683,24 @@ const useAttendanceController = ({
             const timeStr = data.time || serverNow().toTimeString().split(" ")[0];
             updateAttendance(data, timeStr);
             showTemporaryLogsForSession(data.session);
-            setScannerFeedback("success", data.message);
-            startSuccessCountdown(() => {
-                if (restartScanner) startAttendanceFingerprintScan();
-            });
+            showScanResult("success", data.message);
+            ensureScannerRunning();
             return;
         }
 
-        if (data.message && !data.prompt) {
-            setScannerFeedback("error", data.message);
-            retryScanner(restartScanner);
+        if (data.message) {
+            showScanResult("error", data.message);
+            ensureScannerRunning();
         }
     };
 
-    const recordAttendanceScan = async (employeeId) => {
+    // scanId: the fingerprint service's scan log row (with the match score);
+    // the server adds what this scan recorded to it.
+    const recordAttendanceScan = async (employeeId, scanId = null) => {
         if (!employeeId) return;
 
-        closeFingerprintStream();
+        // The scanner stays open: the next person can scan while this saves.
+        clearScanResult();
         setScannerFeedback("processing", scannerMessages.recording);
 
         try {
@@ -717,9 +710,15 @@ const useAttendanceController = ({
                     logSessionRef.current,
                     logActionRef.current,
                 ),
+                scan_id: scanId,
             }, {
                 timeout: 15000,
             });
+
+            // The prompt's answer completes this scan's log row.
+            if (response.data?.prompt) {
+                promptScanIdRef.current = scanId;
+            }
 
             applyAttendanceResult(response.data);
 
@@ -735,8 +734,8 @@ const useAttendanceController = ({
                 error.response?.data?.message ||
                 "Unable to record attendance.";
 
-            setScannerFeedback("error", message);
-            retryScanner();
+            showScanResult("error", message);
+            ensureScannerRunning();
         }
     };
 
@@ -823,40 +822,52 @@ const useAttendanceController = ({
         }
 
         if (data.status) {
-            setScannerFeedback(
-                data.status === "processing"
-                    ? "processing"
-                    : data.status === "error"
-                      ? "error"
-                      : "scanning",
-                data.message || scannerMessages.placeFinger,
-            );
+            if (data.status === "error") {
+                clearScanResult();
+                setScannerFeedback("error", data.message);
+                return;
+            }
+
+            // "Scanner ready" and the like do not replace a result still on
+            // screen.
+            if (!resultTimerRef.current) {
+                setScannerFeedback(
+                    data.status === "processing" ? "processing" : "scanning",
+                    data.message || scannerMessages.placeFinger,
+                );
+            }
             return;
         }
 
         if (data.success && data.employee?.id && !data.session) {
-            recordAttendanceScan(data.employee.id);
+            recordAttendanceScan(data.employee.id, data.scan_id ?? null);
             return;
         }
 
-        // Stop acquiring fingerprints throughout the retry countdown.
-        closeFingerprintStream();
-        applyAttendanceResult(data, true);
+        // e.g. "Fingerprint not recognized.": shown, and the person can try
+        // again right away.
+        applyAttendanceResult(data);
     };
 
     // claim: a person opened the page or pressed "Use scanner here", so the
     // scanner moves here. resume: the availability check found it free.
-    // Every other call is an automatic restart after a scan, which does
-    // nothing while another page has the scanner.
+    // Every other call is an automatic restart (after a prompt or a lost
+    // connection), which does nothing while another page has the scanner.
+    // keepFeedback: leave the result on screen (e.g. after a prompt answer).
     const startAttendanceFingerprintScan = ({
         claim = false,
         resume = false,
+        keepFeedback = false,
     } = {}) => {
         if (!scannerEnabledRef.current) return;
         if (scannerOwnerRef.current && !claim && !resume) return;
 
         closeFingerprintStream();
-        resetScannerState();
+
+        if (!keepFeedback) {
+            clearScanResult();
+            resetScannerState();
+        }
 
         const eventSource = new EventSource(
             scannerUrl(fingerprintServiceUrl, "/bioAttendanceScan", {
@@ -869,7 +880,9 @@ const useAttendanceController = ({
         eventSource.onopen = () => {
             if (eventSourceRef.current !== eventSource) return;
 
-            setScannerFeedback("scanning", scannerMessages.connected);
+            if (!resultTimerRef.current) {
+                setScannerFeedback("scanning", scannerMessages.connected);
+            }
         };
 
         eventSource.onmessage = (event) => {
@@ -1002,15 +1015,21 @@ const useAttendanceController = ({
 
         if (!promptData?.employee?.id) return;
 
+        promptOpenRef.current = false;
         setShowAMPromptModal(false);
         setShowPMPromptModal(false);
         resetManualSelection();
         setScannerFeedback("processing", `Recording ${choice}...`);
 
+        // The answer completes the same scan's log row.
+        const scanId = promptScanIdRef.current;
+        promptScanIdRef.current = null;
+
         try {
             const response = await window.axios.post(route("attendance.choice"), {
                 employee_id: promptData.employee.id,
                 choice,
+                scan_id: scanId,
             });
 
             applyAttendanceResult(response.data);
@@ -1021,12 +1040,14 @@ const useAttendanceController = ({
                 error.response?.data?.message ||
                 "Failed to send choice to server.";
 
-            setScannerFeedback("error", message);
-            retryScanner();
+            showScanResult("error", message);
+            ensureScannerRunning();
         }
     };
 
     const handlePromptTimeout = () => {
+        promptOpenRef.current = false;
+        promptScanIdRef.current = null;
         setShowAMPromptModal(false);
         setShowPMPromptModal(false);
         setAMPromptData(null);
@@ -1110,7 +1131,6 @@ const useAttendanceController = ({
         pmSessionLocked,
         amSessionClosesAt: rules.amSessionClosesAt?.label ?? "",
         pmSessionOpensAt: rules.pmSessionOpensAt?.label ?? "",
-        retryCountdown,
         scanMessage,
         scannerOwner,
         scanStatus: displayStatus,
@@ -1122,7 +1142,6 @@ const useAttendanceController = ({
         showAMPromptModal,
         showPMPromptModal,
         StatusIcon,
-        successCountdown,
         suggestionMatches,
         suggestionsLoading,
         takeScannerHere,

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pyzkfp import ZKFP2
 import mysql.connector
 
-from . import scanner_owner
+from . import scanner_owner, settings
 from .register import register_fingerprint
 from .attendance_scan import scan_attendance_fingerprint
 from .fingerprint_choice import fingerprint_choice
@@ -79,6 +79,13 @@ class FingerprintService:
             raise RuntimeError("No fingerprint devices found")
         if not self.zkfp2.OpenDevice(0):
             raise RuntimeError("Failed to open fingerprint device")
+
+        # From .env; see settings.py.
+        logger.info(
+            "Match threshold %s; registrations below %s are weak.",
+            settings.match_threshold(),
+            settings.weak_registration_score(),
+        )
 
         self.db_config = {
             "host": os.getenv("BIOMETRIC_DB_HOST", os.getenv("DB_HOST", "127.0.0.1")),
@@ -233,6 +240,7 @@ async def bio_attendance_scan(
                 station_id,
                 request.is_disconnected,
                 lease=lease,
+                purpose=mode,
             ),
         ):
             yield event

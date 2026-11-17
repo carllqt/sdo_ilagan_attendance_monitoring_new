@@ -6,6 +6,7 @@ use App\Data\Administrator\Attendance\AttendanceFilter;
 use App\Models\Administrator\Attendance;
 use App\Models\Administrator\Employee;
 use App\Models\Administrator\Station;
+use App\Models\FingerprintScan;
 use App\Models\User;
 use App\Repositories\Administrator\AttendanceRepository;
 use App\Services\AttendanceMonitoringRealtimeService;
@@ -118,10 +119,46 @@ class AttendanceService
         $employee = $this->employeeForAttendance($employeeId, $stationId);
         $choice = (string) $request->input('choice', '');
 
-        return $this->oneScanAtATime(
+        $result = $this->oneScanAtATime(
             $employee,
             fn () => $this->recordScanForEmployee($employee, $choice),
         );
+        $this->noteScanOutcome($request, $employee, $result);
+
+        return $result;
+    }
+
+    /**
+     * Add what a fingerprint scan led to (e.g. "AM Time-In recorded") to its
+     * scan log row, which the fingerprint service wrote with the match
+     * score. Only this employee's row, and only while it is still open: a
+     * prompt is completed by the answer that follows it.
+     */
+    private function noteScanOutcome(Request $request, Employee $employee, array $result): void
+    {
+        $scanId = $request->integer('scan_id');
+
+        if ($scanId < 1) {
+            return;
+        }
+
+        [$outcome, $recorded] = match (true) {
+            ($result['success'] ?? false) === true && isset($result['session'], $result['action']) => [
+                FingerprintScan::RECORDED,
+                $result['session'] . ' Time-' . ($result['action'] === 'time-in' ? 'In' : 'Out'),
+            ],
+            (bool) ($result['prompt'] ?? false) => [FingerprintScan::PROMPT, null],
+            (bool) ($result['cooldown'] ?? false) => [FingerprintScan::COOLDOWN, null],
+            (bool) ($result['already_recorded'] ?? false) => [FingerprintScan::ALREADY_RECORDED, null],
+            (bool) ($result['locked'] ?? false) => [FingerprintScan::LOCKED, null],
+            default => [FingerprintScan::NOT_RECORDED, null],
+        };
+
+        FingerprintScan::query()
+            ->whereKey($scanId)
+            ->where('employee_id', $employee->id)
+            ->whereIn('outcome', [FingerprintScan::IDENTIFIED, FingerprintScan::PROMPT])
+            ->update(['outcome' => $outcome, 'recorded' => $recorded]);
     }
 
     /**
@@ -239,10 +276,13 @@ class AttendanceService
         $stationId = $this->stationId($request->user());
         $employee = $this->employeeForAttendance($employeeId, $stationId);
 
-        return $this->oneScanAtATime(
+        $result = $this->oneScanAtATime(
             $employee,
             fn () => $this->recordChoiceForEmployee($employee, $choice, now()),
         );
+        $this->noteScanOutcome($request, $employee, $result);
+
+        return $result;
     }
 
     private function recordChoiceForEmployee(Employee $employee, string $choice, Carbon $now): array

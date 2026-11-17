@@ -9,12 +9,24 @@ use App\Models\Administrator\Employee;
 class Biometric extends Model
 {
     protected $fillable = [
-        'employee_id', 
+        'employee_id',
         'fingerprint_template',
-        'finger_index'
+        'finger_index',
+        'registration_score',
     ];
 
     protected $hidden = ['fingerprint_template'];
+
+    // How well the 3 registration scans matched each other (set by the
+    // fingerprint service; null for fingers registered before it existed).
+    protected $casts = [
+        'registration_score' => 'integer',
+    ];
+
+    public function scans()
+    {
+        return $this->hasMany(FingerprintScan::class);
+    }
 
     public function employee()
     {

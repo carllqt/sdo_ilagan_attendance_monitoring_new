@@ -44,6 +44,7 @@ const useFingerprintPanel = ({
     const registerSourceRef = useRef(null);
     const registrationInProgressRef = useRef(false);
     const registrationSuccessMessageRef = useRef("");
+    const registrationWeakRef = useRef(false);
     const [testOpen, setTestOpen] = useState(Boolean(testFingerprintModal));
     const testOpenRef = useRef(Boolean(testFingerprintModal));
     const [testMessage, setTestMessage] = useState(
@@ -268,6 +269,8 @@ const useFingerprintPanel = ({
                 } else if (data.success === true) {
                     setRegistrationFeedback("success", data.message);
                     registrationSuccessMessageRef.current = data.message;
+                    // Saved, but the 3 scans matched each other weakly.
+                    registrationWeakRef.current = Boolean(data.weak);
                     setScanning(false);
                     stopRegisterSource(source);
                     toast.loading("Updating fingerprint registration...", {
@@ -289,11 +292,20 @@ const useFingerprintPanel = ({
 
                     clearFingerprintEmployee({
                         onSuccess: () => {
-                            toast.success(
+                            const message =
                                 registrationSuccessMessageRef.current ||
-                                    "Fingerprint registered successfully.",
-                                { id: registrationToastId },
-                            );
+                                "Fingerprint registered successfully.";
+
+                            if (registrationWeakRef.current) {
+                                toast.warning(message, {
+                                    id: registrationToastId,
+                                    duration: 10000,
+                                });
+                            } else {
+                                toast.success(message, {
+                                    id: registrationToastId,
+                                });
+                            }
                             registrationInProgressRef.current = false;
                         },
                         onError: () => {
@@ -395,9 +407,16 @@ const useFingerprintPanel = ({
                         ? station?.name || "No station"
                         : office?.name || "-";
 
+                    // The score helps judge a registration: a finger that
+                    // matches only just above the threshold is a weak one.
+                    const scoreText =
+                        data.score !== undefined && data.score !== null
+                            ? ` · score ${data.score}${data.threshold ? ` (needs ${data.threshold})` : ""}`
+                            : "";
+
                     setTestFeedback(
                         "success",
-                        `Match: ${getEmployeeName(data.employee)} (${locationName} - ${position})`,
+                        `Match: ${getEmployeeName(data.employee)} (${locationName} - ${position})${scoreText}`,
                     );
 
                     scheduleTestReset();

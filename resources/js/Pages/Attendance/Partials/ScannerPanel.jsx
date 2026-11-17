@@ -26,11 +26,10 @@ const ScannerPanel = ({
     handleLogSessionToggle,
     logAction,
     logSession,
-    retryCountdown,
     scanMessage,
     scannerOwner = null,
+    scanStatus = "idle",
     selectedChoice,
-    successCountdown,
     takeScannerHere = () => {},
     timeOutLocked = false,
     timeOutOpensAt = "",
@@ -202,10 +201,10 @@ const ScannerPanel = ({
                                         {scanMessage}
                                     </div>
                                     <div className="mt-1 text-sm font-semibold text-blue-100">
-                                        {retryCountdown !== null
-                                            ? `Retrying in ${retryCountdown} seconds`
-                                            : successCountdown !== null
-                                              ? `Resetting in ${successCountdown} seconds`
+                                        {scanStatus === "success"
+                                            ? "Lift your finger. The next person can scan now."
+                                            : scanStatus === "error"
+                                              ? "Lift your finger and try again."
                                               : "Keep the finger steady until confirmation."}
                                     </div>
                                 </div>

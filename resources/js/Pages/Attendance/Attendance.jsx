@@ -56,11 +56,10 @@ const Attendance = ({
                             }
                             logAction={attendance.logAction}
                             logSession={attendance.logSession}
-                            retryCountdown={attendance.retryCountdown}
                             scanMessage={attendance.scanMessage}
                             scannerOwner={attendance.scannerOwner}
                             selectedChoice={attendance.selectedChoice}
-                            successCountdown={attendance.successCountdown}
+                            scanStatus={attendance.scanStatus}
                             takeScannerHere={attendance.takeScannerHere}
                             amSessionClosesAt={attendance.amSessionClosesAt}
                             pmSessionLocked={attendance.pmSessionLocked}
