@@ -22,8 +22,8 @@ def sse_progress(message: str, **payload) -> str:
     return sse({"success": None, "message": message, **payload})
 
 
-def sse_status(status: str, message: str) -> str:
-    return sse({"status": status, "message": message})
+def sse_status(status: str, message: str, **payload) -> str:
+    return sse({"status": status, "message": message, **payload})
 
 
 def sse_success(**payload) -> str:

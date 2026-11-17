@@ -31,14 +31,20 @@ class FingerprintTemplates:
     def loaded(self):
         return self.signature is not None
 
-    async def refresh(self, station_id=KEEP_STATION, force=False):
+    async def refresh(self, station_id=KEEP_STATION, force=False, lease=None):
         """Load `station_id`'s prints if they are not loaded yet or changed,
         or always with force=True (e.g. after the device reconnects and its
         memory is empty).
 
+        With `lease`, nothing loads once another page has taken the scanner,
+        so a page that just lost it cannot swap out the new page's prints.
+
         Returns True when the templates were reloaded.
         """
         async with self._reload_lock:
+            if lease is not None and lease.taken:
+                return False
+
             if station_id is KEEP_STATION:
                 station_id = self.station_id
 

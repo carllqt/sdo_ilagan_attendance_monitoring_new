@@ -20,14 +20,22 @@ async def scan_attendance_fingerprint(
     service,
     station_id=None,
     is_disconnected=None,
+    lease=None,
 ):
-    """Identify a fingerprint and return employee data. Laravel records attendance."""
+    """Identify a fingerprint and return employee data. Laravel records attendance.
+
+    `lease` is this connection's use of the scanner (see scanner_owner.py):
+    once another page takes the scanner, this stops and tells the page who.
+    """
     templates = service.templates
+
+    def taken():
+        return lease is not None and lease.taken
 
     # Only this station's prints are matched. They stay in SDK memory between
     # connections; this reloads them only if they changed since the last load.
     try:
-        await templates.refresh(station_id=station_id)
+        await templates.refresh(station_id=station_id, lease=lease)
     except Exception as exc:
         logger.error("Error checking registered fingerprints: %s", exc)
 
@@ -36,6 +44,10 @@ async def scan_attendance_fingerprint(
             return
 
     try:
+        if taken():
+            yield lease.taken_event()
+            return
+
         yield sse_status("ready", "Fingerprint scanner ready.")
         last_heartbeat = datetime.now()
         last_template_check = datetime.now()
@@ -48,6 +60,10 @@ async def scan_attendance_fingerprint(
                 logger.info("SSE attendance client disconnected; stopping scanner.")
                 return
 
+            if taken():
+                yield lease.taken_event()
+                return
+
             now = datetime.now()
 
             if (now - last_heartbeat).total_seconds() >= HEARTBEAT_INTERVAL:
@@ -57,12 +73,14 @@ async def scan_attendance_fingerprint(
             if (now - last_template_check).total_seconds() >= TEMPLATE_CHECK_INTERVAL:
                 last_template_check = now
                 try:
-                    await templates.refresh(station_id=station_id)
+                    await templates.refresh(station_id=station_id, lease=lease)
                 except Exception as exc:
                     logger.error("Error checking registered fingerprints: %s", exc)
 
             try:
                 async with service.scan_lock:
+                    if taken():
+                        continue
                     capture = await asyncio.to_thread(service.zkfp2.AcquireFingerprint)
             except Exception as exc:
                 logger.error("Fingerprint capture error: %s", exc)
@@ -76,8 +94,10 @@ async def scan_attendance_fingerprint(
                     try:
                         async with service.scan_lock:
                             await asyncio.to_thread(service.reconnect)
-                        # A reopened device starts with empty memory.
-                        await templates.refresh(station_id=station_id, force=True)
+                        # A reopened device starts with empty memory. Reload
+                        # the station loaded now, which is another page's if
+                        # that page took the scanner meanwhile.
+                        await templates.refresh(force=True)
                         capture_error_count = 0
                         sensor_armed = False
                         sensor_clear_since = None
@@ -118,6 +138,11 @@ async def scan_attendance_fingerprint(
             if is_disconnected and await is_disconnected():
                 logger.info("SSE attendance client disconnected after capture.")
                 return
+
+            # Taken while this finger was being read: the finger belongs to
+            # the page that has the scanner now, not to this one.
+            if taken():
+                continue
 
             tmp, _ = capture
             yield sse_status("processing", "Fingerprint detected. Verifying...")

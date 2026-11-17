@@ -1,9 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
+import { ArrowLeftRight } from "lucide-react";
 import { getEmployeeName } from "@/lib/utils";
+import {
+    fetchScannerStatus,
+    releaseScanner,
+    scannerMovedHere,
+    scannerUrl,
+    scannerUsedElsewhere,
+} from "@/lib/fingerprintScanner";
 import useEmployeeSearchSuggestions from "../../Admin/EmployeeManagement/hooks/useEmployeeSearchSuggestions";
 import AlreadyRecordedToast from "../Partials/AlreadyRecordedToast";
+import AttendanceToast from "../Partials/AttendanceToast";
 import ScanCooldownToast from "../Partials/ScanCooldownToast";
 import {
     attendanceChoice,
@@ -27,6 +36,8 @@ const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
 const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
 const ATTENDANCE_DATE_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
 const TEMPORARY_LOGS_DISPLAY_MS = 5 * 1000;
+// While another page has the scanner, how often to check if it is free.
+const SCANNER_CHECK_MS = 5 * 1000;
 
 const attendanceDateKey = (date) => {
     const parts = new Intl.DateTimeFormat("en-US", {
@@ -107,6 +118,12 @@ const useAttendanceController = ({
         session: initialTab,
     });
     const eventSourceRef = useRef(null);
+    // The page using the scanner when it is not this one, as the fingerprint
+    // service describes it ({ label, where, since, summary }); null when the
+    // scanner is here.
+    const [scannerOwner, setScannerOwnerState] = useState(null);
+    const scannerOwnerRef = useRef(null);
+    const scannerCheckTimerRef = useRef(null);
     const logActionRef = useRef(initialScannerAction);
     const logSessionRef = useRef(initialScannerSession);
     const scannerEnabledRef = useRef(false);
@@ -123,9 +140,6 @@ const useAttendanceController = ({
     const access = attendanceAccess || {};
     const canUseScanner = true;
     const stationId = access.station?.id;
-    const stationQuery = stationId
-        ? `?station_id=${encodeURIComponent(stationId)}`
-        : "";
     const totalAttendanceRecords = dailyAttendance.length;
     const {
         searchBoxRef,
@@ -452,17 +466,29 @@ const useAttendanceController = ({
             return;
         }
 
-        startAttendanceFingerprintScan();
+        // Opening the page moves the scanner here.
+        startAttendanceFingerprintScan({ claim: true });
         return () => {
             closeFingerprintStream();
+            releaseScanner(fingerprintServiceUrl);
             clearInterval(retryTimerRef.current);
             clearInterval(successTimerRef.current);
             clearTimeout(reconnectTimerRef.current);
+            clearTimeout(scannerCheckTimerRef.current);
             clearTimeout(manualSelectionTimerRef.current);
             clearTimeout(employeeClearTimerRef.current);
             clearTimeout(logsResetTimerRef.current);
         };
-    }, [canUseScanner, stationQuery]);
+    }, [canUseScanner, stationId]);
+
+    // Closing or reloading the tab gives the scanner back at once (otherwise
+    // the service keeps it for this page for a minute).
+    useEffect(() => {
+        const release = () => releaseScanner(fingerprintServiceUrl);
+
+        window.addEventListener("pagehide", release);
+        return () => window.removeEventListener("pagehide", release);
+    }, [fingerprintServiceUrl]);
 
     const updateAttendance = (data, timeStr) => {
         const session = data.session;
@@ -714,8 +740,87 @@ const useAttendanceController = ({
         }
     };
 
+    const setScannerOwner = (owner) => {
+        scannerOwnerRef.current = owner;
+        setScannerOwnerState(owner);
+    };
+
+    const scheduleScannerCheck = () => {
+        clearTimeout(scannerCheckTimerRef.current);
+        scannerCheckTimerRef.current = setTimeout(
+            checkScannerAvailability,
+            SCANNER_CHECK_MS,
+        );
+    };
+
+    // Another page has the scanner: show who, and come back on our own once
+    // it is free (e.g. the registration finished).
+    const checkScannerAvailability = async () => {
+        if (!scannerEnabledRef.current || !scannerOwnerRef.current) return;
+
+        try {
+            const status = await fetchScannerStatus(fingerprintServiceUrl);
+
+            if (!scannerOwnerRef.current) return;
+
+            if (status.free) {
+                startAttendanceFingerprintScan({ resume: true });
+                return;
+            }
+
+            if (status.owner) setScannerOwner(status.owner);
+        } catch {
+            // Service not reachable; keep checking.
+        }
+
+        scheduleScannerCheck();
+    };
+
+    const showScannerUsedElsewhere = (data) => {
+        closeFingerprintStream();
+        clearTimeout(reconnectTimerRef.current);
+        setScannerOwner(data.owner || { summary: data.message });
+        scheduleScannerCheck();
+    };
+
+    const takeScannerHere = () => {
+        clearTimeout(scannerCheckTimerRef.current);
+        startAttendanceFingerprintScan({ claim: true });
+    };
+
+    const showScannerMovedHere = (data) => {
+        toast.custom(
+            () =>
+                React.createElement(AttendanceToast, {
+                    detail: "That page stopped scanning.",
+                    icon: React.createElement(ArrowLeftRight, {
+                        className: "h-4 w-4",
+                    }),
+                    message: data.message,
+                    title: "Scanner is now on this page",
+                    tone: "info",
+                }),
+            { duration: 5000, position: "top-center" },
+        );
+    };
+
     const handleResponseData = (data) => {
         if (!data || Object.keys(data).length === 0) return;
+
+        if (scannerUsedElsewhere(data)) {
+            showScannerUsedElsewhere(data);
+            return;
+        }
+
+        if (scannerMovedHere(data)) {
+            showScannerMovedHere(data);
+            return;
+        }
+
+        if (data.status === "ready") {
+            clearTimeout(scannerCheckTimerRef.current);
+            setScannerOwner(null);
+        }
 
         if (data.status) {
             setScannerFeedback(
@@ -739,14 +844,25 @@ const useAttendanceController = ({
         applyAttendanceResult(data, true);
     };
 
-    const startAttendanceFingerprintScan = () => {
+    // claim: a person opened the page or pressed "Use scanner here", so the
+    // scanner moves here. resume: the availability check found it free.
+    // Every other call is an automatic restart after a scan, which does
+    // nothing while another page has the scanner.
+    const startAttendanceFingerprintScan = ({
+        claim = false,
+        resume = false,
+    } = {}) => {
         if (!scannerEnabledRef.current) return;
+        if (scannerOwnerRef.current && !claim && !resume) return;
 
         closeFingerprintStream();
         resetScannerState();
 
         const eventSource = new EventSource(
-            `${fingerprintServiceUrl}/bioAttendanceScan${stationQuery}`,
+            scannerUrl(fingerprintServiceUrl, "/bioAttendanceScan", {
+                station_id: stationId,
+                claim,
+            }),
         );
         eventSourceRef.current = eventSource;
 
@@ -777,6 +893,14 @@ const useAttendanceController = ({
             console.error("SSE error:", err);
             eventSource.close();
             eventSourceRef.current = null;
+
+            // Lost the connection while waiting for the scanner: keep
+            // checking for it instead of reconnecting.
+            if (scannerOwnerRef.current) {
+                scheduleScannerCheck();
+                return;
+            }
+
             setScannerFeedback("error", scannerMessages.disconnected);
             clearTimeout(reconnectTimerRef.current);
             reconnectTimerRef.current = setTimeout(() => {
@@ -912,7 +1036,10 @@ const useAttendanceController = ({
         startAttendanceFingerprintScan();
     };
 
-    const currentStatus = statusConfig[scanStatus] || statusConfig.idle;
+    // While another page has the scanner, that is the status shown,
+    // whatever this page was last doing.
+    const displayStatus = scannerOwner ? "elsewhere" : scanStatus;
+    const currentStatus = statusConfig[displayStatus] || statusConfig.idle;
     const StatusIcon = currentStatus.icon;
     const selectedChoice = attendanceChoice(logSession, logAction);
     const timeOutLocked = !canTimeOut(time, logSession, rules);
@@ -967,7 +1094,7 @@ const useAttendanceController = ({
         employeeConfirmationKey,
         employeeName,
         filterLoading,
-        fingerprintColor: fingerprintColor(scanStatus),
+        fingerprintColor: fingerprintColor(displayStatus),
         formattedDate,
         clearAttendanceSearch,
         handleLogActionChange,
@@ -985,7 +1112,8 @@ const useAttendanceController = ({
         pmSessionOpensAt: rules.pmSessionOpensAt?.label ?? "",
         retryCountdown,
         scanMessage,
-        scanStatus,
+        scannerOwner,
+        scanStatus: displayStatus,
         search,
         searchBoxRef,
         selectSuggestion,
@@ -997,6 +1125,7 @@ const useAttendanceController = ({
         successCountdown,
         suggestionMatches,
         suggestionsLoading,
+        takeScannerHere,
         time,
         timeOutLocked,
         timeOutOpensAt: timeOutOpensLabel,

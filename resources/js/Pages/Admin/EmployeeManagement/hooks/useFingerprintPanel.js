@@ -7,6 +7,22 @@ import {
     formatFingerprintRegistrationParam,
 } from "../utils";
 import { getEmployeeName } from "@/lib/utils";
+import {
+    fetchScannerStatus,
+    scannerMovedHere,
+    scannerUrl,
+    scannerUsedElsewhere,
+} from "@/lib/fingerprintScanner";
+
+// How often the panel checks who is using the scanner.
+const SCANNER_STATUS_CHECK_MS = 10 * 1000;
+
+const showScannerMovedHere = (data) => {
+    toast.info(data.message, {
+        description:
+            "That page stops scanning, and gets the scanner back when you finish here.",
+    });
+};
 
 const useFingerprintPanel = ({
     filteredEmployees,
@@ -39,6 +55,36 @@ const useFingerprintPanel = ({
     const testReconnectTimerRef = useRef(null);
     const [fingerprintEmployeeLoading, setFingerprintEmployeeLoading] =
         useState(false);
+    // Who is using the scanner ({ free, yours, owner }), or null when the
+    // fingerprint service cannot be reached.
+    const [scannerStatus, setScannerStatus] = useState(null);
+
+    // Checked every few seconds, and again shortly after a registration or
+    // test starts or ends.
+    useEffect(() => {
+        let cancelled = false;
+        let timer = null;
+
+        const check = async () => {
+            try {
+                const status = await fetchScannerStatus(fingerprintServiceUrl);
+                if (!cancelled) setScannerStatus(status);
+            } catch {
+                if (!cancelled) setScannerStatus(null);
+            }
+
+            if (!cancelled) {
+                timer = setTimeout(check, SCANNER_STATUS_CHECK_MS);
+            }
+        };
+
+        timer = setTimeout(check, 600);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [fingerprintServiceUrl, scanning, testOpen]);
 
     useEffect(() => {
         setSelectedEmployee(selectedFingerprintEmployeeProp?.id || "");
@@ -183,8 +229,13 @@ const useFingerprintPanel = ({
             id: registrationToastId,
         });
 
+        // Pressing Register moves the scanner here.
         const source = new EventSource(
-            `${fingerprintServiceUrl}/bioRegisterSSE/${selectedEmployee}`,
+            scannerUrl(
+                fingerprintServiceUrl,
+                `/bioRegisterSSE/${selectedEmployee}`,
+                { claim: true },
+            ),
         );
         registerSourceRef.current = source;
 
@@ -192,8 +243,22 @@ const useFingerprintPanel = ({
             if (registerSourceRef.current !== source) return;
 
             try {
-                const data = JSON.parse(event.data);
+                let data = JSON.parse(event.data);
                 if (!data || Object.keys(data).length === 0) return;
+
+                if (scannerMovedHere(data)) {
+                    showScannerMovedHere(data);
+                    return;
+                }
+
+                // Another page took the scanner before the 3 scans were
+                // done; nothing was saved.
+                if (scannerUsedElsewhere(data)) {
+                    data = {
+                        success: false,
+                        message: `${data.message} Registration stopped, nothing was saved.`,
+                    };
+                }
 
                 setScanFeedbackKey((value) => value + 1);
 
@@ -279,12 +344,19 @@ const useFingerprintPanel = ({
         };
     };
 
-    const startTestFingerprint = () => {
+    // Opening the test moves the scanner here (claim); its automatic
+    // reconnect after an error does not take it from another page.
+    const startTestFingerprint = ({ claim = true } = {}) => {
         clearTestTimers();
         stopTestSource();
         resetTestFeedback();
 
-        const source = new EventSource(`${fingerprintServiceUrl}/bioAttendanceScan`);
+        const source = new EventSource(
+            scannerUrl(fingerprintServiceUrl, "/bioAttendanceScan", {
+                purpose: "test",
+                claim,
+            }),
+        );
         testSourceRef.current = source;
 
         source.onmessage = (event) => {
@@ -294,6 +366,20 @@ const useFingerprintPanel = ({
                 const data = JSON.parse(event.data);
 
                 if (!data || Object.keys(data).length === 0) return;
+
+                if (scannerMovedHere(data)) {
+                    showScannerMovedHere(data);
+                    return;
+                }
+
+                // Another page has the scanner: stop here (no reconnect).
+                // Closing and reopening the test takes it back.
+                if (scannerUsedElsewhere(data)) {
+                    clearTestTimers();
+                    stopTestSource(source);
+                    setTestFeedback("error", data.message);
+                    return;
+                }
 
                 if (data.status) {
                     setTestFeedback(
@@ -334,7 +420,9 @@ const useFingerprintPanel = ({
 
             clearTimeout(testReconnectTimerRef.current);
             testReconnectTimerRef.current = setTimeout(() => {
-                if (testOpenRef.current) startTestFingerprint();
+                if (testOpenRef.current) {
+                    startTestFingerprint({ claim: false });
+                }
             }, 3000);
         };
     };
@@ -395,6 +483,7 @@ const useFingerprintPanel = ({
         registerFingerprint,
         scanFeedbackKey,
         scanMessage,
+        scannerStatus,
         scanStatus,
         scanning,
         selectedEmployee,

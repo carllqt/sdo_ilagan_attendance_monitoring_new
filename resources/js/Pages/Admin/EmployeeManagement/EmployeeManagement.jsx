@@ -50,6 +50,7 @@ const EmployeeManagement = ({
         registerFingerprint,
         scanFeedbackKey,
         scanMessage,
+        scannerStatus,
         scanStatus,
         scanning,
         selectedEmployee,
@@ -123,6 +124,7 @@ const EmployeeManagement = ({
                         scanning={scanning}
                         scanStatus={scanStatus}
                         scanMessage={scanMessage}
+                        scannerStatus={scannerStatus}
                         scanFeedbackKey={scanFeedbackKey}
                         cancelScan={cancelScan}
                         registerFingerprint={registerFingerprint}

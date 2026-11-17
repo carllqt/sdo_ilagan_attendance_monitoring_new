@@ -9,9 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pyzkfp import ZKFP2
 import mysql.connector
 
+from . import scanner_owner
 from .register import register_fingerprint
 from .attendance_scan import scan_attendance_fingerprint
 from .fingerprint_choice import fingerprint_choice
+from .scanner_owner import ScannerOwnership
 from .sse import stream_response
 from .templates import FingerprintTemplates
 
@@ -70,6 +72,8 @@ class FingerprintService:
         # SDK memory. Loaded when the page first connects (before anyone
         # scans) and reloaded only when that station's prints change.
         self.templates = FingerprintTemplates(self)
+        # Which page is using the scanner; one at a time.
+        self.ownership = ScannerOwnership()
 
         if self.zkfp2.GetDeviceCount() == 0:
             raise RuntimeError("No fingerprint devices found")
@@ -163,32 +167,90 @@ class FingerprintService:
 # Initialize service
 service = FingerprintService()
 
+def client_host(request: Request) -> str:
+    return request.client.host if request.client else ""
+
+
+def with_scanner(request: Request, client: str, claim: bool, mode: str, label: str, scan):
+    return scanner_owner.run_with_scanner(
+        service.ownership,
+        client=client,
+        claim=claim,
+        mode=mode,
+        label=label,
+        host=client_host(request),
+        scan=scan,
+        is_disconnected=request.is_disconnected,
+    )
+
+
 # ----- ENDPOINTS -----
+# Each page sends `client` (its tab's id) and `claim=1` when a person opened
+# the page or pressed a button; automatic reconnects send no claim.
 @app.get("/bioRegisterSSE/{emp_id}")
-async def bio_register_sse(emp_id: int, request: Request):
+async def bio_register_sse(emp_id: int, request: Request, client: str = "", claim: bool = True):
     """SSE endpoint for fingerprint registration"""
     async def event_stream():
-        async for event in register_fingerprint(emp_id, service):
-            if await request.is_disconnected():
-                break
+        label = await asyncio.to_thread(scanner_owner.registration_label, service, emp_id)
+
+        async for event in with_scanner(
+            request,
+            client,
+            claim,
+            scanner_owner.REGISTRATION,
+            label,
+            lambda lease: register_fingerprint(emp_id, service, lease=lease),
+        ):
             yield event
 
     return stream_response(event_stream())
 
 @app.get("/bioAttendanceScan")
-async def bio_attendance_scan(request: Request, station_id: int | None = None):
-    """SSE endpoint for attendance fingerprint scanning."""
+async def bio_attendance_scan(
+    request: Request,
+    station_id: int | None = None,
+    client: str = "",
+    claim: bool = False,
+    purpose: str = "attendance",
+):
+    """SSE endpoint for attendance fingerprint scanning (and the fingerprint
+    test, with purpose=test)."""
     async def event_stream():
-        async for msg in scan_attendance_fingerprint(
-            service,
-            station_id,
-            request.is_disconnected,
+        if purpose == scanner_owner.TEST:
+            mode, label = scanner_owner.TEST, scanner_owner.TEST_LABEL
+        else:
+            mode = scanner_owner.ATTENDANCE
+            label = await asyncio.to_thread(scanner_owner.attendance_label, service, station_id)
+
+        async for event in with_scanner(
+            request,
+            client,
+            claim,
+            mode,
+            label,
+            lambda lease: scan_attendance_fingerprint(
+                service,
+                station_id,
+                request.is_disconnected,
+                lease=lease,
+            ),
         ):
-            if await request.is_disconnected():
-                break
-            yield msg
+            yield event
 
     return stream_response(event_stream())
+
+
+@app.get("/bioScannerStatus")
+async def bio_scanner_status(request: Request, client: str = ""):
+    """Who is using the scanner: {free, yours, owner}."""
+    return service.ownership.status(client, client_host(request))
+
+
+@app.post("/bioScannerRelease")
+async def bio_scanner_release(client: str = ""):
+    """A page is closing: give the scanner back without the usual wait."""
+    service.ownership.release(client)
+    return {"ok": True}
 
 
 @app.get("/bioFingerprintChoice/{employee_id}/{choice}")

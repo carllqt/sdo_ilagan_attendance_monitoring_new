@@ -7,6 +7,7 @@ import {
     LockKeyhole,
     LogIn,
     LogOut,
+    MonitorSmartphone,
     Sun,
     UserRound,
 } from "lucide-react";
@@ -27,8 +28,10 @@ const ScannerPanel = ({
     logSession,
     retryCountdown,
     scanMessage,
+    scannerOwner = null,
     selectedChoice,
     successCountdown,
+    takeScannerHere = () => {},
     timeOutLocked = false,
     timeOutOpensAt = "",
     pmSessionLocked = false,
@@ -180,22 +183,33 @@ const ScannerPanel = ({
                         <div className="relative flex min-h-0 flex-col items-center justify-center px-4 py-4 text-center">
                             <div className="relative flex h-28 w-28 items-center justify-center rounded-full border border-blue-400/30 bg-blue-950/45 2xl:h-32 2xl:w-32">
                                 <div className="absolute inset-2 rounded-full border border-blue-400/25" />
-                                <Fingerprint
-                                    className={`relative h-16 w-16 2xl:h-20 2xl:w-20 ${fingerprintColor}`}
+                                {scannerOwner ? (
+                                    <MonitorSmartphone className="relative h-14 w-14 text-amber-200 2xl:h-16 2xl:w-16" />
+                                ) : (
+                                    <Fingerprint
+                                        className={`relative h-16 w-16 2xl:h-20 2xl:w-20 ${fingerprintColor}`}
+                                    />
+                                )}
+                            </div>
+                            {scannerOwner ? (
+                                <ScannerInUseElsewhere
+                                    owner={scannerOwner}
+                                    onTakeScanner={takeScannerHere}
                                 />
-                            </div>
-                            <div className="relative mt-3 min-h-[3.5rem]">
-                                <div className="text-base font-bold text-white drop-shadow-sm">
-                                    {scanMessage}
+                            ) : (
+                                <div className="relative mt-3 min-h-[3.5rem]">
+                                    <div className="text-base font-bold text-white drop-shadow-sm">
+                                        {scanMessage}
+                                    </div>
+                                    <div className="mt-1 text-sm font-semibold text-blue-100">
+                                        {retryCountdown !== null
+                                            ? `Retrying in ${retryCountdown} seconds`
+                                            : successCountdown !== null
+                                              ? `Resetting in ${successCountdown} seconds`
+                                              : "Keep the finger steady until confirmation."}
+                                    </div>
                                 </div>
-                                <div className="mt-1 text-sm font-semibold text-blue-100">
-                                    {retryCountdown !== null
-                                        ? `Retrying in ${retryCountdown} seconds`
-                                        : successCountdown !== null
-                                          ? `Resetting in ${successCountdown} seconds`
-                                          : "Keep the finger steady until confirmation."}
-                                </div>
-                            </div>
+                            )}
                         </div>
 
                         <div className="relative flex min-h-0 flex-col justify-center border-t border-violet-400/35 px-4 py-4 md:border-l md:border-t-0 md:pl-7">
@@ -367,6 +381,35 @@ const ScannerPanel = ({
         </section>
     );
 };
+
+// Another page has the scanner: say which one, and let the person here take
+// it back (the other page then stops scanning).
+const ScannerInUseElsewhere = ({ owner, onTakeScanner }) => (
+    <div className="relative mt-3 flex max-w-xs flex-col items-center">
+        <div className="text-base font-bold text-white drop-shadow-sm">
+            Scanner in use elsewhere
+        </div>
+        <div className="mt-1 text-sm font-black text-amber-100">
+            {owner.label || owner.summary}
+        </div>
+        {owner.where && (
+            <div className="text-xs font-semibold text-blue-100">
+                {owner.where}
+                {owner.since ? ` · since ${owner.since}` : ""}
+            </div>
+        )}
+        <div className="mt-2 text-xs font-semibold text-blue-100/80">
+            Scanning starts here again when it is free.
+        </div>
+        <button
+            type="button"
+            onClick={onTakeScanner}
+            className="mt-3 rounded-full border border-amber-200/60 bg-amber-400/20 px-4 py-1.5 text-sm font-black text-amber-50 shadow-sm transition hover:bg-amber-400/35 focus:outline-none focus:ring-2 focus:ring-amber-200/70"
+        >
+            Use scanner here
+        </button>
+    </div>
+);
 
 const EmployeeInfoRow = ({
     animationClassName = "",

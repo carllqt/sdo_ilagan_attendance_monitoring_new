@@ -71,6 +71,7 @@ const EmployeeFingerprintPanel = ({
     scanning,
     scanStatus,
     scanMessage,
+    scannerStatus = null,
     scanFeedbackKey = 0,
     cancelScan,
     availableFingers,
@@ -420,7 +421,43 @@ const EmployeeFingerprintPanel = ({
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
+
+                    <ScannerStatusLine status={scannerStatus} />
                 </div>
+            </div>
+        </div>
+    );
+};
+
+// Which page is using the fingerprint scanner right now. Nothing is shown
+// when the fingerprint service cannot be reached.
+const ScannerStatusLine = ({ status }) => {
+    if (!status) return null;
+
+    const { owner } = status;
+    let dot = "bg-slate-300";
+    let text = "Scanner is free.";
+    let detail = null;
+
+    if (owner && status.yours) {
+        dot = "bg-green-500";
+        text = `Scanner: ${owner.label} (this page).`;
+    } else if (owner) {
+        dot = "bg-amber-500";
+        text = `Scanner in use: ${owner.label}, ${owner.where}, since ${owner.since}.`;
+        detail =
+            "Registering or testing here moves the scanner to this page. It goes back when you finish.";
+    }
+
+    return (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs text-slate-600">
+            <span
+                className={`mt-1 h-2 w-2 shrink-0 rounded-full ${dot}`}
+                aria-hidden="true"
+            />
+            <div className="min-w-0">
+                <p className="font-semibold text-slate-700">{text}</p>
+                {detail ? <p className="mt-0.5">{detail}</p> : null}
             </div>
         </div>
     );

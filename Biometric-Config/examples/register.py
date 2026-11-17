@@ -6,12 +6,25 @@ from .sse import sse_error, sse_progress, sse_success
 logger = logging.getLogger("FingerprintService")
 
 
-async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_threshold=90):
+async def register_fingerprint(
+    emp_id,
+    service,
+    match_threshold=60,
+    duplicate_threshold=90,
+    lease=None,
+):
     """
     Register a fingerprint for an employee.
     Requires 3 consistent scans and rejects duplicates assigned to other employees.
+
+    `lease` is this connection's use of the scanner (see scanner_owner.py):
+    if another page takes the scanner before the 3 scans are done, the
+    registration stops and nothing is saved.
     """
     templates = []
+
+    def taken():
+        return lease is not None and lease.taken
 
     try:
         # Duplicate check: compare against every station's prints (the scanner
@@ -23,15 +36,21 @@ async def register_fingerprint(emp_id, service, match_threshold=60, duplicate_th
             existing_prints = []
 
         while len(templates) < 3:
+            if taken():
+                yield lease.taken_event()
+                return
+
             try:
                 async with service.scan_lock:
+                    if taken():
+                        continue
                     capture = await asyncio.to_thread(service.zkfp2.AcquireFingerprint)
             except Exception as exc:
                 logger.error("Fingerprint capture error: %s", exc)
                 await asyncio.sleep(0.1)
                 continue
 
-            if not capture:
+            if not capture or taken():
                 await asyncio.sleep(0.1)
                 continue
 

@@ -2,6 +2,7 @@ import {
     AlertTriangle,
     CheckCircle2,
     Loader2,
+    MonitorSmartphone,
     Wifi,
     WifiOff,
 } from "lucide-react";
@@ -53,6 +54,14 @@ export const statusConfig = {
     prompt: {
         label: "Choose Log",
         icon: AlertTriangle,
+        badgeClass: "border-amber-200 bg-amber-50 text-amber-700",
+        panelClass: "ring-1 ring-amber-200/25",
+    },
+    // Another page (registration, the test, another attendance tab) is
+    // using the scanner.
+    elsewhere: {
+        label: "Scanner in use elsewhere",
+        icon: MonitorSmartphone,
         badgeClass: "border-amber-200 bg-amber-50 text-amber-700",
         panelClass: "ring-1 ring-amber-200/25",
     },
