@@ -40,18 +40,10 @@ load_env_file(Path(__file__).resolve().parents[2] / ".env")
 load_env_file(Path(__file__).resolve().parents[1] / ".env")
 
 
-def env_list(name: str, default: str) -> list[str]:
-    return [
-        item.strip()
-        for item in os.getenv(name, default).split(",")
-        if item.strip()
-    ]
-
-
-origins = env_list(
-    "BIOMETRIC_CORS_ORIGINS",
-    "http://127.0.0.1:8000,http://localhost:8000,http://10.10.115.29:8000",
-)
+# Pages allowed to use this scanner: the attendance site on this computer
+# (any of its addresses), plus BIOMETRIC_CORS_ORIGINS. See settings.py.
+origins = settings.allowed_origins()
+logger.info("Pages allowed to use the scanner: %s", ", ".join(origins))
 
 app.add_middleware(
     CORSMiddleware,

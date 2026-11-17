@@ -12,10 +12,19 @@ BIOMETRIC_WEAK_REGISTRATION_SCORE (default 75, allowed 0-100)
     3 tries), and a finger saved below it is reported as weak. A starting
     value: the saved registration scores show what is normal for your
     scanners.
+
+BIOMETRIC_CORS_ORIGINS (optional, comma-separated)
+    Extra web addresses whose pages may use this scanner. Not needed for the
+    station's own attendance page: the site on this same computer is always
+    allowed, at any of the computer's addresses (port BIOMETRIC_SITE_PORT,
+    default 8000) and at APP_URL.
 """
 import logging
 import os
 from functools import cache
+from urllib.parse import urlsplit
+
+from .scanner_owner import LOCAL_ADDRESSES
 
 logger = logging.getLogger("FingerprintService")
 
@@ -48,3 +57,32 @@ def match_threshold():
 @cache
 def weak_registration_score():
     return _int_setting("BIOMETRIC_WEAK_REGISTRATION_SCORE", 75, 0, 100)
+
+
+# This laptop's development site, allowed by default as before.
+DEFAULT_EXTRA_ORIGINS = "http://10.10.115.29:8000"
+
+
+def allowed_origins():
+    """Web pages (origins) allowed to use this scanner.
+
+    Each station runs its own copy of the site next to its scanner, so the
+    site on this computer is always allowed, whatever address the kiosk
+    browser opens it at. Without this, a station whose address was missing
+    from a hard-coded list could not reach its own scanner.
+    """
+    port = os.getenv("BIOMETRIC_SITE_PORT", "8000").strip() or "8000"
+    origins = [
+        f"http://{host}:{port}"
+        for host in sorted(LOCAL_ADDRESSES)
+        if ":" not in host  # IPv6 (::1) would need brackets; not used
+    ]
+
+    app_url = urlsplit(os.getenv("APP_URL", "").strip())
+    if app_url.scheme in ("http", "https") and app_url.netloc:
+        origins.append(f"{app_url.scheme}://{app_url.netloc}")
+
+    extra = os.getenv("BIOMETRIC_CORS_ORIGINS", DEFAULT_EXTRA_ORIGINS)
+    origins += [item.strip().rstrip("/") for item in extra.split(",") if item.strip()]
+
+    return list(dict.fromkeys(origins))
