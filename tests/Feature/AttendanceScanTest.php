@@ -291,3 +291,58 @@ it('sends the PM session opening time to the attendance page', function () {
             ->where('attendanceRules.pmSessionOpensAt', ['minutes' => 720, 'label' => '12:00 PM'])
         );
 });
+
+/*
+| No duplicate records: one attendance per employee per day and one AM / PM
+| row per attendance (unique indexes), and one scan at a time per employee.
+*/
+
+it('refuses a second attendance row for the same employee and day', function () {
+    seedToday();
+
+    expect(fn () => Attendance::create([
+        'employee_id' => $this->employee->id,
+        'date' => '2026-11-17',
+    ]))->toThrow(Illuminate\Database\UniqueConstraintViolationException::class);
+});
+
+it('refuses a second AM or PM row for the same attendance', function () {
+    seedToday(am: ['am_time_in' => '07:50:00'], pm: ['pm_time_in' => '12:40:00']);
+    $attendance = todayAttendance();
+
+    expect(fn () => $attendance->am()->create(['am_time_in' => '08:00:00']))
+        ->toThrow(Illuminate\Database\UniqueConstraintViolationException::class)
+        ->and(fn () => $attendance->pm()->create(['pm_time_in' => '13:00:00']))
+        ->toThrow(Illuminate\Database\UniqueConstraintViolationException::class);
+});
+
+it('makes a second scan wait while one is being saved for the same employee', function () {
+    $lock = Illuminate\Support\Facades\Cache::lock("attendance-scan:{$this->employee->id}", 10);
+    $lock->get();
+
+    // Real time on purpose: the lock wait is timed with now(), which a
+    // frozen test clock would never move.
+    $this->postJson(route('attendance.scan'), [
+        'employee_id' => $this->employee->id,
+        'choice' => 'AM Time-In',
+    ])
+        ->assertOk()
+        ->assertJson([
+            'success' => false,
+            'message' => 'Another scan for this employee is still being saved. Please scan again.',
+        ]);
+
+    $lock->release();
+
+    expect(Attendance::count())->toBe(0);
+});
+
+it('sends every session time to the attendance page', function () {
+    $this->get(route('attendance'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('attendanceRules.pmLogsShownFrom', ['minutes' => 735, 'label' => '12:15 PM'])
+            ->where('attendanceRules.pmSessionStartsAt', ['minutes' => 740, 'label' => '12:20 PM'])
+            ->where('attendanceRules.amSessionClosesAt', ['minutes' => 780, 'label' => '1:00 PM'])
+        );
+});

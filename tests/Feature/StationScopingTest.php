@@ -195,3 +195,17 @@ it('shows the SDO admin other stations in the edit modals', function () {
         ->and(app(AttendanceManagementRepository::class)->editModalAttendance($this->otherAttendance->id, null))
         ->not->toBeNull();
 });
+
+it('tells the admin when the employee already has attendance that day', function () {
+    $this->actingAs($this->superAdmin)
+        ->post(route('attendance-management.create'), [
+            'employee_id' => $this->otherEmployee->id,
+            'date' => '2026-11-16',
+            'am_time_in' => '07:30',
+        ])
+        ->assertSessionHasErrors([
+            'date' => 'This employee already has an attendance record for this date. Edit that record instead.',
+        ]);
+
+    expect(Attendance::where('employee_id', $this->otherEmployee->id)->count())->toBe(1);
+});

@@ -60,6 +60,7 @@ const Attendance = ({
                             scanMessage={attendance.scanMessage}
                             selectedChoice={attendance.selectedChoice}
                             successCountdown={attendance.successCountdown}
+                            amSessionClosesAt={attendance.amSessionClosesAt}
                             pmSessionLocked={attendance.pmSessionLocked}
                             pmSessionOpensAt={attendance.pmSessionOpensAt}
                             timeOutLocked={attendance.timeOutLocked}

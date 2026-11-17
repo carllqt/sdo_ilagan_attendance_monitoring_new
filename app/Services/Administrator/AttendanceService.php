@@ -10,23 +10,41 @@ use App\Models\User;
 use App\Repositories\Administrator\AttendanceRepository;
 use App\Services\AttendanceMonitoringRealtimeService;
 use Carbon\Carbon;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class AttendanceService
 {
-    private const PM_SESSION_START_MINUTES = 12 * 60 + 20;
-    private const SCAN_COOLDOWN_MINUTES = 15;
-    // Earliest time each session's Time-Out can be recorded (minutes since
-    // midnight). This is the only place to change them: the attendance page
-    // receives them through pageData() (attendanceRules) to lock its button.
-    private const TIME_OUT_OPENS_AT = [
-        'AM' => 11 * 60,
-        'PM' => 13 * 60 + 30,
-    ];
-    // Earliest time the PM session can be used (PM Time-In, and switching the
-    // attendance page to PM). Also sent to the page through attendanceRules.
+    /*
+    | Attendance times of day, in minutes since midnight. This is the only
+    | place to change them: the attendance page receives them through
+    | pageData() (attendanceRules) and has no times of its own.
+    */
+    // AM Time-Out is allowed from 11:00 AM.
+    private const AM_TIME_OUT_OPENS_AT = 11 * 60;
+    // PM Time-In, and switching the page to PM by hand, from 12:00 PM.
     private const PM_SESSION_OPENS_AT = 12 * 60;
+    // The page shows the PM logs tab from 12:15 PM.
+    private const PM_LOGS_SHOWN_FROM = 12 * 60 + 15;
+    // The page switches itself to the PM session at 12:20 PM; automatic mode
+    // and the missing AM Time-Out prompt use the same time.
+    private const PM_SESSION_STARTS_AT = 12 * 60 + 20;
+    // The page can no longer be switched back to AM from 1:00 PM.
+    private const AM_SESSION_CLOSES_AT = 13 * 60;
+    // PM Time-Out is allowed from 1:30 PM.
+    private const PM_TIME_OUT_OPENS_AT = 13 * 60 + 30;
+    private const TIME_OUT_OPENS_AT = [
+        'AM' => self::AM_TIME_OUT_OPENS_AT,
+        'PM' => self::PM_TIME_OUT_OPENS_AT,
+    ];
+
+    private const SCAN_COOLDOWN_MINUTES = 15;
+    // Per-employee scan lock: held at most this long, and a second scan
+    // waits at most this long for it.
+    private const SCAN_LOCK_SECONDS = 10;
+    private const SCAN_LOCK_WAIT_SECONDS = 5;
     private const ATTENDANCE_CHOICES = [
         'AM Time-In',
         'AM Time-Out',
@@ -56,16 +74,14 @@ class AttendanceService
             'attendanceFilters' => $filter->toArray(),
             'fingerprintServiceUrl' => $this->fingerprintServiceUrl($request),
             'attendanceRules' => [
-                'timeOutOpensAt' => collect(self::TIME_OUT_OPENS_AT)
-                    ->map(fn (int $minutes) => [
-                        'minutes' => $minutes,
-                        'label' => $this->minutesLabel($minutes),
-                    ])
-                    ->all(),
-                'pmSessionOpensAt' => [
-                    'minutes' => self::PM_SESSION_OPENS_AT,
-                    'label' => $this->minutesLabel(self::PM_SESSION_OPENS_AT),
+                'timeOutOpensAt' => [
+                    'AM' => $this->timeRule(self::AM_TIME_OUT_OPENS_AT),
+                    'PM' => $this->timeRule(self::PM_TIME_OUT_OPENS_AT),
                 ],
+                'pmSessionOpensAt' => $this->timeRule(self::PM_SESSION_OPENS_AT),
+                'pmLogsShownFrom' => $this->timeRule(self::PM_LOGS_SHOWN_FROM),
+                'pmSessionStartsAt' => $this->timeRule(self::PM_SESSION_STARTS_AT),
+                'amSessionClosesAt' => $this->timeRule(self::AM_SESSION_CLOSES_AT),
                 // The page follows the server's clock, not the PC's.
                 'serverTime' => now()->getTimestampMs(),
             ],
@@ -97,8 +113,38 @@ class AttendanceService
     {
         $stationId = $this->stationId($request->user());
         $employee = $this->employeeForAttendance($employeeId, $stationId);
-        $now = now();
         $choice = (string) $request->input('choice', '');
+
+        return $this->oneScanAtATime(
+            $employee,
+            fn () => $this->recordScanForEmployee($employee, $choice),
+        );
+    }
+
+    /**
+     * Run one scan at a time per employee. A double scan, or the same finger
+     * on two open attendance pages, waits for the first to finish, so the
+     * cooldown and "already recorded" checks always see the latest record.
+     * The unique indexes on the attendance tables are the database backstop.
+     */
+    private function oneScanAtATime(Employee $employee, callable $record): array
+    {
+        try {
+            return Cache::lock(
+                "attendance-scan:{$employee->id}",
+                self::SCAN_LOCK_SECONDS,
+            )->block(self::SCAN_LOCK_WAIT_SECONDS, $record);
+        } catch (LockTimeoutException) {
+            return $this->errorPayload(
+                'Another scan for this employee is still being saved. Please scan again.',
+                $employee,
+            );
+        }
+    }
+
+    private function recordScanForEmployee(Employee $employee, string $choice): array
+    {
+        $now = now();
         $cooldown = $this->scanCooldownPayload($employee, $now);
 
         if ($cooldown) {
@@ -130,7 +176,7 @@ class AttendanceService
             $attendance->load(['am', 'pm', 'employee.office']);
 
             $am = $attendance->am;
-            $isPmSession = $this->minutesSinceMidnight($now) >= self::PM_SESSION_START_MINUTES;
+            $isPmSession = $this->minutesSinceMidnight($now) >= self::PM_SESSION_STARTS_AT;
             $forcePm = $isPmSession
                 && (! $am || ! $am->am_time_in || ($am->am_time_in && $am->am_time_out));
 
@@ -189,9 +235,11 @@ class AttendanceService
     {
         $stationId = $this->stationId($request->user());
         $employee = $this->employeeForAttendance($employeeId, $stationId);
-        $now = now();
 
-        return $this->recordChoiceForEmployee($employee, $choice, $now);
+        return $this->oneScanAtATime(
+            $employee,
+            fn () => $this->recordChoiceForEmployee($employee, $choice, now()),
+        );
     }
 
     private function recordChoiceForEmployee(Employee $employee, string $choice, Carbon $now): array
@@ -245,7 +293,7 @@ class AttendanceService
 
     private function missingAmOutPrompt(Employee $employee, Carbon $now): ?array
     {
-        if ($this->minutesSinceMidnight($now) < self::PM_SESSION_START_MINUTES) {
+        if ($this->minutesSinceMidnight($now) < self::PM_SESSION_STARTS_AT) {
             return null;
         }
 
@@ -331,6 +379,15 @@ class AttendanceService
             'locked' => true,
             'message' => "{$choice} opens at {$this->minutesLabel($opensAt)}.",
         ]);
+    }
+
+    /** A time of day for the attendance page: 660 → minutes 660, "11:00 AM". */
+    private function timeRule(int $minutes): array
+    {
+        return [
+            'minutes' => $minutes,
+            'label' => $this->minutesLabel($minutes),
+        ];
     }
 
     /** 660 → "11:00 AM", 810 → "1:30 PM". */

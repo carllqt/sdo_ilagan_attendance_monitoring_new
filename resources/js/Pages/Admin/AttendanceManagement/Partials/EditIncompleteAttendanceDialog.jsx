@@ -339,7 +339,10 @@ const EditIncompleteAttendanceDialog = ({
                     setAttendance(null);
                     closeDialog();
                 },
-                onError: () => toast.error("Failed to create attendance"),
+                onError: (errors) =>
+                    toast.error(
+                        errors?.date || "Failed to create attendance",
+                    ),
             });
         }
     };

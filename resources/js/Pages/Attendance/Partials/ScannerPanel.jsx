@@ -33,6 +33,7 @@ const ScannerPanel = ({
     timeOutOpensAt = "",
     pmSessionLocked = false,
     pmSessionOpensAt = "",
+    amSessionClosesAt = "",
 }) => {
     const nextSession = logSession === "AM" ? "PM" : "AM";
     const showEmployeeConfirmation = Boolean(employee);
@@ -65,7 +66,7 @@ const ScannerPanel = ({
                     <AttendanceToast
                         detail="Scanner must remain in PM Session"
                         icon={<LockKeyhole className="h-4 w-4" />}
-                        message="AM Session is closed after 1:00 PM"
+                        message={`AM Session is closed from ${amSessionClosesAt}`}
                         title="Session unavailable"
                         tone="warning"
                     />

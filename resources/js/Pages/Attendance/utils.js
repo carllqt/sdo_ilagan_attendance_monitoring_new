@@ -75,33 +75,37 @@ export const attendanceItems = (records) =>
 const minutesSinceMidnight = (date) =>
     date.getHours() * 60 + date.getMinutes();
 
-export const defaultSession = (date = new Date()) =>
-    minutesSinceMidnight(date) < 12 * 60 + 20 ? "AM" : "PM";
+/*
+| `rules` is attendanceRules from the server: every time of day the page uses,
+| each as { minutes, label }. The page has no times of its own; to change
+| one, edit the constants at the top of AttendanceService.php.
+*/
+const hasReached = (date, rule) =>
+    Boolean(rule) && minutesSinceMidnight(date) >= rule.minutes;
 
-export const defaultLogsSession = (date = new Date()) =>
-    minutesSinceMidnight(date) < 12 * 60 + 15 ? "AM" : "PM";
+// The page switches itself to the PM session at rules.pmSessionStartsAt.
+export const defaultSession = (date, rules) =>
+    hasReached(date, rules?.pmSessionStartsAt) ? "PM" : "AM";
 
-// timeOutOpensAt comes from the server (attendanceRules.timeOutOpensAt), the
-// same times it enforces: { AM: { minutes, label }, PM: { minutes, label } }.
-// To change the times, edit TIME_OUT_OPENS_AT in AttendanceService.php.
-export const canTimeOut = (date, session, timeOutOpensAt) => {
-    const opensAt = timeOutOpensAt?.[session];
+export const defaultLogsSession = (date, rules) =>
+    hasReached(date, rules?.pmLogsShownFrom) ? "PM" : "AM";
+
+export const canTimeOut = (date, session, rules) => {
+    const opensAt = rules?.timeOutOpensAt?.[session];
 
     // Without the server's times, leave it open: the server still refuses
     // an early Time-Out.
-    return !opensAt || minutesSinceMidnight(date) >= opensAt.minutes;
+    return !opensAt || hasReached(date, opensAt);
 };
 
-export const defaultLogAction = (date, session, timeOutOpensAt) =>
-    canTimeOut(date, session, timeOutOpensAt) ? "time-out" : "time-in";
+export const defaultLogAction = (date, session, rules) =>
+    canTimeOut(date, session, rules) ? "time-out" : "time-in";
 
-// pmSessionOpensAt comes from the server (attendanceRules.pmSessionOpensAt).
-// To change it, edit PM_SESSION_OPENS_AT in AttendanceService.php.
-export const canSwitchToPmSession = (date, pmSessionOpensAt) =>
-    !pmSessionOpensAt || minutesSinceMidnight(date) >= pmSessionOpensAt.minutes;
+export const canSwitchToPmSession = (date, rules) =>
+    !rules?.pmSessionOpensAt || hasReached(date, rules.pmSessionOpensAt);
 
-export const canSwitchToAmSession = (date = new Date()) =>
-    minutesSinceMidnight(date) < 13 * 60;
+export const canSwitchToAmSession = (date, rules) =>
+    !hasReached(date, rules?.amSessionClosesAt);
 
 export const attendanceChoice = (session, action) =>
     `${session} Time-${action === "time-in" ? "In" : "Out"}`;

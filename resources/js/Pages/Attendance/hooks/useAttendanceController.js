@@ -47,10 +47,10 @@ const useAttendanceController = ({
     attendanceRules = {},
     fingerprintServiceUrl,
 }) => {
-    const timeOutOpensAt = attendanceRules.timeOutOpensAt;
-    const pmSessionOpensAt = attendanceRules.pmSessionOpensAt;
+    // Every time of day the page uses comes from the server (see utils.js).
+    const rules = attendanceRules;
     const defaultActionAt = (date, session) =>
-        defaultLogAction(date, session, timeOutOpensAt);
+        defaultLogAction(date, session, rules);
 
     // Follow the server's clock, not the PC's: the page may run on a PC
     // whose clock is off. Starts from the time the page was rendered and is
@@ -73,7 +73,7 @@ const useAttendanceController = ({
         requestedScannerSession,
     )
         ? requestedScannerSession
-        : defaultSession(initialNow);
+        : defaultSession(initialNow, rules);
     const initialTab = attendanceFilters.session === "PM" ? "PM" : "AM";
     const requestedInitialAction = initialUrlParams.get("action");
     const initialScannerAction = ["time-in", "time-out"].includes(
@@ -259,7 +259,7 @@ const useAttendanceController = ({
 
             logsResetTimerRef.current = setTimeout(() => {
                 logsResetTimerRef.current = null;
-                const configuredSession = defaultLogsSession(serverNow());
+                const configuredSession = defaultLogsSession(serverNow(), rules);
                 automaticLogsSessionRef.current = configuredSession;
                 showLogsForSession(configuredSession);
             }, TEMPORARY_LOGS_DISPLAY_MS);
@@ -270,11 +270,11 @@ const useAttendanceController = ({
     useEffect(() => {
         const syncClock = () => {
             const now = serverNow();
-            const nextSession = defaultSession(now);
+            const nextSession = defaultSession(now, rules);
 
             setTime(now);
 
-            if (!canSwitchToAmSession(now) && logSession === "AM") {
+            if (!canSwitchToAmSession(now, rules) && logSession === "AM") {
                 setManualLogMode(false);
                 setLogSession("PM");
                 setLogAction(defaultActionAt(now, "PM"));
@@ -419,7 +419,7 @@ const useAttendanceController = ({
     useEffect(() => {
         const now = serverNow();
         const requestedSession =
-            attendanceFilters.session || defaultSession(now);
+            attendanceFilters.session || defaultSession(now, rules);
         const nextSession = requestedSession === "PM" ? "PM" : "AM";
         const nextFilters = {
             search: attendanceFilters.search || "",
@@ -433,7 +433,7 @@ const useAttendanceController = ({
     }, [attendanceFilters]);
 
     useEffect(() => {
-        const nextLogsSession = defaultLogsSession(time);
+        const nextLogsSession = defaultLogsSession(time, rules);
 
         if (automaticLogsSessionRef.current !== nextLogsSession) {
             automaticLogsSessionRef.current = nextLogsSession;
@@ -799,7 +799,7 @@ const useAttendanceController = ({
         manualSelectionTimerRef.current = null;
 
         const now = serverNow();
-        const session = defaultSession(now);
+        const session = defaultSession(now, rules);
         const action = defaultActionAt(now, session);
 
         logSessionRef.current = session;
@@ -820,13 +820,13 @@ const useAttendanceController = ({
     const handleLogSessionToggle = () => {
         const nextSession = logSession === "AM" ? "PM" : "AM";
 
-        if (nextSession === "AM" && !canSwitchToAmSession(time)) {
+        if (nextSession === "AM" && !canSwitchToAmSession(time, rules)) {
             return false;
         }
 
         if (
             nextSession === "PM" &&
-            !canSwitchToPmSession(time, pmSessionOpensAt)
+            !canSwitchToPmSession(time, rules)
         ) {
             return false;
         }
@@ -853,7 +853,7 @@ const useAttendanceController = ({
     const handleLogActionChange = (action) => {
         if (
             action === "time-out" &&
-            !canTimeOut(serverNow(), logSessionRef.current, timeOutOpensAt)
+            !canTimeOut(serverNow(), logSessionRef.current, rules)
         ) {
             return false;
         }
@@ -915,10 +915,10 @@ const useAttendanceController = ({
     const currentStatus = statusConfig[scanStatus] || statusConfig.idle;
     const StatusIcon = currentStatus.icon;
     const selectedChoice = attendanceChoice(logSession, logAction);
-    const timeOutLocked = !canTimeOut(time, logSession, timeOutOpensAt);
-    const timeOutOpensLabel = timeOutOpensAt?.[logSession]?.label ?? "";
+    const timeOutLocked = !canTimeOut(time, logSession, rules);
+    const timeOutOpensLabel = rules.timeOutOpensAt?.[logSession]?.label ?? "";
     const pmSessionLocked =
-        logSession === "AM" && !canSwitchToPmSession(time, pmSessionOpensAt);
+        logSession === "AM" && !canSwitchToPmSession(time, rules);
     const employeeName = employee ? getEmployeeName(employee) : "";
     const formattedDate = time.toLocaleDateString(undefined, {
         weekday: "long",
@@ -981,7 +981,8 @@ const useAttendanceController = ({
         logSession,
         pmPromptData,
         pmSessionLocked,
-        pmSessionOpensAt: pmSessionOpensAt?.label ?? "",
+        amSessionClosesAt: rules.amSessionClosesAt?.label ?? "",
+        pmSessionOpensAt: rules.pmSessionOpensAt?.label ?? "",
         retryCountdown,
         scanMessage,
         scanStatus,

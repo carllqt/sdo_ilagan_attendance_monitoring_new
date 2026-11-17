@@ -22,6 +22,16 @@ class DailySeeder extends Seeder
 
         foreach ($dates as $date) {
             foreach ($employees as $employee) {
+                // One attendance per employee per day (unique index), so
+                // running this seeder twice on the same day skips them.
+                $exists = Attendance::where('employee_id', $employee->id)
+                    ->whereDate('date', $date->toDateString())
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
                 $attendance = Attendance::create([
                     'employee_id' => $employee->id,
                     'date' => $date->toDateString(),
