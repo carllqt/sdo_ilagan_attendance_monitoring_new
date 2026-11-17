@@ -81,15 +81,24 @@ export const defaultSession = (date = new Date()) =>
 export const defaultLogsSession = (date = new Date()) =>
     minutesSinceMidnight(date) < 12 * 60 + 15 ? "AM" : "PM";
 
-export const defaultLogAction = (date, session = defaultSession(date)) => {
-    const minutes = minutesSinceMidnight(date);
+// timeOutOpensAt comes from the server (attendanceRules.timeOutOpensAt), the
+// same times it enforces: { AM: { minutes, label }, PM: { minutes, label } }.
+// To change the times, edit TIME_OUT_OPENS_AT in AttendanceService.php.
+export const canTimeOut = (date, session, timeOutOpensAt) => {
+    const opensAt = timeOutOpensAt?.[session];
 
-    if (session === "AM") {
-        return minutes >= 11 * 60 ? "time-out" : "time-in";
-    }
-
-    return minutes >= 13 * 60 + 30 ? "time-out" : "time-in";
+    // Without the server's times, leave it open: the server still refuses
+    // an early Time-Out.
+    return !opensAt || minutesSinceMidnight(date) >= opensAt.minutes;
 };
+
+export const defaultLogAction = (date, session, timeOutOpensAt) =>
+    canTimeOut(date, session, timeOutOpensAt) ? "time-out" : "time-in";
+
+// pmSessionOpensAt comes from the server (attendanceRules.pmSessionOpensAt).
+// To change it, edit PM_SESSION_OPENS_AT in AttendanceService.php.
+export const canSwitchToPmSession = (date, pmSessionOpensAt) =>
+    !pmSessionOpensAt || minutesSinceMidnight(date) >= pmSessionOpensAt.minutes;
 
 export const canSwitchToAmSession = (date = new Date()) =>
     minutesSinceMidnight(date) < 13 * 60;

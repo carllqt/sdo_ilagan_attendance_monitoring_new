@@ -13,12 +13,14 @@ const Attendance = ({
     attendances,
     attendanceFilters = {},
     attendanceAccess = {},
+    attendanceRules = {},
     fingerprintServiceUrl = defaultFingerprintServiceUrl,
 }) => {
     const attendance = useAttendanceController({
         attendances,
         attendanceAccess,
         attendanceFilters,
+        attendanceRules,
         fingerprintServiceUrl,
     });
 
@@ -58,6 +60,10 @@ const Attendance = ({
                             scanMessage={attendance.scanMessage}
                             selectedChoice={attendance.selectedChoice}
                             successCountdown={attendance.successCountdown}
+                            pmSessionLocked={attendance.pmSessionLocked}
+                            pmSessionOpensAt={attendance.pmSessionOpensAt}
+                            timeOutLocked={attendance.timeOutLocked}
+                            timeOutOpensAt={attendance.timeOutOpensAt}
                         />
 
                         <LogsPanel

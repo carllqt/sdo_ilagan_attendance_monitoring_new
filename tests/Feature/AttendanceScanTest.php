@@ -142,3 +142,152 @@ it('still asks about a missing AM Time-Out after lunch', function () {
             'options' => ['AM Time-Out', 'PM Time-In'],
         ]);
 });
+
+/*
+| Time-Out is locked until 11:00 AM (AM) and 1:30 PM (PM). The page locks
+| the button; the server refuses early Time-Outs on every path as well.
+*/
+
+it('refuses AM Time-Out before 11:00 AM', function () {
+    seedToday(am: ['am_time_in' => '07:50:00']);
+
+    scanAt('10:30:00', 'AM Time-Out')
+        ->assertOk()
+        ->assertJson(['success' => false, 'locked' => true, 'message' => 'AM Time-Out opens at 11:00 AM.']);
+
+    expect(todayAttendance()->am->am_time_out)->toBeNull();
+});
+
+it('refuses AM Time-Out before 11:00 AM even with no Time-In (no prompt)', function () {
+    scanAt('10:30:00', 'AM Time-Out')
+        ->assertOk()
+        ->assertJson(['success' => false, 'locked' => true])
+        ->assertJsonMissing(['prompt' => true]);
+});
+
+it('allows AM Time-Out at exactly 11:00 AM', function () {
+    seedToday(am: ['am_time_in' => '07:50:00']);
+
+    scanAt('11:00:00', 'AM Time-Out')
+        ->assertOk()
+        ->assertJson(['success' => true, 'session' => 'AM', 'action' => 'time-out']);
+});
+
+it('refuses PM Time-Out before 1:30 PM', function () {
+    seedToday(
+        am: ['am_time_in' => '07:50:00', 'am_time_out' => '12:00:00'],
+        pm: ['pm_time_in' => '12:40:00'],
+    );
+
+    scanAt('13:15:00', 'PM Time-Out')
+        ->assertOk()
+        ->assertJson(['success' => false, 'locked' => true, 'message' => 'PM Time-Out opens at 1:30 PM.']);
+
+    expect(todayAttendance()->pm->pm_time_out)->toBeNull();
+});
+
+it('allows PM Time-Out at exactly 1:30 PM', function () {
+    seedToday(
+        am: ['am_time_in' => '07:50:00', 'am_time_out' => '12:00:00'],
+        pm: ['pm_time_in' => '12:40:00'],
+    );
+
+    scanAt('13:30:00', 'PM Time-Out')
+        ->assertOk()
+        ->assertJson(['success' => true, 'session' => 'PM', 'action' => 'time-out']);
+});
+
+it('refuses an early Time-Out sent as a prompt answer', function () {
+    $this->travelTo(Carbon::parse('2026-11-17 10:30:00'));
+
+    $this->postJson(route('attendance.choice'), [
+        'employee_id' => $this->employee->id,
+        'choice' => 'AM Time-Out',
+    ])->assertOk()->assertJson(['success' => false, 'locked' => true]);
+
+    expect(todayAttendance())->toBeNull();
+});
+
+it('refuses an early Time-Out in automatic mode (no choice sent)', function () {
+    seedToday(am: ['am_time_in' => '07:50:00']);
+    $this->travelTo(Carbon::parse('2026-11-17 10:30:00'));
+
+    $this->postJson(route('attendance.scan'), [
+        'employee_id' => $this->employee->id,
+    ])->assertOk()->assertJson(['success' => false, 'locked' => true]);
+
+    expect(todayAttendance()->am->am_time_out)->toBeNull();
+});
+
+/*
+| The page gets the unlock times and the server's clock from the server, so
+| there is one place to change the times and the page follows server time.
+*/
+
+it('sends the unlock times and server time to the attendance page', function () {
+    $this->travelTo(Carbon::parse('2026-11-17 09:15:00'));
+
+    $this->get(route('attendance'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Attendance/Attendance')
+            ->where('attendanceRules.timeOutOpensAt.AM', ['minutes' => 660, 'label' => '11:00 AM'])
+            ->where('attendanceRules.timeOutOpensAt.PM', ['minutes' => 810, 'label' => '1:30 PM'])
+            ->where('attendanceRules.serverTime', Carbon::parse('2026-11-17 09:15:00')->getTimestampMs())
+        );
+});
+
+it('returns the server time on keep-alive', function () {
+    $this->travelTo(Carbon::parse('2026-11-17 10:59:30'));
+
+    $this->getJson(route('attendance.keep-alive'))
+        ->assertOk()
+        ->assertJson([
+            'ok' => true,
+            'server_time' => Carbon::parse('2026-11-17 10:59:30')->getTimestampMs(),
+        ]);
+});
+
+/*
+| The PM session opens at 12:00 PM: the page will not switch to PM before
+| then, and the server refuses a PM Time-In before then.
+*/
+
+it('refuses PM Time-In before 12:00 PM', function () {
+    scanAt('11:30:00', 'PM Time-In')
+        ->assertOk()
+        ->assertJson(['success' => false, 'locked' => true, 'message' => 'PM Time-In opens at 12:00 PM.']);
+
+    expect(todayAttendance()?->pm?->pm_time_in)->toBeNull();
+});
+
+it('allows PM Time-In at exactly 12:00 PM', function () {
+    scanAt('12:00:00', 'PM Time-In')
+        ->assertOk()
+        ->assertJson(['success' => true, 'session' => 'PM', 'action' => 'time-in']);
+});
+
+it('refuses an early PM Time-In sent as a prompt answer', function () {
+    $this->travelTo(Carbon::parse('2026-11-17 11:30:00'));
+
+    $this->postJson(route('attendance.choice'), [
+        'employee_id' => $this->employee->id,
+        'choice' => 'PM Time-In',
+    ])->assertOk()->assertJson(['success' => false, 'locked' => true]);
+
+    expect(todayAttendance())->toBeNull();
+});
+
+it('still allows AM Time-In at any time', function () {
+    scanAt('06:00:00', 'AM Time-In')
+        ->assertOk()
+        ->assertJson(['success' => true, 'session' => 'AM', 'action' => 'time-in']);
+});
+
+it('sends the PM session opening time to the attendance page', function () {
+    $this->get(route('attendance'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('attendanceRules.pmSessionOpensAt', ['minutes' => 720, 'label' => '12:00 PM'])
+        );
+});

@@ -29,12 +29,35 @@ const ScannerPanel = ({
     scanMessage,
     selectedChoice,
     successCountdown,
+    timeOutLocked = false,
+    timeOutOpensAt = "",
+    pmSessionLocked = false,
+    pmSessionOpensAt = "",
 }) => {
     const nextSession = logSession === "AM" ? "PM" : "AM";
     const showEmployeeConfirmation = Boolean(employee);
 
     const showSessionToast = () => {
         const changed = handleLogSessionToggle();
+
+        if (!changed && nextSession === "PM") {
+            toast.custom(
+                () => (
+                    <AttendanceToast
+                        detail="Scanner stays in AM Session until then"
+                        icon={<LockKeyhole className="h-4 w-4" />}
+                        message={`PM Session opens at ${pmSessionOpensAt}`}
+                        title="Session unavailable"
+                        tone="warning"
+                    />
+                ),
+                {
+                    duration: 3500,
+                    position: "top-center",
+                },
+            );
+            return;
+        }
 
         if (!changed) {
             toast.custom(
@@ -63,7 +86,25 @@ const ScannerPanel = ({
     const changeLogAction = (action) => {
         if (action === logAction) return;
 
-        handleLogActionChange(action);
+        if (!handleLogActionChange(action)) {
+            toast.custom(
+                () => (
+                    <AttendanceToast
+                        detail={`You can select it from ${timeOutOpensAt}.`}
+                        icon={<LockKeyhole className="h-4 w-4" />}
+                        message={`${logSession} Time-Out is not open yet`}
+                        title="Time Out locked"
+                        tone="warning"
+                    />
+                ),
+                {
+                    duration: 3500,
+                    position: "top-center",
+                },
+            );
+            return;
+        }
+
         toast.custom(
             () => <LogActionChangeToast action={action} session={logSession} />,
             {
@@ -114,6 +155,12 @@ const ScannerPanel = ({
                         onClick={showSessionToast}
                         className="rounded-full border border-blue-300/30 bg-blue-950/55 px-3 py-1 text-sm font-bold text-white shadow-sm transition hover:border-emerald-300/70 hover:text-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
                         aria-label={`Switch to ${nextSession} session`}
+                        aria-disabled={pmSessionLocked}
+                        title={
+                            pmSessionLocked
+                                ? `PM Session opens at ${pmSessionOpensAt}`
+                                : undefined
+                        }
                     >
                         {logSession} Session
                     </button>
@@ -156,6 +203,12 @@ const ScannerPanel = ({
                                 onClick={showSessionToast}
                                 className="inline-flex w-fit items-center gap-2 rounded-full text-sm font-black uppercase text-emerald-200 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
                                 aria-label={`Switch to ${nextSession} session`}
+                        aria-disabled={pmSessionLocked}
+                        title={
+                            pmSessionLocked
+                                ? `PM Session opens at ${pmSessionOpensAt}`
+                                : undefined
+                        }
                             >
                                 <Sun className="h-4 w-4" />
                                 {logSession} Session
@@ -173,8 +226,11 @@ const ScannerPanel = ({
                                         label: "Time Out",
                                         Icon: LogOut,
                                     },
-                                ].map(({ action, label, Icon }) => {
+                                ].map(({ action, label, Icon: ActionIcon }) => {
                                     const selected = logAction === action;
+                                    const locked =
+                                        action === "time-out" && timeOutLocked;
+                                    const Icon = locked ? LockKeyhole : ActionIcon;
 
                                     return (
                                         <button
@@ -182,10 +238,18 @@ const ScannerPanel = ({
                                             type="button"
                                             onClick={() => changeLogAction(action)}
                                             aria-pressed={selected}
+                                            aria-disabled={locked}
+                                            title={
+                                                locked
+                                                    ? `${logSession} Time-Out opens at ${timeOutOpensAt}`
+                                                    : undefined
+                                            }
                                             className={`relative flex min-h-[3.9rem] items-center gap-4 overflow-hidden rounded-xl border-2 px-4 text-left text-sm font-black uppercase transition duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-300/70 2xl:min-h-[4.4rem] ${
                                                 selected
                                                     ? "border-emerald-300 bg-emerald-500/30 text-white shadow-[0_0_28px_rgba(16,185,129,0.38),inset_0_0_24px_rgba(16,185,129,0.12)]"
-                                                    : "border-blue-300/25 bg-blue-950/35 text-blue-100 hover:border-blue-200/55 hover:bg-blue-900/45 hover:text-white"
+                                                    : locked
+                                                      ? "cursor-not-allowed border-blue-300/15 bg-blue-950/20 text-blue-200/60"
+                                                      : "border-blue-300/25 bg-blue-950/35 text-blue-100 hover:border-blue-200/55 hover:bg-blue-900/45 hover:text-white"
                                             }`}
                                         >
                                             {selected && (
@@ -200,7 +264,14 @@ const ScannerPanel = ({
                                             >
                                                 <Icon className="h-5 w-5" />
                                             </span>
-                                            <span>{label}</span>
+                                            <span className="flex flex-col">
+                                                <span>{label}</span>
+                                                {locked && (
+                                                    <span className="text-[11px] font-bold normal-case tracking-normal text-blue-200/70">
+                                                        Opens {timeOutOpensAt}
+                                                    </span>
+                                                )}
+                                            </span>
                                         </button>
                                     );
                                 })}

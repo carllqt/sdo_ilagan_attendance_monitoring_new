@@ -31,7 +31,11 @@ class AttendanceController extends Controller
 
     public function keepAlive(): JsonResponse
     {
-        return response()->json(['ok' => true]);
+        // server_time lets the attendance page keep its clock in sync.
+        return response()->json([
+            'ok' => true,
+            'server_time' => now()->getTimestampMs(),
+        ]);
     }
 
     public function scan(Request $request): JsonResponse

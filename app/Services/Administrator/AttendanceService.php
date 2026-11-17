@@ -17,6 +17,16 @@ class AttendanceService
 {
     private const PM_SESSION_START_MINUTES = 12 * 60 + 20;
     private const SCAN_COOLDOWN_MINUTES = 15;
+    // Earliest time each session's Time-Out can be recorded (minutes since
+    // midnight). This is the only place to change them: the attendance page
+    // receives them through pageData() (attendanceRules) to lock its button.
+    private const TIME_OUT_OPENS_AT = [
+        'AM' => 11 * 60,
+        'PM' => 13 * 60 + 30,
+    ];
+    // Earliest time the PM session can be used (PM Time-In, and switching the
+    // attendance page to PM). Also sent to the page through attendanceRules.
+    private const PM_SESSION_OPENS_AT = 12 * 60;
     private const ATTENDANCE_CHOICES = [
         'AM Time-In',
         'AM Time-Out',
@@ -45,6 +55,20 @@ class AttendanceService
             'attendances' => $this->repository->todayAttendancesForStation($stationId, $filter),
             'attendanceFilters' => $filter->toArray(),
             'fingerprintServiceUrl' => $this->fingerprintServiceUrl($request),
+            'attendanceRules' => [
+                'timeOutOpensAt' => collect(self::TIME_OUT_OPENS_AT)
+                    ->map(fn (int $minutes) => [
+                        'minutes' => $minutes,
+                        'label' => $this->minutesLabel($minutes),
+                    ])
+                    ->all(),
+                'pmSessionOpensAt' => [
+                    'minutes' => self::PM_SESSION_OPENS_AT,
+                    'label' => $this->minutesLabel(self::PM_SESSION_OPENS_AT),
+                ],
+                // The page follows the server's clock, not the PC's.
+                'serverTime' => now()->getTimestampMs(),
+            ],
             'attendanceAccess' => [
                 'station' => [
                     'id' => $user?->employee?->station?->id,
@@ -82,6 +106,12 @@ class AttendanceService
         }
 
         if (in_array($choice, self::ATTENDANCE_CHOICES, true)) {
+            $locked = $this->lockedChoicePayload($employee, $choice, $now);
+
+            if ($locked) {
+                return $locked;
+            }
+
             $prompt = match ($choice) {
                 'PM Time-In' => $this->missingAmOutPrompt($employee, $now),
                 'AM Time-Out', 'PM Time-Out' => $this->missingTimeInPrompt($employee, $choice, $now),
@@ -117,6 +147,12 @@ class AttendanceService
                 }
 
                 if ($am->am_time_in && ! $am->am_time_out) {
+                    $locked = $this->lockedChoicePayload($employee, 'AM Time-Out', $now);
+
+                    if ($locked) {
+                        return $locked;
+                    }
+
                     $am->update(['am_time_out' => $this->timeString($now)]);
                     return $this->recordedPayload($attendance, $employee, 'AM', 'time-out', 'AM time-out recorded', $now);
                 }
@@ -135,6 +171,12 @@ class AttendanceService
             }
 
             if (! $pm->pm_time_out) {
+                $locked = $this->lockedChoicePayload($employee, 'PM Time-Out', $now);
+
+                if ($locked) {
+                    return $locked;
+                }
+
                 $pm->update(['pm_time_out' => $this->timeString($now)]);
                 return $this->recordedPayload($attendance, $employee, 'PM', 'time-out', 'PM time-out recorded', $now);
             }
@@ -154,6 +196,13 @@ class AttendanceService
 
     private function recordChoiceForEmployee(Employee $employee, string $choice, Carbon $now): array
     {
+        // Also covers prompt answers sent to /attendance/choice.
+        $locked = $this->lockedChoicePayload($employee, $choice, $now);
+
+        if ($locked) {
+            return $locked;
+        }
+
         return DB::transaction(function () use ($choice, $employee, $now) {
             $attendance = $this->attendanceForToday((int) $employee->id, $now);
             $attendance->load(['am', 'pm', 'employee.office']);
@@ -251,6 +300,43 @@ class AttendanceService
         }
 
         return $this->missingTimeInPromptPayload($employee, 'PM');
+    }
+
+    /**
+     * Refuse an action before its opening time, however the request arrives
+     * (page selection, prompt answer or automatic mode):
+     * AM Time-Out from 11:00 AM, PM Time-In from 12:00 PM, PM Time-Out from
+     * 1:30 PM. AM Time-In is always open.
+     */
+    private function lockedChoicePayload(Employee $employee, string $choice, Carbon $now): ?array
+    {
+        $log = self::ATTENDANCE_LOGS[$choice] ?? null;
+
+        if (! $log) {
+            return null;
+        }
+
+        $opensAt = match (true) {
+            $log['action'] === 'time-out' => self::TIME_OUT_OPENS_AT[$log['session']],
+            $log['session'] === 'PM' => self::PM_SESSION_OPENS_AT,
+            default => null,
+        };
+
+        if ($opensAt === null || $this->minutesSinceMidnight($now) >= $opensAt) {
+            return null;
+        }
+
+        return $this->attendancePayload($employee, [
+            'success' => false,
+            'locked' => true,
+            'message' => "{$choice} opens at {$this->minutesLabel($opensAt)}.",
+        ]);
+    }
+
+    /** 660 → "11:00 AM", 810 → "1:30 PM". */
+    private function minutesLabel(int $minutes): string
+    {
+        return now()->startOfDay()->addMinutes($minutes)->format('g:i A');
     }
 
     private function missingTimeInPromptPayload(Employee $employee, string $session): array
