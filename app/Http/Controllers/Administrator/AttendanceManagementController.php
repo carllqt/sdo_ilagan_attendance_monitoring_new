@@ -26,14 +26,21 @@ class AttendanceManagementController extends Controller
 
     public function update(UpdateAttendanceRequest $request, int $id)
     {
-        $this->attendanceManagement->updateAttendance($id, $request->validated());
+        $this->attendanceManagement->updateAttendance(
+            $id,
+            $this->stationId(),
+            $request->validated(),
+        );
 
         return back()->with('success', 'Attendance updated and tardiness recalculated!');
     }
 
     public function store(StoreAttendanceRequest $request)
     {
-        $this->attendanceManagement->storeAttendance($request->validated());
+        $this->attendanceManagement->storeAttendance(
+            $request->validated(),
+            $this->stationId(),
+        );
 
         return back()->with('success', 'Attendance created and tardiness calculated!');
     }

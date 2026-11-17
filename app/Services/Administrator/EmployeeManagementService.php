@@ -65,13 +65,16 @@ class EmployeeManagementService
             ->all();
     }
 
-    public function editModal(Request $request, string $modal): ?array
+    public function editModal(Request $request, string $modal, int $stationId): ?array
     {
         if (! $this->isModal($request, $modal)) {
             return null;
         }
 
-        $employee = $this->repository->editModalEmployee((int) $request->query('employee_id'));
+        $employee = $this->repository->editModalEmployee(
+            (int) $request->query('employee_id'),
+            $stationId,
+        );
 
         if (! $employee) {
             return null;
@@ -122,8 +125,12 @@ class EmployeeManagementService
         return $employee ? $this->formatFingerprintEmployee($employee) : null;
     }
 
-    public function store(array $validated, Request $request): Employee
+    public function store(array $validated, Request $request, int $stationId): Employee
     {
+        if ((int) $validated['station_id'] !== $stationId) {
+            abort(403, 'You can only register employees in your own station.');
+        }
+
         if ($request->hasFile('profile_img')) {
             $validated['profile_img'] = $request->file('profile_img')->store(
                 'employee-profile-images',
@@ -134,9 +141,11 @@ class EmployeeManagementService
         return $this->repository->create($validated);
     }
 
-    public function update(int $id, array $validated, Request $request): Employee
+    public function update(int $id, int $stationId, array $validated, Request $request): Employee
     {
-        $employee = $this->repository->findOrFail($id);
+        // Only employees currently in the admin's station can be edited.
+        // Changing station_id (transferring them out) is still allowed.
+        $employee = $this->repository->findInStationOrFail($id, $stationId);
 
         if ($request->hasFile('profile_img')) {
             if ($employee->profile_img) {

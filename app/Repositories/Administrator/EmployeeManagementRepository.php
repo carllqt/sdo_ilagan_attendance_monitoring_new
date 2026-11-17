@@ -115,7 +115,7 @@ class EmployeeManagementRepository
             ->get();
     }
 
-    public function editModalEmployee(int $employeeId): ?Employee
+    public function editModalEmployee(int $employeeId, int $stationId): ?Employee
     {
         return Employee::with([
             'office:id,name',
@@ -134,6 +134,7 @@ class EmployeeManagementRepository
                 'work_schedule_id',
                 'active_status',
             )
+            ->where('station_id', $stationId)
             ->find($employeeId);
     }
 
@@ -165,8 +166,10 @@ class EmployeeManagementRepository
         return Employee::create($data);
     }
 
-    public function findOrFail(int $id): Employee
+    public function findInStationOrFail(int $id, int $stationId): Employee
     {
-        return Employee::findOrFail($id);
+        return Employee::query()
+            ->where('station_id', $stationId)
+            ->findOrFail($id);
     }
 }

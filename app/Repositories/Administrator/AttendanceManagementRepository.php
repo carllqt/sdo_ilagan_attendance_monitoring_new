@@ -138,16 +138,18 @@ class AttendanceManagementRepository
             ->withQueryString();
     }
 
-    public function attendanceForUpdate(int $id): Attendance
+    public function attendanceForUpdate(int $id, int $stationId): Attendance
     {
         return Attendance::with([
             'am',
             'pm',
             'employee.workSchedule.workType',
-        ])->findOrFail($id);
+        ])
+            ->whereHas('employee', fn ($query) => $query->where('station_id', $stationId))
+            ->findOrFail($id);
     }
 
-    public function editModalAttendance(int $attendanceId): ?Attendance
+    public function editModalAttendance(int $attendanceId, int $stationId): ?Attendance
     {
         return Attendance::with([
             'employee:id,first_name,middle_name,last_name,profile_img,office_id,station_id,active_status',
@@ -155,7 +157,9 @@ class AttendanceManagementRepository
             'employee.office.division:id,code,name',
             'am:id,attendance_id,am_time_in,am_time_out',
             'pm:id,attendance_id,pm_time_in,pm_time_out',
-        ])->find($attendanceId);
+        ])
+            ->whereHas('employee', fn ($query) => $query->where('station_id', $stationId))
+            ->find($attendanceId);
     }
 
     public function createAttendance(array $data): Attendance
@@ -184,6 +188,14 @@ class AttendanceManagementRepository
             ->where('id', $employeeId)
             ->where('station_id', $stationId)
             ->where('active_status', 1)
+            ->exists();
+    }
+
+    public function employeeIsInStation(int $employeeId, int $stationId): bool
+    {
+        return \App\Models\Administrator\Employee::query()
+            ->whereKey($employeeId)
+            ->where('station_id', $stationId)
             ->exists();
     }
 

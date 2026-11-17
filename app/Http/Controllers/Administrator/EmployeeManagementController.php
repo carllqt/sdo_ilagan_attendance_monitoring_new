@@ -45,7 +45,7 @@ class EmployeeManagementController extends Controller
             'status' => fn () => $employeeListData()['status'],
             'officeName' => fn () => $employeeListData()['officeName'],
             'limit' => fn () => $employeeListData()['limit'],
-            'editEmployeeModal' => fn () => $this->employees->editModal($request, 'edit-employee'),
+            'editEmployeeModal' => fn () => $this->employees->editModal($request, 'edit-employee', $stationId),
             'testFingerprintModal' => fn () => $this->employees->testFingerprintModal($request),
             'fingerprintServiceUrl' => fn () => $this->employees->fingerprintServiceUrl($request),
         ]);
@@ -64,7 +64,11 @@ class EmployeeManagementController extends Controller
     public function store(StoreEmployeeRequest $request)
     {
         $validated = $request->validated();
-        $this->employees->store($validated, $request);
+        $this->employees->store(
+            $validated,
+            $request,
+            (int) auth()->user()->employee->station_id,
+        );
         $fullName = $this->employees->successName($validated);
 
         return redirect()->back()->with(
@@ -80,7 +84,12 @@ class EmployeeManagementController extends Controller
         $validated = $request->validated();
         unset($validated['password']);
 
-        $this->employees->update((int) $id, $validated, $request);
+        $this->employees->update(
+            (int) $id,
+            (int) auth()->user()->employee->station_id,
+            $validated,
+            $request,
+        );
 
         return back()->with('success', 'Employee updated successfully 🎉');
     }
