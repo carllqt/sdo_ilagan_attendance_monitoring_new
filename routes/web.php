@@ -44,7 +44,6 @@ Route::post('/document-requests', [DocumentRequestController::class, 'store'])->
 
 // Attendance kiosk routes are public so employees can record their own time.
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
-Route::get('/attendance/keep-alive', [AttendanceController::class, 'keepAlive'])->name('attendance.keep-alive');
 Route::get('/attendance/suggestions', [AttendanceController::class, 'suggestions'])->name('attendance.suggestions');
 Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
 Route::post('/attendance/choice', [AttendanceController::class, 'choice'])->name('attendance.choice');

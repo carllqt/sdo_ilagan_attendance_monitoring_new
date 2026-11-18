@@ -33,7 +33,6 @@ import {
 
 const MANUAL_SCANNER_SELECTION_MS = 10 * 1000;
 const EMPLOYEE_CONFIRMATION_DISPLAY_MS = 10 * 1000;
-const SESSION_KEEP_ALIVE_MS = 15 * 60 * 1000;
 const ATTENDANCE_DATE_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000;
 const TEMPORARY_LOGS_DISPLAY_MS = 5 * 1000;
 // While another page has the scanner, how often to check if it is free.
@@ -68,8 +67,7 @@ const useAttendanceController = ({
         defaultLogAction(date, session, rules);
 
     // Follow the server's clock, not the PC's: the page may run on a PC
-    // whose clock is off. Starts from the time the page was rendered and is
-    // corrected on every keep-alive (see keepSessionAlive below).
+    // whose clock is off. Set from the time the page was rendered.
     const clockOffsetRef = useRef(null);
 
     if (clockOffsetRef.current === null) {
@@ -396,45 +394,6 @@ const useAttendanceController = ({
 
         return true;
     }, []);
-
-    useEffect(() => {
-        const keepSessionAlive = () => {
-            const sentAt = Date.now();
-
-            window.axios
-                .get(route("attendance.keep-alive"))
-                .then(({ data }) => {
-                    if (!data?.server_time) return;
-
-                    // Assume the server read its clock halfway through the
-                    // request, then store how far the PC clock is off.
-                    const receivedAt = Date.now();
-                    clockOffsetRef.current =
-                        data.server_time +
-                        (receivedAt - sentAt) / 2 -
-                        receivedAt;
-                })
-                .catch((error) => refreshExpiredSession(error));
-        };
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible") {
-                keepSessionAlive();
-            }
-        };
-
-        keepSessionAlive();
-        const timer = setInterval(keepSessionAlive, SESSION_KEEP_ALIVE_MS);
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-
-        return () => {
-            clearInterval(timer);
-            document.removeEventListener(
-                "visibilitychange",
-                handleVisibilityChange,
-            );
-        };
-    }, [refreshExpiredSession]);
 
     useEffect(() => {
         const now = serverNow();

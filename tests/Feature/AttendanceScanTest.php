@@ -235,17 +235,6 @@ it('sends the unlock times and server time to the attendance page', function () 
         );
 });
 
-it('returns the server time on keep-alive', function () {
-    $this->travelTo(Carbon::parse('2026-11-17 10:59:30'));
-
-    $this->getJson(route('attendance.keep-alive'))
-        ->assertOk()
-        ->assertJson([
-            'ok' => true,
-            'server_time' => Carbon::parse('2026-11-17 10:59:30')->getTimestampMs(),
-        ]);
-});
-
 /*
 | The PM session opens at 12:00 PM: the page will not switch to PM before
 | then, and the server refuses a PM Time-In before then.

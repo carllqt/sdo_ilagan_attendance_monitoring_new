@@ -13,6 +13,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->authenticateSessions();
 
+        // The attendance kiosk runs on the station's own PC and needs no
+        // login, so saving a scan or a prompt answer does not depend on a
+        // session (which would expire after a long weekend and fail the
+        // first scan).
+        $middleware->validateCsrfTokens(except: [
+            'attendance/scan',
+            'attendance/choice',
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
