@@ -12,8 +12,6 @@ use Illuminate\Support\Carbon;
 */
 
 beforeEach(function () {
-    config(['broadcasting.default' => 'null']);
-
     $station = Station::create(['name' => 'School Division Office', 'code' => 'SDO']);
 
     $this->employee = Employee::create([

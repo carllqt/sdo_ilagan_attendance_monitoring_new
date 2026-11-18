@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, router } from "@inertiajs/react";
-import { BellRing } from "lucide-react";
-import { Toaster, toast } from "sonner";
 
 import TalaBackground from "@/Components/TalaBackground";
 import Header from "./Partials/Header";
 import EmployeeList from "./Partials/EmployeeList";
 import { getEmployeeName, sortAlphabetically } from "@/lib/utils";
 
-const LIVE_UPDATE_TOAST_ID = "attendance-monitoring-live-update";
+// The page reloads its data this often to show new scans.
+const AUTO_REFRESH_MS = 30 * 1000;
 
 const toArray = (value) => {
     if (Array.isArray(value)) return value;
@@ -50,84 +49,6 @@ const createRows = (employees, travelOrders = []) => {
     );
 };
 
-const updateEmployeeCollection = (employees, updatedEmployee) => {
-    if (!updatedEmployee?.id) return employees;
-
-    if (Array.isArray(employees)) {
-        return employees.map((employee) =>
-            Number(employee.id) === Number(updatedEmployee.id)
-                ? updatedEmployee
-                : employee,
-        );
-    }
-
-    if (Array.isArray(employees?.data)) {
-        return {
-            ...employees,
-            data: employees.data.map((employee) =>
-                Number(employee.id) === Number(updatedEmployee.id)
-                    ? updatedEmployee
-                    : employee,
-            ),
-        };
-    }
-
-    return employees;
-};
-
-const formatPunchTime = (time) => {
-    if (!time) return "";
-
-    const [hours = 0, minutes = 0] = String(time).split(":").map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-
-    return date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-};
-
-const latestPunch = (employee = {}) => {
-    const punches = [
-        ["PM Out", employee.pm_out],
-        ["PM In", employee.pm_in],
-        ["AM Out", employee.am_out],
-        ["AM In", employee.am_in],
-    ];
-    const punch = punches.find(([, time]) => Boolean(time));
-
-    if (!punch) return employee.status || "Attendance updated";
-
-    return `${punch[0]} ${formatPunchTime(punch[1])}`;
-};
-
-const LiveUpdateToast = ({ count, employee }) => (
-    <div className="monitor-live-toast relative flex min-w-[270px] max-w-[330px] items-center gap-2.5 overflow-hidden rounded-xl border border-sky-300/25 bg-gradient-to-br from-[#02062f]/95 via-[#08145a]/95 to-[#0f2f72]/95 px-3.5 py-3 text-white shadow-2xl shadow-blue-950/35 backdrop-blur">
-        <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/80 to-transparent" />
-        {count > 1 ? (
-            <span className="monitor-live-toast-badge absolute right-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-black text-white shadow-lg shadow-rose-900/25">
-                {count}
-            </span>
-        ) : null}
-        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-300/25 bg-emerald-400/15 text-emerald-200 shadow-inner">
-            <span className="absolute inset-0 rounded-full bg-emerald-300/25 animate-ping" />
-            <BellRing className="relative h-4 w-4 animate-bell-ring" />
-        </span>
-        <div className="min-w-0 pr-6">
-            <p className="text-xs font-black uppercase text-sky-100">
-                Live update
-            </p>
-            <p className="truncate text-sm font-semibold text-white">
-                {getEmployeeName(employee) || "Employee"}
-            </p>
-            <p className="text-[11px] font-bold uppercase text-emerald-200">
-                {latestPunch(employee)}
-            </p>
-        </div>
-    </div>
-);
-
 const AttendanceMonitoring = ({
     employees = {},
     filters = {},
@@ -149,13 +70,13 @@ const AttendanceMonitoring = ({
     const [stationSearch, setStationSearch] = useState("");
     const [time, setTime] = useState(new Date());
     const [filterScope, setFilterScope] = useState(null);
-    const [broadcastStatus, setBroadcastStatus] = useState("connecting");
+    // When the page last got fresh data (shown in the header).
+    const [lastRefreshedAt, setLastRefreshedAt] = useState(() => new Date());
+    const [refreshing, setRefreshing] = useState(false);
     const [pageMotion, setPageMotion] = useState("next");
     const requestInFlightRef = useRef(false);
     const requestIdRef = useRef(0);
-    const broadcastStatusTimerRef = useRef(null);
-    const toastCountRef = useRef(0);
-    const toastResetTimerRef = useRef(null);
+    const refreshRef = useRef(null);
     const selectedStation = filters.station_id || 1;
     const selectedStationCode = filters.station_code || "SDO";
     const selectedStationName =
@@ -229,96 +150,31 @@ const AttendanceMonitoring = ({
         return () => clearInterval(timer);
     }, []);
 
-    const showLiveUpdateToast = (employee) => {
-        if (!employee?.id) return;
+    // Show new scans: reload the side panels every 30 seconds. The employee
+    // list already gets fresh data as it pages through itself (every 9
+    // seconds); it is reloaded here too when it has one page or a search is
+    // active, since it does not page then.
+    refreshRef.current = () => {
+        if (requestInFlightRef.current || document.hidden) return;
 
-        toastCountRef.current += 1;
+        const only = ["recentLogs", "topFirstTimeIns", "travelOrders"];
 
-        toast.custom(
-            () => (
-                <LiveUpdateToast
-                    count={toastCountRef.current}
-                    employee={employee}
-                />
-            ),
-            {
-                id: LIVE_UPDATE_TOAST_ID,
-                duration: 4500,
-            },
-        );
+        if (hasActiveSearch || Number(liveEmployees?.last_page || 1) <= 1) {
+            only.push("employees");
+        }
 
-        clearTimeout(toastResetTimerRef.current);
-        toastResetTimerRef.current = setTimeout(() => {
-            toastCountRef.current = 0;
-        }, 4800);
+        router.reload({
+            only,
+            onStart: () => setRefreshing(true),
+            onSuccess: () => setLastRefreshedAt(new Date()),
+            onFinish: () => setRefreshing(false),
+        });
     };
 
     useEffect(() => {
-        if (!window.Echo || !selectedStation) return;
-
-        const connection = window.Echo.connector?.pusher?.connection;
-        const setConnected = () => setBroadcastStatus("live");
-        const setConnecting = () => setBroadcastStatus("connecting");
-        const setDisconnected = () => setBroadcastStatus("offline");
-
-        if (connection) {
-            if (connection.state === "connected") {
-                setConnected();
-            } else if (connection.state === "connecting") {
-                setConnecting();
-            } else {
-                setDisconnected();
-            }
-
-            connection.bind("connected", setConnected);
-            connection.bind("connecting", setConnecting);
-            connection.bind("disconnected", setDisconnected);
-            connection.bind("unavailable", setDisconnected);
-            connection.bind("failed", setDisconnected);
-        }
-
-        const channelName = `attendance-monitoring.station.${selectedStation}`;
-        const channel = window.Echo.channel(channelName);
-
-        channel.listen(".attendance-monitoring.updated", (event) => {
-            const payload = event.payload || {};
-
-            setLiveEmployees((current) =>
-                updateEmployeeCollection(current, payload.employee),
-            );
-
-            if (Array.isArray(payload.recentLogs)) {
-                setLiveRecentLogs(payload.recentLogs);
-            }
-
-            if (Array.isArray(payload.topFirstTimeIns)) {
-                setLiveTopFirstTimeIns(payload.topFirstTimeIns);
-            }
-
-            if (Array.isArray(payload.travelOrders)) {
-                setLiveTravelOrders(payload.travelOrders);
-            }
-
-            setBroadcastStatus("updated");
-            showLiveUpdateToast(payload.employee);
-
-            clearTimeout(broadcastStatusTimerRef.current);
-            broadcastStatusTimerRef.current = setTimeout(() => {
-                setBroadcastStatus("live");
-            }, 1500);
-        });
-
-        return () => {
-            clearTimeout(broadcastStatusTimerRef.current);
-            clearTimeout(toastResetTimerRef.current);
-            connection?.unbind("connected", setConnected);
-            connection?.unbind("connecting", setConnecting);
-            connection?.unbind("disconnected", setDisconnected);
-            connection?.unbind("unavailable", setDisconnected);
-            connection?.unbind("failed", setDisconnected);
-            window.Echo.leave(channelName);
-        };
-    }, [selectedStation]);
+        const timer = setInterval(() => refreshRef.current?.(), AUTO_REFRESH_MS);
+        return () => clearInterval(timer);
+    }, []);
 
     const selectStation = (station) => {
         const stationCode = String(station?.code || "SDO").trim();
@@ -436,9 +292,12 @@ const AttendanceMonitoring = ({
     return (
         <div className="relative min-h-screen overflow-hidden bg-[#02062f] text-[#070d3f]">
             <Head title="Attendance Monitoring" />
-            <Toaster position="top-center" visibleToasts={1} gap={10} />
             <TalaBackground />
-            <Header broadcastStatus={broadcastStatus} time={time} />
+            <Header
+                lastRefreshedAt={lastRefreshedAt}
+                refreshing={refreshing}
+                time={time}
+            />
             <EmployeeList
                 employees={visibleEmployees}
                 goToPage={goToPage}

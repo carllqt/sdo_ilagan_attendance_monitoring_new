@@ -9,7 +9,6 @@ use App\Models\Administrator\Station;
 use App\Models\FingerprintScan;
 use App\Models\User;
 use App\Repositories\Administrator\AttendanceRepository;
-use App\Services\AttendanceMonitoringRealtimeService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
@@ -61,7 +60,6 @@ class AttendanceService
 
     public function __construct(
         private readonly AttendanceRepository $repository,
-        private readonly AttendanceMonitoringRealtimeService $realtime,
     ) {}
 
     public function pageData(Request $request): array
@@ -599,9 +597,6 @@ class AttendanceService
         string $message,
         Carbon $now,
     ): array {
-        $attendance->refresh();
-        $this->realtime->broadcastForAttendance($attendance);
-
         return $this->attendancePayload($employee, [
             'success' => true,
             'message' => $message,

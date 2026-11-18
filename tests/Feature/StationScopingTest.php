@@ -17,8 +17,6 @@ use Spatie\Permission\Models\Role;
 */
 
 beforeEach(function () {
-    config(['broadcasting.default' => 'null']);
-
     Role::create(['name' => 'school_admin', 'guard_name' => 'web']);
     Role::create(['name' => 'sdo_admin', 'guard_name' => 'web']);
 

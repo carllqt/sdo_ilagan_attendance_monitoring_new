@@ -1,5 +1,5 @@
 import React from "react";
-import { Radio, WifiOff } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import BrandSubtitle from "@/Components/BrandSubtitle";
@@ -51,55 +51,36 @@ const GlowingClockIcon = () => (
     </svg>
 );
 
-const LiveIndicator = ({ status = "connecting" }) => {
-    const isLive = status === "live";
-    const isUpdated = status === "updated";
-    const isConnecting = status === "connecting";
-    const Icon = isLive || isUpdated || isConnecting ? Radio : WifiOff;
-    const label = isUpdated
-        ? "Updated"
-        : isLive
-          ? "Live"
-          : isConnecting
-            ? "Connecting"
-            : "Offline";
-    const detail = isUpdated
-        ? "Broadcast received"
-        : isLive
-          ? "Broadcast active"
-          : isConnecting
-            ? "Opening Reverb"
-            : "Reverb not connected";
+// The page reloads its data every 30 seconds; this shows when it last did.
+const RefreshIndicator = ({ lastRefreshedAt, refreshing = false }) => {
+    const updatedAt = lastRefreshedAt
+        ? lastRefreshedAt.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              second: "2-digit",
+          })
+        : "";
 
     return (
         <div className="flex items-center gap-2 rounded-lg border border-white/20 bg-[#071158]/70 px-3 py-2 text-left shadow-[0_10px_24px_rgba(2,6,47,0.24)]">
-            <span
-                className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                    isLive || isUpdated
-                        ? "bg-emerald-400/18 text-emerald-200"
-                        : isConnecting
-                          ? "bg-amber-300/18 text-amber-100"
-                          : "bg-red-400/18 text-red-100"
-                }`}
-            >
-                {(isLive || isUpdated) && (
-                    <span className="absolute h-8 w-8 rounded-full bg-emerald-300/25 animate-ping" />
-                )}
-                <Icon className="relative h-4 w-4" />
+            <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-400/18 text-sky-100">
+                <RefreshCw
+                    className={`relative h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                />
             </span>
             <div className="min-w-[92px]">
                 <p className="text-xs font-black uppercase leading-tight tracking-wide text-white">
-                    {label}
+                    {refreshing ? "Refreshing" : "Auto refresh"}
                 </p>
                 <p className="text-[10px] font-semibold text-blue-50/80">
-                    {detail}
+                    {updatedAt ? `Updated ${updatedAt}` : "Every 30 seconds"}
                 </p>
             </div>
         </div>
     );
 };
 
-const Header = ({ broadcastStatus = "connecting", time }) => {
+const Header = ({ lastRefreshedAt = null, refreshing = false, time }) => {
     const today = time.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -134,7 +115,10 @@ const Header = ({ broadcastStatus = "connecting", time }) => {
                 </div>
 
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center lg:mt-0">
-                    <LiveIndicator status={broadcastStatus} />
+                    <RefreshIndicator
+                        lastRefreshedAt={lastRefreshedAt}
+                        refreshing={refreshing}
+                    />
 
                     <div className="rounded-xl border border-white/25 bg-[linear-gradient(135deg,rgba(42,75,205,0.58),rgba(102,82,218,0.68)_48%,rgba(49,30,139,0.62))] px-5 py-3 text-right shadow-[0_0_28px_rgba(96,165,250,0.30),0_14px_36px_rgba(2,6,47,0.32),inset_0_1px_0_rgba(255,255,255,0.32)] ring-1 ring-violet-200/20 backdrop-blur-md">
                         <div className="flex items-center gap-3">

@@ -4,14 +4,12 @@ namespace App\Services\Administrator;
 
 use App\Data\Administrator\TravelLocatorManagement\TravelLocatorRequestFilter;
 use App\Repositories\Administrator\TravelLocatorManagementRepository;
-use App\Services\AttendanceMonitoringRealtimeService;
 use Illuminate\Http\Request;
 
 class TravelLocatorManagementService
 {
     public function __construct(
         private readonly TravelLocatorManagementRepository $repository,
-        private readonly AttendanceMonitoringRealtimeService $realtime,
     ) {}
 
     public function pageData(Request $request): array
@@ -60,7 +58,6 @@ class TravelLocatorManagementService
             (int) $matchedEmployee->getKey(),
         );
 
-        $this->realtime->broadcastForTravelOrder($travelOrder);
     }
 
     public function deleteTravelOrder(int $id, Request $request): void

@@ -61,9 +61,6 @@ Route::middleware(['auth', 'role:sdo_admin|sdo_hr|school_admin'])->group(functio
     Route::get('/document-samples/travel-order', [DocumentPrintController::class, 'travelOrderSample'])
         ->name('document-samples.travel-order');
 
-    Route::post('/attendance-monitoring/broadcast', [AttendanceMonitoringController::class, 'broadcast'])->name('attendance-monitoring.broadcast');
-    Route::get('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'liveTest'])->name('attendance-monitoring.live-test');
-    Route::post('/attendance-monitoring/live-test', [AttendanceMonitoringController::class, 'triggerLiveTest'])->name('attendance-monitoring.live-test.trigger');
 
     //Attendance Management
     Route::get('/attendance-management', [AttendanceManagementController::class, 'index'])->name('attendance-management');
