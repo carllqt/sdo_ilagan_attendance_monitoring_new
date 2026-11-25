@@ -2,6 +2,7 @@
 
 use App\Data\AttendanceMonitoring\AttendanceEmployeeData;
 use App\Data\AttendanceMonitoring\AttendanceMonitoringFilter;
+use App\Models\Administrator\Attendance;
 use App\Models\Administrator\Employee;
 use App\Models\Administrator\Station;
 use App\Models\EmployeeTravelOrder;
@@ -108,6 +109,56 @@ it('shows On Travel for everyone on travel, not only the side panel few', functi
 
     expect($statuses->filter(fn ($status) => $status === 'On Travel')->count())->toBe(5)
         ->and($statuses['Traveler6'])->toBe('Absent');
+});
+
+it('counts the station by status and lists only the picked status', function () {
+    $this->travelTo(Carbon::parse('2026-11-25 15:00'));
+    $station = Station::create(['name' => 'School Division Office', 'code' => 'SDO']);
+    $other = Station::create(['name' => 'Other School', 'code' => 'OTH']);
+    $person = fn (string $name, $at = null) => Employee::create([
+        'first_name' => $name, 'last_name' => 'Cruz', 'position' => 'Teacher I',
+        'station_id' => ($at ?? $station)->id, 'active_status' => true,
+    ]);
+    $scan = function (Employee $employee, array $am = [], array $pm = []) {
+        $attendance = Attendance::create(['employee_id' => $employee->id, 'date' => '2026-11-25']);
+        if ($am) $attendance->am()->create($am);
+        if ($pm) $attendance->pm()->create($pm);
+    };
+
+    $scan($person('Early'), ['am_time_in' => '07:50:00'], ['pm_time_out' => '17:00:00']);
+    $scan($person('Tardy1'), ['am_time_in' => '08:40:00'], ['pm_time_out' => '17:00:00']);
+    $scan($person('Tardy2'), ['am_time_in' => '09:05:00'], ['pm_time_out' => '17:00:00']);
+    $scan($person('Morning'), ['am_time_in' => '07:55:00', 'am_time_out' => '12:00:00']);
+    $person('Missing');
+    $scan($person('Elsewhere', $other), ['am_time_in' => '09:30:00']);
+
+    $query = ['station_code' => 'SDO', 'station_name' => 'School Division Office'];
+
+    $this->get(route('attendance-monitoring', $query))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('statusCounts', fn ($counts) => collect($counts)->pluck('count', 'key')->all() === [
+                'on-time' => 1, 'on-grace' => 0, 'late' => 2, 'half-day' => 1,
+                'no-time-in' => 0, 'on-travel' => 0, 'absent' => 1,
+            ])
+            ->where('employees.total', 5));
+
+    $this->get(route('attendance-monitoring', [...$query, 'status' => 'late']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.status', 'late')
+            ->where('employees.total', 2)
+            ->where('employees.data', fn ($rows) => collect($rows)->pluck('first_name')->sort()->values()->all() === ['Tardy1', 'Tardy2']));
+
+    // The next page of a filtered list keeps the filter.
+    $this->getJson(route('attendance-monitoring.employees-page', [...$query, 'status' => 'half-day', 'page' => 1]))
+        ->assertOk()
+        ->assertJsonPath('employees.total', 1)
+        ->assertJsonPath('employees.data.0.first_name', 'Morning');
+
+    // An unknown status is refused.
+    $this->getJson(route('attendance-monitoring.employees-page', [...$query, 'status' => 'nope']))
+        ->assertStatus(422);
 });
 
 it('builds the status from a row at the given time', function () {

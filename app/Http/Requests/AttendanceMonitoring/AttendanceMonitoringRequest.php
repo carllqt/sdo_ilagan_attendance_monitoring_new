@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\AttendanceMonitoring;
 
+use App\Data\AttendanceMonitoring\AttendanceEmployeeData;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AttendanceMonitoringRequest extends FormRequest
 {
@@ -20,6 +22,7 @@ class AttendanceMonitoringRequest extends FormRequest
             'station_name' => ['nullable', 'string', 'max:255'],
             'page' => ['nullable', 'integer', 'min:1'],
             'limit' => ['nullable', 'integer'],
+            'status' => ['nullable', Rule::in(array_keys(AttendanceEmployeeData::STATUSES))],
         ];
     }
 }

@@ -10,6 +10,7 @@ import {
 import EmployeeSearchBox from "./EmployeeSearchBox";
 import SchoolList from "./SchoolList";
 import SidePanels from "./SidePanels";
+import StatusCounters from "./StatusCounters";
 
 const EmployeeListHeader = ({
     search,
@@ -87,6 +88,9 @@ const EmployeeList = ({
     recentLogs = [],
     topFirstTimeIns = [],
     travelOrders = [],
+    statusCounts = [],
+    selectedStatus = "",
+    selectStatus = () => {},
 }) => {
     const { page, pageCount, total, startIndex, endIndex } =
         useEmployeePagination(employees);
@@ -116,6 +120,12 @@ const EmployeeList = ({
                                 }
                                 setSearch={setSearch}
                                 submitSearch={submitSearch}
+                            />
+
+                            <StatusCounters
+                                counts={statusCounts}
+                                selectedStatus={selectedStatus}
+                                onSelect={selectStatus}
                             />
 
                             <div

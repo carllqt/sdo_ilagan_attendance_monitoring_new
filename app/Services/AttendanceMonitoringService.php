@@ -37,6 +37,7 @@ class AttendanceMonitoringService
             'recentLogs' => fn () => $this->repository->recentLogs($today, $filter),
             'topFirstTimeIns' => fn () => $this->repository->topFirstTimeIns($today, $filter),
             'travelOrders' => fn () => $this->repository->travelOrders($today, $filter),
+            'statusCounts' => fn () => $this->repository->statusCounts($today, $filter),
             'filters' => $filter->toArray(),
         ];
     }

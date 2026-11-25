@@ -20,6 +20,9 @@ class AttendanceMonitoringFilter
         public readonly string $stationCode,
         public readonly string $stationName,
         public readonly ?Station $station,
+        // A status key (AttendanceEmployeeData::STATUSES) to list only
+        // those employees, or '' for everyone.
+        public readonly string $status = '',
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -37,6 +40,9 @@ class AttendanceMonitoringFilter
             stationCode: $station?->code ?? ($stationCode ?: 'SDO'),
             stationName: $station?->name ?? ($stationName ?: 'School Division Office'),
             station: $station,
+            status: array_key_exists((string) $request->query('status', ''), AttendanceEmployeeData::STATUSES)
+                ? (string) $request->query('status')
+                : '',
         );
     }
 
@@ -76,6 +82,7 @@ class AttendanceMonitoringFilter
             'station_id' => $this->stationId,
             'station_code' => $this->stationCode,
             'station_name' => $this->stationName,
+            'status' => $this->status,
         ];
     }
 

@@ -30,6 +30,17 @@ class AttendanceEmployeeData
     public const NO_TIME_IN = 'No Time-In';
     public const ABSENT = 'Absent';
 
+    // Every status, by the key the page uses to filter by it (?status=late).
+    public const STATUSES = [
+        'on-time' => self::ON_TIME,
+        'on-grace' => self::ON_GRACE,
+        'late' => self::LATE,
+        'half-day' => self::HALF_DAY,
+        'no-time-in' => self::NO_TIME_IN,
+        'on-travel' => self::ON_TRAVEL,
+        'absent' => self::ABSENT,
+    ];
+
     private const DEFAULT_START = '08:00';
     private const ON_TIME_UNTIL = '08:00';
     // The afternoon starts at 1:00 PM (as in the tardiness records): someone

@@ -12,26 +12,71 @@ use App\Models\Administrator\Employee;
 use App\Models\Administrator\Station;
 use App\Models\EmployeeTravelOrder;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class AttendanceMonitoringRepository
 {
     public function employees(Carbon $today, AttendanceMonitoringFilter $filter)
     {
-        $employees = $this->employeeQuery($today, $filter)
+        $at = $this->statusTime($today);
+        $query = $this->employeeQuery($today, $filter)
             ->when($filter->search !== '', function ($query) use ($filter) {
                 $this->applyEmployeeSearch($query, $filter->search);
-            })
-            ->paginate($filter->employeeLimit, ['*'], 'page', $filter->page);
+            });
 
-        // Statuses are for now on today's page, and for the end of the day
-        // on a past day (e.g. Half Day once the afternoon has started).
-        $at = $today->isToday() ? now() : $today->copy()->endOfDay();
+        if ($filter->status === '') {
+            $employees = $query->paginate($filter->employeeLimit, ['*'], 'page', $filter->page);
+            $employees->setCollection($employees->getCollection()
+                ->map(fn ($employee) => AttendanceEmployeeData::fromRow($employee, $at)));
 
-        $employees->setCollection($employees->getCollection()
-            ->map(fn ($employee) => AttendanceEmployeeData::fromRow($employee, $at)));
+            return $employees;
+        }
 
-        return $employees;
+        // A status is worked out per employee, not in SQL: filter the whole
+        // station, then split it into pages.
+        $label = AttendanceEmployeeData::STATUSES[$filter->status];
+        $rows = $query->get()
+            ->map(fn ($employee) => AttendanceEmployeeData::fromRow($employee, $at))
+            ->filter(fn (array $row) => $row['status'] === $label)
+            ->values();
+
+        return new LengthAwarePaginator(
+            $rows->forPage($filter->page, $filter->employeeLimit)->values(),
+            $rows->count(),
+            $filter->employeeLimit,
+            $filter->page,
+            ['path' => request()->url(), 'pageName' => 'page'],
+        );
+    }
+
+    /**
+     * How many of the station's employees have each status, for the
+     * counters above the list: [{key, label, count}, ...].
+     */
+    public function statusCounts(Carbon $today, AttendanceMonitoringFilter $filter): array
+    {
+        $at = $this->statusTime($today);
+        $counts = $this->employeeQuery($today, $filter)
+            ->get()
+            ->map(fn ($employee) => AttendanceEmployeeData::fromRow($employee, $at)['status'])
+            ->countBy();
+
+        return collect(AttendanceEmployeeData::STATUSES)
+            ->map(fn (string $label, string $key) => [
+                'key' => $key,
+                'label' => $label,
+                'count' => (int) ($counts[$label] ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    // Statuses are for now on today's page, and for the end of the day on a
+    // past day (e.g. Half Day once the afternoon has started).
+    private function statusTime(Carbon $today): Carbon
+    {
+        return $today->isToday() ? now() : $today->copy()->endOfDay();
     }
 
     public function stationOptions(AttendanceMonitoringFilter $filter)

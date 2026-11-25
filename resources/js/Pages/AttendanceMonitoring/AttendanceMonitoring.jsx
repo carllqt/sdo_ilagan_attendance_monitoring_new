@@ -50,6 +50,7 @@ const AttendanceMonitoring = ({
     recentLogs = [],
     topFirstTimeIns = [],
     travelOrders = [],
+    statusCounts = [],
 }) => {
     const stationList = useMemo(
         () => sortAlphabetically(toArray(stations), "name"),
@@ -60,6 +61,7 @@ const AttendanceMonitoring = ({
     const [liveTopFirstTimeIns, setLiveTopFirstTimeIns] =
         useState(topFirstTimeIns);
     const [liveTravelOrders, setLiveTravelOrders] = useState(travelOrders);
+    const [liveStatusCounts, setLiveStatusCounts] = useState(statusCounts);
     const [search, setSearch] = useState(filters.search || "");
     const [stationSearch, setStationSearch] = useState("");
     const [time, setTime] = useState(new Date());
@@ -76,6 +78,8 @@ const AttendanceMonitoring = ({
     const selectedStationName =
         filters.station_name || "School Division Office";
     const hasActiveSearch = search.trim() !== "";
+    // The status counter picked (e.g. "late"), or "" for everyone.
+    const selectedStatus = filters.status || "";
     const visibleEmployees = liveEmployees;
     const rows = useMemo(
         () => createRows(visibleEmployees),
@@ -140,6 +144,10 @@ const AttendanceMonitoring = ({
     }, [travelOrders]);
 
     useEffect(() => {
+        setLiveStatusCounts(statusCounts);
+    }, [statusCounts]);
+
+    useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -151,7 +159,12 @@ const AttendanceMonitoring = ({
     refreshRef.current = () => {
         if (requestInFlightRef.current || document.hidden) return;
 
-        const only = ["recentLogs", "topFirstTimeIns", "travelOrders"];
+        const only = [
+            "recentLogs",
+            "topFirstTimeIns",
+            "travelOrders",
+            "statusCounts",
+        ];
 
         if (hasActiveSearch || Number(liveEmployees?.last_page || 1) <= 1) {
             only.push("employees");
@@ -211,6 +224,7 @@ const AttendanceMonitoring = ({
                     page: nextPage,
                     station_code: selectedStationCode,
                     station_name: selectedStationName,
+                    status: selectedStatus || undefined,
                 },
             })
             .then((response) => {
@@ -244,6 +258,11 @@ const AttendanceMonitoring = ({
             direction || (nextPage >= currentPage ? "next" : "previous"),
         );
         visit({ page: nextPage }, "employees");
+    };
+
+    const selectStatus = (status) => {
+        setPageMotion("next");
+        visit({ status: status || null, page: null }, "employees");
     };
 
     const submitSearch = (value) => {
@@ -312,6 +331,9 @@ const AttendanceMonitoring = ({
                 recentLogs={liveRecentLogs}
                 topFirstTimeIns={liveTopFirstTimeIns}
                 travelOrders={liveTravelOrders}
+                statusCounts={liveStatusCounts}
+                selectedStatus={selectedStatus}
+                selectStatus={selectStatus}
             />
         </div>
     );
