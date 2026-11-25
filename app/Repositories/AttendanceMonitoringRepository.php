@@ -201,6 +201,7 @@ class AttendanceMonitoringRepository
 
         return Employee::query()
             ->leftJoin('stations', 'stations.id', '=', 'employees.station_id')
+            ->leftJoin('work_schedules', 'work_schedules.id', '=', 'employees.work_schedule_id')
             ->leftJoinSub($todayAttendance, 'today_attendances', function ($join) {
                 $join->on('today_attendances.employee_id', '=', 'employees.id');
             })
@@ -217,6 +218,8 @@ class AttendanceMonitoringRepository
                 'employees.station_id',
                 'stations.name as station_name',
                 'stations.code as station_code',
+                // For the On Time / On Grace / Late status.
+                'work_schedules.time_in as schedule_time_in',
                 'attendance_ams.am_time_in as am_in',
                 'attendance_ams.am_time_out as am_out',
                 'attendance_pms.pm_time_in as pm_in',
