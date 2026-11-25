@@ -16,18 +16,13 @@ const toArray = (value) => {
     return [];
 };
 
-const createRows = (employees, travelOrders = []) => {
-    const travelEmployeeIds = new Set(
-        toArray(travelOrders)
-            .map((travelOrder) => travelOrder?.employee?.id)
-            .filter(Boolean)
-            .map(Number),
-    );
-
-    return sortAlphabetically(
+// Each employee's status, including On Travel, comes from the server
+// (AttendanceEmployeeData).
+const createRows = (employees) =>
+    sortAlphabetically(
         toArray(employees?.data || employees).map((employee) => {
             const employeeId = employee.employee_id || employee.id;
-            const isOnTravel = travelEmployeeIds.has(Number(employeeId));
+            const isOnTravel = Boolean(employee.on_travel);
 
             return {
                 id: employee.id,
@@ -41,13 +36,12 @@ const createRows = (employees, travelOrders = []) => {
                 am_out: isOnTravel ? "" : employee.am_out || "",
                 pm_in: isOnTravel ? "" : employee.pm_in || "",
                 pm_out: isOnTravel ? "" : employee.pm_out || "",
-                status: isOnTravel ? "ON TRAVEL" : employee.status || "Absent",
+                status: employee.status || "Absent",
                 isOnTravel,
             };
         }),
         "name",
     );
-};
 
 const AttendanceMonitoring = ({
     employees = {},
@@ -84,8 +78,8 @@ const AttendanceMonitoring = ({
     const hasActiveSearch = search.trim() !== "";
     const visibleEmployees = liveEmployees;
     const rows = useMemo(
-        () => createRows(visibleEmployees, liveTravelOrders),
-        [visibleEmployees, liveTravelOrders],
+        () => createRows(visibleEmployees),
+        [visibleEmployees],
     );
 
     const visit = (overrides = {}, scope = "employees") => {

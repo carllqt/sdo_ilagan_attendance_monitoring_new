@@ -24,8 +24,12 @@ class AttendanceMonitoringRepository
             })
             ->paginate($filter->employeeLimit, ['*'], 'page', $filter->page);
 
+        // Statuses are for now on today's page, and for the end of the day
+        // on a past day (e.g. Half Day once the afternoon has started).
+        $at = $today->isToday() ? now() : $today->copy()->endOfDay();
+
         $employees->setCollection($employees->getCollection()
-            ->map(fn ($employee) => AttendanceEmployeeData::fromRow($employee)));
+            ->map(fn ($employee) => AttendanceEmployeeData::fromRow($employee, $at)));
 
         return $employees;
     }
@@ -225,6 +229,16 @@ class AttendanceMonitoringRepository
                 'attendance_pms.pm_time_in as pm_in',
                 'attendance_pms.pm_time_out as pm_out',
             ])
+            // On travel today, checked for each employee (not from the side
+            // panel's travel list, which shows only a few).
+            ->selectSub(
+                EmployeeTravelOrder::query()
+                    ->selectRaw('COUNT(*) > 0')
+                    ->whereColumn('employee_travel_orders.employee_id', 'employees.id')
+                    ->whereDate('employee_travel_orders.start_date', '<=', $today)
+                    ->whereDate('employee_travel_orders.end_date', '>=', $today),
+                'on_travel',
+            )
             ->where('employees.station_id', $filter->stationId)
             ->orderByRaw("CASE WHEN stations.code = 'SDO' THEN 0 ELSE 1 END")
             ->orderBy('stations.name')

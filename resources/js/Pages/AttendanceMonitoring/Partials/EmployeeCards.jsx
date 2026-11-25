@@ -1,19 +1,28 @@
 import React from "react";
-import { CheckCircle2, Clock3, Hourglass, Plane, XCircle } from "lucide-react";
+import {
+    CheckCircle2,
+    CircleAlert,
+    Clock3,
+    Hourglass,
+    Plane,
+    SunMedium,
+    XCircle,
+} from "lucide-react";
 
 import EmployeeAvatar from "@/Components/EmployeeAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "../utils";
 
 const EmployeeCard = ({ row }) => {
-    // From the first time-in (AttendanceEmployeeData): On Time by 8:00,
-    // On Grace until 8:30, Late after.
+    // Set by AttendanceEmployeeData on the server.
     const status = row.status || "Absent";
     const isOnTime = status === "On Time";
     const isOnGrace = status === "On Grace";
     const isLate = status === "Late";
+    const isHalfDay = status === "Half Day";
+    const isNoTimeIn = status === "No Time-In";
     const isAbsent = status === "Absent";
-    const isOnTravel = row.isOnTravel || status === "ON TRAVEL";
+    const isOnTravel = row.isOnTravel || status === "On Travel";
 
     return (
         <div className="rounded-xl border border-white/80 bg-white p-4 shadow-lg shadow-blue-950/10 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-950/20">
@@ -40,15 +49,21 @@ const EmployeeCard = ({ row }) => {
                                 ? "bg-yellow-300 text-[#070d3f] shadow-yellow-200"
                                 : isLate
                                   ? "bg-orange-500 text-white shadow-orange-200"
-                                  : isAbsent
-                                    ? "bg-rose-500 text-white shadow-rose-200"
-                                    : "bg-slate-500 text-white shadow-slate-200"
+                                  : isHalfDay
+                                    ? "bg-violet-500 text-white shadow-violet-200"
+                                    : isNoTimeIn
+                                      ? "bg-slate-600 text-white shadow-slate-200"
+                                      : isAbsent
+                                        ? "bg-rose-500 text-white shadow-rose-200"
+                                        : "bg-slate-500 text-white shadow-slate-200"
                     }`}
                 >
                     {isOnTravel && <Plane className="h-3.5 w-3.5" />}
                     {isOnTime && <CheckCircle2 className="h-3.5 w-3.5" />}
                     {isOnGrace && <Hourglass className="h-3.5 w-3.5" />}
                     {isLate && <Clock3 className="h-3.5 w-3.5" />}
+                    {isHalfDay && <SunMedium className="h-3.5 w-3.5" />}
+                    {isNoTimeIn && <CircleAlert className="h-3.5 w-3.5" />}
                     {isAbsent && <XCircle className="h-3.5 w-3.5" />}
                     {status}
                 </span>
