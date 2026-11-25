@@ -91,24 +91,26 @@ it('records AM Time-Out normally when AM Time-In exists', function () {
     expect(todayAttendance()->am->am_time_out)->toStartWith('12:00');
 });
 
-it('asks a late afternoon arrival instead of recording PM Time-Out', function () {
+it('records PM Time-Out with no PM Time-In without asking', function () {
     scanAt('13:35:00', 'PM Time-Out')
         ->assertOk()
-        ->assertJson([
-            'prompt' => true,
-            'prompt_type' => 'PM',
-            'options' => ['PM Time-Out', 'PM Time-In'],
-        ]);
+        ->assertJson(['success' => true, 'session' => 'PM', 'action' => 'time-out'])
+        ->assertJsonMissing(['prompt' => true]);
 
-    expect(todayAttendance()?->pm?->pm_time_out)->toBeNull();
+    expect(todayAttendance()->pm)
+        ->pm_time_in->toBeNull()
+        ->pm_time_out->toStartWith('13:35');
 });
 
-it('asks when AM is complete but PM Time-In is missing', function () {
+it('records PM Time-Out when AM is complete but PM Time-In is missing', function () {
     seedToday(am: ['am_time_in' => '07:50:00', 'am_time_out' => '12:00:00']);
 
     scanAt('17:00:00', 'PM Time-Out')
         ->assertOk()
-        ->assertJson(['prompt' => true, 'prompt_type' => 'PM']);
+        ->assertJson(['success' => true, 'session' => 'PM', 'action' => 'time-out'])
+        ->assertJsonMissing(['prompt' => true]);
+
+    expect(todayAttendance()->pm->pm_time_out)->toStartWith('17:00');
 });
 
 it('does not ask someone who only scans in and out for the day', function () {

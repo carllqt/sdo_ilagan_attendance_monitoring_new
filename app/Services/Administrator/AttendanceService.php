@@ -196,9 +196,11 @@ class AttendanceService
                 return $locked;
             }
 
+            // PM Time-Out is recorded as scanned, even with no PM Time-In:
+            // no question for it.
             $prompt = match ($choice) {
                 'PM Time-In' => $this->missingAmOutPrompt($employee, $now),
-                'AM Time-Out', 'PM Time-Out' => $this->missingTimeInPrompt($employee, $choice, $now),
+                'AM Time-Out' => $this->missingAmTimeInPrompt($employee, $now),
                 default => null,
             };
 
@@ -360,35 +362,23 @@ class AttendanceService
      * 11:00), so a late arrival can scan while Time-Out is selected. If that
      * session has no Time-In yet, ask instead of guessing.
      */
-    private function missingTimeInPrompt(Employee $employee, string $choice, Carbon $now): ?array
+    // AM Time-Out with no AM Time-In today: ask whether they are timing in
+    // (a late arrival) or out.
+    private function missingAmTimeInPrompt(Employee $employee, Carbon $now): ?array
     {
-        $attendance = Attendance::query()
-            ->with(['am', 'pm'])
+        $am = Attendance::query()
+            ->with('am')
             ->where('employee_id', $employee->id)
             ->whereDate('date', $now->toDateString())
-            ->first();
-        $am = $attendance?->am;
-        $pm = $attendance?->pm;
+            ->first()
+            ?->am;
 
-        if ($choice === 'AM Time-Out') {
-            // Has a Time-In, or Time-Out is already recorded (handled later).
-            if ($am?->am_time_in || $am?->am_time_out) {
-                return null;
-            }
-
-            return $this->missingTimeInPromptPayload($employee, 'AM');
-        }
-
-        if ($pm?->pm_time_in || $pm?->pm_time_out) {
+        // Has a Time-In, or Time-Out is already recorded (handled later).
+        if ($am?->am_time_in || $am?->am_time_out) {
             return null;
         }
 
-        // AM Time-In with no lunch scans: leaving for the day, no question.
-        if ($am?->am_time_in && ! $am->am_time_out) {
-            return null;
-        }
-
-        return $this->missingTimeInPromptPayload($employee, 'PM');
+        return $this->missingTimeInPromptPayload($employee, 'AM');
     }
 
     /**
